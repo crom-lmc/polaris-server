@@ -5,23 +5,7 @@ Spring Cloud 微服务架构，Nacos 配置/注册中心，Gateway 统一入口�
 
 ## 一、架构总览
 
-```
-浏览器（6 个前端应用）
-        │
-        ▼
-sso-gateway :9080              ← 统一入口：JWT 校验、路由、内部 token 透传
-        │
- ┌──────┼──────────┬──────────┬──────────┬──────────┐
- ▼      ▼          ▼          ▼          ▼          ▼
-sso-  sso-       ehr       settings    cms        portal
-auth  account  :9006      :9007      :9004      :9005
-:9001  :9002      │          │          │
- └──────┴── sso_ms 库       │          │
-              ehr 库    settings 库  cms 库      （聚合只读 cms）
-                                        blog :9003 → blog 库（独立）
-
-基础设施：MySQL 5.7+（root/root）、Redis、Nacos（配置 + 注册）
-```
+![Polaris 架构图](docs/architecture.svg)
 
 ## 二、模块明细
 
