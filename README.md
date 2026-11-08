@@ -162,10 +162,33 @@ mvn -q compile
 | 新增字典 | settings 配置中心页面维护，或 `data.sql` 加 `cfg_dict_*` 种子 |
 | 新增业务编号 | settings 加 `cfg_code_rule`，业务侧调编号服务取号 |
 
-## 七、约定
+## 七、开发规范
 
-- **敏感配置**：入库配置只含 `ENC(...)` 密文或 `${ENV}` 占位；私钥、token、主密钥在 `polaris-nacos/.secrets/`、`.env`（均已 gitignore）；`config/prod/` 已入库但仅作参考（无真实敏感值，线上不使用）
+### 代码
+
+- **分层**：`controller`（参数校验、返回 `R<T>`）→ `service`（业务）→ `mapper`（MyBatis-Plus），controller 不写业务、service 不直接拼 SQL
+- **异常**：业务错误一律 `throw new BizException(ErrorCode.XXX)`，全局异常处理器兜底；**关键链路禁止 try-catch 吞异常**
+- **命名**：表名带模块前缀（`sso_` / `ehr_` / `cfg_` / `cms_`）；权限码 `资源:动作`（如 `announcement:manage`）；接口路径与前端应用对应（`/ehr/**` 等）
+- **时间**：统一 `LocalDateTime`，向前端输出 `yyyy-MM-dd HH:mm:ss`
+
+### 数据库
+
+- 新表 DDL 进 `resources/schema.sql`（`CREATE TABLE IF NOT EXISTS`），种子数据进 `data.sql`（`INSERT IGNORE`），保证全新库启动即用、老库重复执行无副作用
+- 业务枚举不硬编码，进 settings 数据字典；业务编号走 `cfg_code_rule`，不自造流水
+- 已读/计数类写入用唯一键 + `INSERT IGNORE` 保证幂等
+
+### 配置与安全
+
+- 敏感值**只允许**两种形式入库：`ENC(...)` 密文（密钥在本机 `.env`）或 `${ENV_VAR}` 占位；明文密码/密钥/token 一律进 `.secrets/`（gitignore）
+- 新增配置项：local/prod 两份 yaml 同步加，import-config.py 推送后验证
+
+### Git
+
+- 提交信息格式：`<type>: <说明>`，type ∈ `feat / fix / docs / style / refactor / chore`
+- `update.md`（仓库根目录，不入库）按日期倒序记录所有改动，改完即写
+- `target/`、`logs/`、`polaris-uploads*/`、`.secrets/`、`update.md` 永不提交
+
+## 八、约定
+
 - **初始密码**：默认随机生成（`initial_password_mode=RANDOM`），配置中心可改固定模式
-- **异常**：关键链路不许吞异常，业务错误抛 `BizException(ErrorCode)`
 - **上传目录**：`polaris-uploads*/` 运行期产生，不入库
-- **变更记录**：`update.md` 维护在仓库根目录（不入库），所有改动按日期倒序追加
