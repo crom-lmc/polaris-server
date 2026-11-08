@@ -2,7 +2,7 @@
   <defs>
     <style>
       .title   { font-size:19px; font-weight:700; fill:#1f2733; }
-      .layer   { font-size:13px; font-weight:600; fill:#8a94a6; letter-spacing:2px; }
+      .layer   { font-size:13px; font-weight:600; fill:#8a94a6; letter-spacing:2px; paint-order:stroke; stroke:#ffffff; stroke-width:5px; }
       .box     { stroke-width:1.2; }
       .name    { font-size:14px; font-weight:600; fill:#1f2733; }
       .sub     { font-size:11.5px; fill:#6b7686; }
@@ -77,12 +77,12 @@
 
   <!-- 网关 -> 服务（分散出口，避免叠线） -->
   <g>
-    <path class="edge" d="M420,262 L420,292 L120,292 L120,320"/>
-    <path class="edge" d="M460,262 L460,292 L292,292 L292,320"/>
-    <path class="edge" d="M500,262 L500,292 L464,292 L464,320"/>
-    <path class="edge" d="M600,262 L600,292 L636,292 L636,320"/>
-    <path class="edge" d="M640,262 L640,292 L808,292 L808,320"/>
-    <path class="edge" d="M680,262 L680,292 L980,292 L980,320"/>
+    <path class="edge" d="M420,262 L420,280 L120,280 L120,320"/>
+    <path class="edge" d="M460,262 L460,280 L292,280 L292,320"/>
+    <path class="edge" d="M500,262 L500,280 L464,280 L464,320"/>
+    <path class="edge" d="M600,262 L600,280 L636,280 L636,320"/>
+    <path class="edge" d="M640,262 L640,280 L808,280 L808,320"/>
+    <path class="edge" d="M680,262 L680,280 L980,280 L980,320"/>
   </g>
 
   <!-- ===== 服务层 ===== -->
@@ -134,7 +134,7 @@
   <g>
     <rect class="box db" x="70"  y="482" width="240" height="58" rx="10"/>
     <text class="name" x="190" y="506" text-anchor="middle">sso_ms</text>
-    <text class="sub"  x="190" y="524" text-anchor="middle">账号 / 权限 :9002 / 登录日志</text>
+    <text class="sub"  x="190" y="524" text-anchor="middle">账号 / 权限 / 登录日志</text>
 
     <rect class="box db" x="384" y="482" width="160" height="58" rx="10"/>
     <text class="name" x="464" y="506" text-anchor="middle">ehr</text>
