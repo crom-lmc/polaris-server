@@ -1,3 +1,6 @@
+# 内部变更记录，不入库
+update.md
+
 # 构建产物
 target/
 *.class
