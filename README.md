@@ -5,9 +5,7 @@ Spring Cloud 微服务架构，Nacos 配置/注册中心，Gateway 统一入口�
 
 ## 一、架构总览
 
-![Polaris 架构图](docs/architecture.png)
 <img width="1529" height="1090" alt="image" src="https://github.com/user-attachments/assets/886da2ae-d8eb-42c1-a653-1f9455e9202b" />
-
 
 > 矢量源文件：[docs/architecture.svg](docs/architecture.svg)
 
