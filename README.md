@@ -30,7 +30,7 @@ polaris-server/
 ├── polaris-portal/                 # 门户聚合 :9005
 ├── polaris-blog/                   # 博客 :9003（独立，无 Nacos 接入）
 ├── polaris-nacos/                  # Nacos 配置包 + 导入工具 + 密钥材料
-│   ├── config/local|prod/          #   各环境配置集（prod 不入库）
+│   ├── config/local|prod/          #   各环境配置集（均入库；prod 仅参考，线上不用这份）
 │   ├── .env / .env.example         #   配置主密钥（不入库）/ 模板
 │   ├── .secrets/                   #   JWT 私钥、app-secret、内部 token（不入库）
 │   ├── import-config.py            #   配置推送脚本
@@ -164,7 +164,7 @@ mvn -q compile
 
 ## 七、约定
 
-- **敏感配置**：入库配置只含 `ENC(...)` 密文或 `${ENV}` 占位；私钥、token、主密钥在 `polaris-nacos/.secrets/`、`.env`（均已 gitignore）；`config/prod/` 不入库
+- **敏感配置**：入库配置只含 `ENC(...)` 密文或 `${ENV}` 占位；私钥、token、主密钥在 `polaris-nacos/.secrets/`、`.env`（均已 gitignore）；`config/prod/` 已入库但仅作参考（无真实敏感值，线上不使用）
 - **初始密码**：默认随机生成（`initial_password_mode=RANDOM`），配置中心可改固定模式
 - **异常**：关键链路不许吞异常，业务错误抛 `BizException(ErrorCode)`
 - **上传目录**：`polaris-uploads*/` 运行期产生，不入库

@@ -12,7 +12,7 @@
 | 文件/目录 | 用途 | 是否入库 |
 |---|---|---|
 | `config/local/` | 本地环境配置集（本机 MySQL、服务直连 IP、`sql.init=always`），每条 yaml 对应 Nacos 一个 dataId | ✅ 入库（含 `ENC(...)` 密文，无明文敏感项） |
-| `config/prod/` | 线上环境配置集（`lb://` 服务发现、口令走环境变量占位），线上实际不使用本仓库这份 | ❌ 已 gitignore |
+| `config/prod/` | 线上环境配置集（`lb://` 服务发现、口令走环境变量占位），仅作参考，线上实际不使用本仓库这份 | ✅ 入库（无真实敏感值） |
 | `.env` | **配置主密钥** `SSO_CONF_KEY`（AES-256-GCM，Base64），服务启动解密 `ENC(...)` 的唯一凭据 | ❌ 已 gitignore，只存本机/部署机 |
 | `.env.example` | `.env` 的模板，新环境复制后填入自己的密钥 | ✅ 入库 |
 | `.secrets/` | 密钥材料：JWT 私钥（local/prod）、公钥、各应用 `app-secret`、内部调用 token、主密钥备份、SQL 备份 | ❌ 已 gitignore，绝不入库 |

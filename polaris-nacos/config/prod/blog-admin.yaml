@@ -1,0 +1,34 @@
+# env    : prod  (namespace sso-ms-prod)
+# dataId : blog-admin.yaml   group: SSO
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
+# IMPORTANT: keep this file pure ASCII.
+
+spring:
+  datasource:
+    # remote MySQL 5.7; credentials come from env vars so no plaintext lands here.
+    # missing SSO_BLOG_DB_USER/PASSWORD makes the service fail to start on purpose.
+    url: jdbc:mysql://${SSO_BLOG_DB_HOST:120.53.9.119}:${SSO_BLOG_DB_PORT:3306}/blog?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${SSO_BLOG_DB_USER}
+    password: ${SSO_BLOG_DB_PASSWORD}
+  data:
+    redis:
+      host: 120.53.9.119
+      port: 6379
+      database: 0
+      password: ${SSO_BLOG_REDIS_PASSWORD:}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+blog:
+  site:
+    base-url: https://blog.laimengchao.site
+  upload:
+    root: /data/uploads
+    url-prefix: /uploads
+
+logging:
+  level:
+    com.laimengchao.sso.blog: INFO
