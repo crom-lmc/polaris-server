@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="760" viewBox="0 0 1120 760" font-family="Segoe UI, Microsoft YaHei, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="800" viewBox="0 0 1120 800" font-family="Segoe UI, Microsoft YaHei, sans-serif">
   <defs>
     <style>
+      .title   { font-size:19px; font-weight:700; fill:#1f2733; }
       .layer   { font-size:13px; font-weight:600; fill:#8a94a6; letter-spacing:2px; }
-      .box     { stroke-width:1.2; rx:10; }
+      .box     { stroke-width:1.2; }
       .name    { font-size:14px; font-weight:600; fill:#1f2733; }
       .sub     { font-size:11.5px; fill:#6b7686; }
       .db      { fill:#fdf6ec; stroke:#e7c98a; }
@@ -27,152 +28,152 @@
     </marker>
   </defs>
 
-  <rect x="0" y="0" width="1120" height="760" fill="#ffffff"/>
+  <rect x="0" y="0" width="1120" height="800" fill="#ffffff"/>
+  <text class="title" x="40" y="36">Polaris 平台架构</text>
 
   <!-- ===== 前端层 ===== -->
-  <text class="layer" x="40" y="46">前端应用（Vue 3 · ant-design-vue 4）</text>
+  <text class="layer" x="40" y="68">前端应用（Vue 3 · ant-design-vue 4）</text>
   <g>
-    <rect class="box fe" x="40"  y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="120" y="84" text-anchor="middle">sso-web</text>
-    <text class="sub"  x="120" y="103" text-anchor="middle">统一账号中心 :5173</text>
+    <rect class="box fe" x="40"  y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="120" y="104" text-anchor="middle">sso-web</text>
+    <text class="sub"  x="120" y="123" text-anchor="middle">统一账号中心 :5173</text>
 
-    <rect class="box fe" x="212" y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="292" y="84" text-anchor="middle">ehr-web</text>
-    <text class="sub"  x="292" y="103" text-anchor="middle">人力中心 :5179</text>
+    <rect class="box fe" x="212" y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="292" y="104" text-anchor="middle">ehr-web</text>
+    <text class="sub"  x="292" y="123" text-anchor="middle">人力中心 :5179</text>
 
-    <rect class="box fe" x="384" y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="464" y="84" text-anchor="middle">settings-web</text>
-    <text class="sub"  x="464" y="103" text-anchor="middle">配置中心 :5180</text>
+    <rect class="box fe" x="384" y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="464" y="104" text-anchor="middle">settings-web</text>
+    <text class="sub"  x="464" y="123" text-anchor="middle">配置中心 :5180</text>
 
-    <rect class="box fe" x="556" y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="636" y="84" text-anchor="middle">cms-web</text>
-    <text class="sub"  x="636" y="103" text-anchor="middle">内容中心 :5177</text>
+    <rect class="box fe" x="556" y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="636" y="104" text-anchor="middle">cms-web</text>
+    <text class="sub"  x="636" y="123" text-anchor="middle">内容中心 :5177</text>
 
-    <rect class="box fe" x="728" y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="808" y="84" text-anchor="middle">portal-web</text>
-    <text class="sub"  x="808" y="103" text-anchor="middle">内容门户 :5178</text>
+    <rect class="box fe" x="728" y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="808" y="104" text-anchor="middle">portal-web</text>
+    <text class="sub"  x="808" y="123" text-anchor="middle">内容门户 :5178</text>
 
-    <rect class="box fe" x="900" y="60" width="160" height="58" rx="10"/>
-    <text class="name" x="980" y="84" text-anchor="middle">blog-web</text>
-    <text class="sub"  x="980" y="103" text-anchor="middle">博客（web/admin）</text>
+    <rect class="box fe" x="900" y="80" width="160" height="58" rx="10"/>
+    <text class="name" x="980" y="104" text-anchor="middle">blog-web</text>
+    <text class="sub"  x="980" y="123" text-anchor="middle">博客（web/admin）</text>
   </g>
 
-  <!-- 前端 -> 网关 -->
+  <!-- 前端 -> 网关（汇入总线） -->
   <g>
-    <path class="edge" d="M120,118 L120,150 L550,150 L550,196"/>
-    <path class="edge" d="M292,118 L292,162 L550,162 L550,196"/>
-    <path class="edge" d="M464,118 L464,196"/>
-    <path class="edge" d="M636,118 L636,196"/>
-    <path class="edge" d="M808,118 L808,162 L550,162 L550,196"/>
-    <path class="edge" d="M980,118 L980,150 L550,150 L550,196"/>
+    <path class="edge" d="M120,138 L120,164 L550,164 L550,196"/>
+    <path class="edge" d="M292,138 L292,164 L550,164"/>
+    <path class="edge" d="M464,138 L464,164 L550,164"/>
+    <path class="edge" d="M636,138 L636,164 L550,164"/>
+    <path class="edge" d="M808,138 L808,164 L550,164"/>
+    <path class="edge" d="M980,138 L980,164 L550,164"/>
   </g>
 
   <!-- ===== 网关层 ===== -->
-  <text class="layer" x="40" y="186">统一入口</text>
-  <rect class="box gw" x="380" y="200" width="340" height="64" rx="10"/>
-  <text class="name" x="550" y="226" text-anchor="middle">sso-gateway :9080</text>
-  <text class="sub"  x="550" y="246" text-anchor="middle">JWT(RS256) 校验 · 吊销名单轮询 · 路由转发 · 内部 token</text>
+  <text class="layer" x="40" y="188">统一入口</text>
+  <rect class="box gw" x="380" y="198" width="340" height="64" rx="10"/>
+  <text class="name" x="550" y="224" text-anchor="middle">sso-gateway :9080</text>
+  <text class="sub"  x="550" y="244" text-anchor="middle">JWT(RS256) 校验 · 吊销名单轮询 · 路由转发 · 内部 token</text>
 
-  <!-- 网关 -> 服务 -->
+  <!-- 网关 -> 服务（分散出口，避免叠线） -->
   <g>
-    <path class="edge" d="M430,264 L430,300 L150,300 L150,336"/>
-    <path class="edge" d="M490,264 L490,312 L310,312 L310,336"/>
-    <path class="edge" d="M550,264 L550,336"/>
-    <path class="edge" d="M610,264 L610,312 L790,312 L790,336"/>
-    <path class="edge" d="M670,264 L670,300 L950,300 L950,336"/>
+    <path class="edge" d="M420,262 L420,292 L120,292 L120,320"/>
+    <path class="edge" d="M460,262 L460,292 L292,292 L292,320"/>
+    <path class="edge" d="M500,262 L500,292 L464,292 L464,320"/>
+    <path class="edge" d="M600,262 L600,292 L636,292 L636,320"/>
+    <path class="edge" d="M640,262 L640,292 L808,292 L808,320"/>
+    <path class="edge" d="M680,262 L680,292 L980,292 L980,320"/>
   </g>
 
   <!-- ===== 服务层 ===== -->
-  <text class="layer" x="40" y="330">微服务（Spring Cloud · MyBatis-Plus）</text>
+  <text class="layer" x="40" y="310">微服务（Spring Cloud · MyBatis-Plus）</text>
   <g>
-    <rect class="box svc" x="70"  y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="150" y="364" text-anchor="middle">sso-auth :9001</text>
-    <text class="sub"  x="150" y="382" text-anchor="middle">登录认证 / Token 签发</text>
+    <rect class="box svc" x="40"  y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="120" y="344" text-anchor="middle">sso-auth :9001</text>
+    <text class="sub"  x="120" y="362" text-anchor="middle">登录认证 / Token 签发</text>
 
-    <rect class="box svc" x="230" y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="310" y="364" text-anchor="middle">sso-account :9002</text>
-    <text class="sub"  x="310" y="382" text-anchor="middle">账号 / 角色权限</text>
+    <rect class="box svc" x="212" y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="292" y="344" text-anchor="middle">sso-account :9002</text>
+    <text class="sub"  x="292" y="362" text-anchor="middle">账号 / 角色权限</text>
 
-    <rect class="box svc" x="390" y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="470" y="364" text-anchor="middle">ehr :9006</text>
-    <text class="sub"  x="470" y="382" text-anchor="middle">组织 / 员工 / 假勤 / 公告</text>
+    <rect class="box svc" x="384" y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="464" y="344" text-anchor="middle">ehr :9006</text>
+    <text class="sub"  x="464" y="362" text-anchor="middle">组织 / 员工 / 假勤 / 公告</text>
 
-    <rect class="box svc" x="550" y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="630" y="364" text-anchor="middle">settings :9007</text>
-    <text class="sub"  x="630" y="382" text-anchor="middle">字典 / 单号 / 审批 / 安全</text>
+    <rect class="box svc" x="556" y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="636" y="344" text-anchor="middle">settings :9007</text>
+    <text class="sub"  x="636" y="362" text-anchor="middle">字典 / 单号 / 审批 / 安全</text>
 
-    <rect class="box svc" x="710" y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="790" y="364" text-anchor="middle">cms :9004</text>
-    <text class="sub"  x="790" y="382" text-anchor="middle">文章 / 栏目 / 门户配置</text>
+    <rect class="box svc" x="728" y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="808" y="344" text-anchor="middle">cms :9004</text>
+    <text class="sub"  x="808" y="362" text-anchor="middle">文章 / 栏目 / 门户配置</text>
 
-    <rect class="box svc" x="870" y="340" width="160" height="64" rx="10"/>
-    <text class="name" x="950" y="364" text-anchor="middle">portal :9005</text>
-    <text class="sub"  x="950" y="382" text-anchor="middle">门户聚合（只读）</text>
+    <rect class="box svc" x="900" y="320" width="160" height="64" rx="10"/>
+    <text class="name" x="980" y="344" text-anchor="middle">portal :9005</text>
+    <text class="sub"  x="980" y="362" text-anchor="middle">门户聚合（只读）</text>
   </g>
 
-  <!-- blog 独立 -->
-  <rect class="box svc" x="870" y="470" width="160" height="58" rx="10"/>
-  <text class="name" x="950" y="494" text-anchor="middle">blog :9003</text>
-  <text class="sub"  x="950" y="512" text-anchor="middle">博客接口（独立链路）</text>
-  <path class="edgeDash" d="M980,118 L980,150 L1040,150 L1040,300 L950,300 L950,336" opacity="0"/>
-  <path class="edgeDash" d="M950,264 C1040,264 1040,420 990,466"/>
-  <text class="note" x="1026" y="380">blog-web 直连</text>
+  <!-- blog-web 直连 blog（右侧绕行走廊） -->
+  <path class="edgeDash" d="M1040,138 L1040,156 L1088,156 L1088,482 L1068,482"/>
+  <text class="note" x="1096" y="300" transform="rotate(90 1096 300)">blog-web 直连（不经网关）</text>
 
   <!-- 服务 -> 库 -->
   <g>
-    <path class="edge" d="M150,404 L150,440 L230,440 L230,470"/>
-    <path class="edge" d="M310,404 L310,470"/>
-    <path class="edge" d="M470,404 L470,470"/>
-    <path class="edge" d="M630,404 L630,470"/>
-    <path class="edge" d="M790,404 L790,440 L700,440 L700,470"/>
-    <path class="edge" d="M950,404 L950,430 L700,430 L700,470"/>
-    <path class="edge" d="M950,528 L950,556"/>
+    <path class="edge" d="M120,384 L120,482"/>
+    <path class="edge" d="M292,384 L292,482"/>
+    <path class="edge" d="M464,384 L464,482"/>
+    <path class="edge" d="M636,384 L636,482"/>
+    <path class="edge" d="M808,384 L808,482"/>
   </g>
-  <text class="note" x="964" y="424" text-anchor="end">portal 聚合只读 cms 库</text>
+  <!-- portal -> cms 库（只读聚合，虚线） -->
+  <path class="edgeDash" d="M980,384 L980,430 L860,430 L860,482"/>
+  <text class="note" x="920" y="422" text-anchor="middle">portal 只读聚合 cms 库</text>
 
   <!-- ===== 数据层 ===== -->
-  <text class="layer" x="40" y="500">数据存储（MySQL 5.7+ · 分库）</text>
+  <text class="layer" x="1080" y="470" text-anchor="end">数据存储（MySQL 5.7+ · 分库）</text>
   <g>
-    <rect class="box db" x="230" y="470" width="160" height="58" rx="10"/>
-    <text class="name" x="310" y="494" text-anchor="middle">sso_ms</text>
-    <text class="sub"  x="310" y="512" text-anchor="middle">账号 / 权限 / 日志</text>
+    <rect class="box db" x="70"  y="482" width="240" height="58" rx="10"/>
+    <text class="name" x="190" y="506" text-anchor="middle">sso_ms</text>
+    <text class="sub"  x="190" y="524" text-anchor="middle">账号 / 角色权限 / 登录日志</text>
 
-    <rect class="box db" x="390" y="470" width="160" height="58" rx="10"/>
-    <text class="name" x="470" y="494" text-anchor="middle">ehr</text>
-    <text class="sub"  x="470" y="512" text-anchor="middle">组织 / 员工 / 公告</text>
+    <rect class="box db" x="384" y="482" width="160" height="58" rx="10"/>
+    <text class="name" x="464" y="506" text-anchor="middle">ehr</text>
+    <text class="sub"  x="464" y="524" text-anchor="middle">组织 / 员工 / 公告</text>
 
-    <rect class="box db" x="550" y="470" width="160" height="58" rx="10"/>
-    <text class="name" x="630" y="494" text-anchor="middle">settings</text>
-    <text class="sub"  x="630" y="512" text-anchor="middle">字典 / 规则 / 配置</text>
+    <rect class="box db" x="556" y="482" width="160" height="58" rx="10"/>
+    <text class="name" x="636" y="506" text-anchor="middle">settings</text>
+    <text class="sub"  x="636" y="524" text-anchor="middle">字典 / 规则 / 配置</text>
 
-    <rect class="box db" x="710" y="470" width="160" height="58" rx="10"/>
-    <text class="name" x="790" y="494" text-anchor="middle">cms</text>
-    <text class="sub"  x="790" y="512" text-anchor="middle">文章 / 栏目</text>
-
-    <rect class="box db" x="870" y="560" width="160" height="58" rx="10"/>
-    <text class="name" x="950" y="584" text-anchor="middle">blog</text>
-    <text class="sub"  x="950" y="602" text-anchor="middle">博客数据</text>
+    <rect class="box db" x="728" y="482" width="160" height="58" rx="10"/>
+    <text class="name" x="808" y="506" text-anchor="middle">cms</text>
+    <text class="sub"  x="808" y="524" text-anchor="middle">文章 / 栏目</text>
   </g>
+
+  <!-- blog 独立链路 -->
+  <rect class="box svc" x="900" y="482" width="160" height="58" rx="10"/>
+  <text class="name" x="980" y="506" text-anchor="middle">blog :9003</text>
+  <text class="sub"  x="980" y="524" text-anchor="middle">博客接口（独立链路）</text>
+  <path class="edge" d="M980,540 L980,586"/>
+  <rect class="box db" x="900" y="588" width="160" height="58" rx="10"/>
+  <text class="name" x="980" y="612" text-anchor="middle">blog</text>
+  <text class="sub"  x="980" y="630" text-anchor="middle">博客数据（手动 migrate）</text>
 
   <!-- ===== 基础设施 ===== -->
-  <text class="layer" x="40" y="586">基础设施</text>
+  <text class="layer" x="40" y="672">基础设施</text>
   <g>
-    <rect class="box infra" x="40" y="600" width="220" height="64" rx="10"/>
-    <text class="name" x="150" y="624" text-anchor="middle">Nacos</text>
-    <text class="sub"  x="150" y="642" text-anchor="middle">配置中心（ENC 密文）/ 注册中心</text>
+    <rect class="box infra" x="40" y="684" width="220" height="64" rx="10"/>
+    <text class="name" x="150" y="708" text-anchor="middle">Nacos</text>
+    <text class="sub"  x="150" y="726" text-anchor="middle">配置中心（ENC 密文）/ 注册中心</text>
 
-    <rect class="box infra" x="280" y="600" width="160" height="64" rx="10"/>
-    <text class="name" x="360" y="624" text-anchor="middle">Redis</text>
-    <text class="sub"  x="360" y="642" text-anchor="middle">验证码 / 会话 / 缓存</text>
+    <rect class="box infra" x="280" y="684" width="160" height="64" rx="10"/>
+    <text class="name" x="360" y="708" text-anchor="middle">Redis</text>
+    <text class="sub"  x="360" y="726" text-anchor="middle">验证码 / 会话 / 缓存</text>
 
-    <rect class="box infra" x="460" y="600" width="240" height="64" rx="10"/>
-    <text class="name" x="580" y="624" text-anchor="middle">polaris-nacos（配置包）</text>
-    <text class="sub"  x="580" y="642" text-anchor="middle">local 入库 · prod 不入库 · .secrets 密钥</text>
+    <rect class="box infra" x="460" y="684" width="260" height="64" rx="10"/>
+    <text class="name" x="590" y="708" text-anchor="middle">polaris-nacos（配置包）</text>
+    <text class="sub"  x="590" y="726" text-anchor="middle">local 入库 · prod 不入库 · .secrets 密钥</text>
   </g>
-  <path class="edgeDash" d="M150,600 L150,560 L470,560 L470,532"/>
-  <path class="edgeDash" d="M360,600 L360,570 L150,570 L150,404" opacity="0.6"/>
-  <path class="edgeDash" d="M580,600 L580,560 L630,560 L630,532"/>
 
   <!-- 图例 -->
-  <text class="note" x="40" y="726">实线：请求调用　·　虚线：配置 / 缓存依赖　·　所有服务启动自动执行 schema.sql + data.sql（幂等，blog 除外）</text>
+  <text class="note" x="40" y="782">实线：请求调用　·　虚线：聚合 / 外部依赖　·　所有服务启动自动执行 schema.sql + data.sql（幂等，blog 手动）</text>
 </svg>
