@@ -1,0 +1,42 @@
+# env    : local  (namespace sso-ms-local)
+# dataId : sso-auth.yaml
+# group  : SSO
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
+# IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
+#            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
+#            with MalformedInputException and the config silently falls back to the jar.
+
+# note: access-ttl is the worst-case logout delay -- the gateway keeps a revocation cache,
+#       so a revoked access token stays valid at most this long. Do not inflate it.
+
+sso:
+  auth:
+    issuer: sso-auth
+    access-ttl-seconds: 7200        # 2h
+    refresh-ttl-seconds: 2592000    # 30d
+    # direct call for local debugging; use lb://sso-account to exercise service discovery
+    account-base-url: http://127.0.0.1:9002
+    # must be identical to sso.account.internal-token in sso-account.yaml
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+    account-timeout-millis: 3000
+    # revocation list storage: redis (shared across instances, survives auth restart) / memory
+    revocation-store: redis
+    # ---- central session + cross-app SSO ----
+    # session-store: where the SSO cookie -> accountId mapping lives (redis / memory)
+    session-store: redis
+    # 7 days: the window in which any registered app will not ask for the password again
+    session-ttl-seconds: 604800
+    session-cookie-name: SSO_SID
+    # local dev: empty domain => host-only cookie on localhost
+    session-cookie-domain: ""
+    session-cookie-secure: false
+    session-cookie-same-site: Lax
+    # one-time ticket lifetime; exchanged immediately, so 60s is plenty
+    ticket-ttl-seconds: 60
+    # RS256 private key as inline PEM, encrypted. The jar contains the public key ONLY.
+    private-key: ENC(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)
+
+logging:
+  level:
+    com.laimengchao.sso: INFO

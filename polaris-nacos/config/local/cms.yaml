@@ -1,0 +1,28 @@
+# env    : local  (namespace sso-ms-local)
+# dataId : cms.yaml   group: SSO
+# WARNING: keep this file pure ASCII (Chinese comments break the Nacos console push).
+
+server:
+  port: 9004
+
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/cms?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  sql:
+    init:
+      mode: always
+
+cms:
+  upload:
+    root: ./uploads-cms
+    url-prefix: /api/cms/media/file
+    max-size-mb: 10
+  site:
+    base-url: http://localhost:9080
+
+sso:
+  cms:
+    app-code: cms
+    auth-base-url: http://127.0.0.1:9001

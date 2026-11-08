@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laimengchao.sso</groupId>
+        <artifactId>polaris-server</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>polaris-common</artifactId>
+    <name>common</name>
+    <description>
+        公共模块（原 sso-common + sso-utils 合并）：统一返回体、异常、基础实体、枚举，
+        以及 JSON、ID、断言、登录上下文（AccountContext）、密钥解密等工具。
+        包名保持 com.laimengchao.sso.common / com.laimengchao.sso.util 不变，所有服务依赖本模块。
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <!-- web 注解（@RestControllerAdvice/@ExceptionHandler/HttpStatus 等），不含 webmvc/tomcat -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <!-- 仅 GlobalExceptionHandler 的 NoResourceFoundException 需要；optional 不传染给
+             WebFlux 的 sso-gateway（Cloud Gateway 检测到 spring-webmvc 会拒绝启动） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- 通用实体元数据底座 EntityMetaController 需要 JdbcTemplate。optional：不让只引 common
+             的模块（如 sso-gateway）被动带上 JDBC；真正用它的服务本身都有 spring-jdbc -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- MyBatis-Plus 注解（@TableId/@TableField/@TableLogic），仅注解库，不引入 starter -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-annotation</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- JsonUtils 支持 LocalDateTime 等_java.time_ 类型序列化 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

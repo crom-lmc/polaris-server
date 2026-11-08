@@ -1,0 +1,94 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${EHR_PORT:9006}
+
+spring:
+  application:
+    name: ehr
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:ehr.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    url: ${EHR_DB_URL:jdbc:mysql://127.0.0.1:3306/ehr?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${EHR_DB_USER:root}
+    password: ${EHR_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    # 全新库可自动建表；schema.sql 幂等（CREATE TABLE IF NOT EXISTS）
+    mode: ${EHR_SQL_INIT_MODE:always}
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.ehr.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      # 雪花主键（BaseEntity 的 ASSIGN_ID），不要自增：组织节点和档案馆都按字符串返回前端
+      id-type: assign_id
+
+# 跨服务开户：调 sso-account 的内部接口（不经网关，凭 X-Internal-Token）
+ehr:
+  # 服务间准入令牌：本服务 /internal/** 的 X-Internal-Token 必须与它一致
+  # （settings 解析组织负责人、回传审批结果都靠它；三服务共用同一个 SSO_INTERNAL_TOKEN）
+  internal-token: ${SSO_INTERNAL_TOKEN:}
+  # 本服务的对内地址：发起审批时拼成 callbackUrl 交给 settings，终审后 settings 回调它
+  # 注意不是 127.0.0.1 就改成内网 IP/容器名，否则 settings 部到另一台机器就回调不过来
+  self-base-url: ${EHR_SELF_URL:http://127.0.0.1:9006}
+  # EHR 前端地址：离职/减员审批通过的「关闭账号」待办点击后跳人员列表并打开档案
+  web-base-url: ${EHR_WEB_URL:http://127.0.0.1:5179}
+  notice:
+    # HR 部门名称（模糊匹配，含子部门）：员工离职审批通过后，向该部门全员群发「关闭账号」待办
+    hr-org-name: ${EHR_HR_ORG_NAME:人力资源}
+  account:
+    # 新账号默认开通的应用编码（顺序即「我的应用」展示顺序）
+    default-apps: sso-center,portal,ehr
+    # 新账号默认授予的角色编码
+    # EHR_BASIC = 基本功能（看组织/人员/请假 + 提交请假）；EHR_LEAVE = 审批角色，默认不给，
+    # 由管理员在账号中心按需授予部门负责人（否则人人可审批）
+    default-roles: EHR_BASIC
+
+# 配置中心跨服客户端（settings-client 的 Feign 接口，凭 X-Internal-Token 准入，
+# 60s 本地缓存 + 故障兜底；键名与 settings-client 模块约定一致）
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+
+# 单点登录：本服务持应用密钥向 sso-auth 换令牌（密钥由环境变量/配置中心下发）
+sso:
+  ehr:
+    app-code: ehr
+    app-secret: ${EHR_APP_SECRET:}
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.ehr: debug
+    org.springframework.security: warn

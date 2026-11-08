@@ -1,0 +1,43 @@
+# env    : prod  (namespace sso-ms-prod)
+# dataId : sso-account.yaml
+# group  : SSO
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
+# IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
+#            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
+#            with MalformedInputException and the config silently falls back to the jar.
+
+# note: prod DB credentials intentionally stay as env placeholders WITHOUT defaults --
+#       a missing SSO_DB_PASSWORD must abort startup instead of silently using a wrong account.
+#       Once the real password is known, seal it with SecretTool and the env vars disappear.
+
+spring:
+  datasource:
+    url: jdbc:mysql://${SSO_DB_HOST:120.53.9.119}:${SSO_DB_PORT:3306}/sso_ms?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${SSO_DB_USER}
+    password: ${SSO_DB_PASSWORD}
+  sql:
+    init:
+      # never auto-DDL in prod; run sso-account/src/main/resources/schema.sql manually
+      mode: never
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+logging:
+  level:
+    com.laimengchao.sso: INFO
+
+sso:
+  account:
+    # must match sso-auth.yaml
+    internal-token: ENC(9iJGPbUP9f09u4VfJSfZi1SVu40A1IyvoKrOZ9i3ZPYExpr8cvE2vmr8FVH5FX+eil5gebCp1vb9Bod/HtOndnfXK7pEY5dvYDD7UA==)
+  security:
+    max-login-fail: 5
+    lock-minutes: 30
+  bootstrap:
+    admin-username: admin
+    # no default: set SSO_ADMIN_PASSWORD on first boot, or seal it with SecretTool
+    admin-password: ${SSO_ADMIN_PASSWORD}
+    admin-email: admin@laimengchao.site

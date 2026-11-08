@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 300" width="1120" height="300">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8590c"/>
+      <stop offset="0.55" stop-color="#f76707"/>
+      <stop offset="1" stop-color="#f59f00"/>
+    </linearGradient>
+  </defs>
+  <rect width="1120" height="300" fill="url(#g3)"/>
+  <circle cx="120" cy="240" r="140" fill="#ffffff" opacity="0.07"/>
+  <circle cx="1000" cy="60" r="150" fill="#ffffff" opacity="0.07"/>
+  <text x="560" y="122" fill="#ffffff" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="42" font-weight="700">标准协议，开箱即用</text>
+  <text x="560" y="168" fill="#ffffff" fill-opacity="0.9" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="20">OAuth2 授权码 + PKCE，30 分钟完成应用接入</text>
+  <text x="560" y="214" fill="#ffffff" fill-opacity="0.62" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="15">票据一次性兑换 · 令牌按应用隔离 · 密钥不下发前端</text>
+</svg>

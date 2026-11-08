@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laimengchao.sso</groupId>
+        <artifactId>polaris-server</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>polaris-settings-client</artifactId>
+    <name>polaris-settings-client</name>
+    <description>
+        配置中心跨服客户端（Feign）：SettingsApi 声明 /internal/dicts/** 与 /internal/biz/** 的 HTTP 映射，
+        凭 X-Internal-Token 准入；SettingsClient 在 Feign 之上做 60s 本地缓存与故障兜底（返回空集合）。
+        引入本模块即自动装配（AutoConfiguration.imports），配置键 settings.client.base-url / settings.client.internal-token。
+        供 ehr 等业务服务依赖；刻意不依赖 common，保持零传递负担。
+    </description>
+
+    <dependencies>
+        <!-- Feign 核心：注解、编码器/解码器、RequestInterceptor -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <!-- 自动装配注册（AutoConfiguration.imports）与 @ConditionalOnMissingBean -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

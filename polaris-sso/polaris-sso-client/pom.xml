@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laimengchao.sso</groupId>
+        <artifactId>polaris-server</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>polaris-sso-client</artifactId>
+    <name>polaris-sso-client</name>
+    <description>
+        统一账号平台跨服客户端（Feign）：AccountApi 声明 /internal/accounts/** 与 /internal/apps/**（凭 X-Internal-Token 准入），
+        AuthApi 声明 /api/auth/ticket/exchange 与 /api/auth/oauth/token（服务端持应用密钥换票）。
+        引入本模块即自动装配（AutoConfiguration.imports），配置键 sso.client.account-base-url / sso.client.auth-base-url /
+        sso.client.internal-token。刻意不依赖 common，保持零传递负担。
+    </description>
+
+    <dependencies>
+        <!-- Feign 核心：注解、编码器/解码器、RequestInterceptor -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <!-- 自动装配注册（AutoConfiguration.imports） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

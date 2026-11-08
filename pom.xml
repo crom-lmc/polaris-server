@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.laimengchao.sso</groupId>
+    <artifactId>polaris-server</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>polaris-server</name>
+    <description>SSO 微服务模板：sso-gateway(9080) + sso-auth(9001) + sso-account(9002)，按钮级 RBAC 落在 account，JWT 认证由 auth 签发、网关验签。</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-boot.version>3.2.5</spring-boot.version>
+        <!-- Spring Cloud 2023.0.x 对应 Boot 3.2.x，不要升 2024.x（要 Boot 3.4+） -->
+        <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <!-- Spring Cloud Alibaba 2023.0.1.0 对应 Spring Cloud 2023.0.x + Boot 3.2.x -->
+        <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <jjwt.version>0.12.3</jjwt.version>
+    </properties>
+
+    <modules>
+        <!-- 公共库：R/BizException/ErrorCode/GlobalExceptionHandler/BaseEntity 等，全服务共用 -->
+        <module>polaris-common</module>
+        <!-- 统一账号平台：sso-auth + sso-account + sso-gateway -->
+        <module>polaris-sso</module>
+        <!-- 业务应用：博客（聚合 blog-service）。接入方式即「新应用接入模板」，见 README §6.6 -->
+        <module>polaris-blog</module>
+        <!-- 业务应用：CMS 内容管理端，与 blog-admin 同一套接入模板 -->
+        <module>polaris-cms</module>
+        <!-- 业务应用：内容门户（对外展示 CMS 内容），同一套接入模板 -->
+        <module>polaris-portal</module>
+        <!-- 业务应用：EHR 人力（组织架构 / 人员 / 请假），创建人员时跨服务开户 -->
+        <module>polaris-ehr</module>
+        <!-- 配置中心：settings-service(9007) + settings-client（跨服客户端） -->
+        <module>polaris-settings</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot 依赖版本总控 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud 版本总控（gateway 路由与 WebFlux 组件） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba：Nacos 配置中心 / 注册中心。必须排在 spring-cloud BOM 之后 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- MyBatis-Plus（对齐 Blob-Backend，JDK17/Boot3.2 稳定版） -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <!-- 必须钉到 3.0.3+：mybatis-spring 2.x 与 Spring 6.1(Boot3.2) 不兼容，
+                 会抛 Invalid value type for attribute 'factoryBeanObjectType' -->
+            <dependency>
+                <groupId>org.mybatis</groupId>
+                <artifactId>mybatis-spring</artifactId>
+                <version>3.0.3</version>
+            </dependency>
+            <!-- JWT：auth 签发（私钥）、gateway 验签（公钥），两端同版本 -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <!-- 内部公共模块 -->
+            <dependency>
+                <groupId>com.laimengchao.sso</groupId>
+                <artifactId>polaris-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.laimengchao.sso</groupId>
+                <artifactId>polaris-settings-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- 统一账号平台跨服客户端：AccountApi + AuthApi -->
+            <dependency>
+                <groupId>com.laimengchao.sso</groupId>
+                <artifactId>polaris-sso-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- EHR 跨服客户端：EhrOrgApi -->
+            <dependency>
+                <groupId>com.laimengchao.sso</groupId>
+                <artifactId>polaris-ehr-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <!-- 统一绑定 repackage：子模块只声明 mainClass 即可产出可执行 jar，
+                         漏了这段会打出「没有主清单属性」的瘦 jar，java -jar 直接报错 -->
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <!-- 全局开启 -parameters：Spring MVC 的 @RequestParam/@PathVariable 与 MyBatis 反射依赖参数名 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,51 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${PORTAL_PORT:9005}
+
+spring:
+  application:
+    name: portal
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:portal.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+# 门户展示配置（内容从 cms 公开接口读取，这里只管自身站点信息）
+portal:
+  site:
+    # 门户对外标题/描述，前端也可覆盖
+    title: 内容门户
+    base-url: ${PORTAL_SITE_BASE_URL:http://localhost:5178}
+  # 内容来源：cms 公开接口基址（经网关）
+  cms:
+    public-base-url: ${CMS_PUBLIC_BASE_URL:http://127.0.0.1:9004/api/cms/public}
+
+# 单点登录：本服务持应用密钥向 sso-auth 换令牌（密钥由环境变量/配置中心下发）
+sso:
+  portal:
+    app-code: portal
+    app-secret: ${PORTAL_APP_SECRET:}
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.portal: debug
+    org.springframework.security: warn

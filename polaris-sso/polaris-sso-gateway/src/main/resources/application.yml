@@ -1,0 +1,90 @@
+server:
+  # 对外唯一入口。8080 在本机已被其他 Java 进程占用，故模板用 9080
+  port: ${SSO_GATEWAY_PORT:9080}
+
+spring:
+  application:
+    name: sso-gateway
+  config:
+    # 关键：optional: 前缀。没有 Nacos 时自动回退到本文件，服务照常启动
+    import: "optional:nacos:sso-gateway.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      # 地址/账号两级环境变量：SSO_NACOS_* 优先，其次复用本机已有的 NACOS_*（与博客后端同一套）
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        # 环境靠命名空间隔离：local → sso-ms-local，prod → sso-ms-prod，dataId 两边同名
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+    gateway:
+      routes:
+        - id: sso-auth
+          # 直连默认；接服务发现时设 SSO_AUTH_ROUTE=lb://sso-auth（需 SSO_NACOS_DISCOVERY=true）
+          uri: ${SSO_AUTH_ROUTE:http://127.0.0.1:9001}
+          predicates:
+            - Path=/api/auth/**
+        - id: sso-account
+          uri: ${SSO_ACCOUNT_ROUTE:http://127.0.0.1:9002}
+          predicates:
+            - Path=/api/accounts/**,/api/roles/**,/api/permissions/**,/api/applications/**
+        # 业务应用：博客管理端。后台接口（/api/blog/admin/**）必须带令牌，
+        # 读者端（/api/blog/public/**）在白名单里放行
+        - id: blog-admin
+          uri: ${BLOG_ADMIN_ROUTE:http://127.0.0.1:9003}
+          predicates:
+            - Path=/api/blog/**
+        # 上传的文件（图片/封面）：静态资源，同样由 blog-admin 提供
+        - id: blog-uploads
+          uri: ${BLOG_ADMIN_ROUTE:http://127.0.0.1:9003}
+          predicates:
+            - Path=/uploads/**
+        # 业务应用：CMS 内容管理端
+        - id: cms
+          uri: ${CMS_ROUTE:http://127.0.0.1:9004}
+          predicates:
+            - Path=/api/cms/**
+        # 业务应用：内容门户
+        - id: portal
+          uri: ${PORTAL_ROUTE:http://127.0.0.1:9005}
+          predicates:
+            - Path=/api/portal/**
+        # 业务应用：EHR 人力（组织架构/人员/请假）
+        - id: ehr
+          uri: ${EHR_ROUTE:http://127.0.0.1:9006}
+          predicates:
+            - Path=/api/ehr/**
+        # 业务应用：配置中心（枚举型基础信息）
+        - id: settings
+          uri: ${SETTINGS_ROUTE:http://127.0.0.1:9007}
+          predicates:
+            - Path=/api/settings/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            # 前端 sso-web 与本服务不同源，必须显式放开
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+sso:
+  gateway:
+    issuer: sso-auth
+    public-key: ${SSO_JWT_PUBLIC_KEY:classpath:keys/jwt-public.pem}
+    auth-base-url: ${SSO_AUTH_URL:http://127.0.0.1:9001}
+    # 登出后最长多少毫秒内失效；越小越及时，越大对 auth 压力越小
+    revocation-sync-millis: 5000
+
+logging:
+  level:
+    com.laimengchao.sso: INFO

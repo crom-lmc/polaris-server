@@ -1,0 +1,91 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${CMS_PORT:9004}
+
+spring:
+  application:
+    name: cms
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:cms.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    # 数据源指向独立 CMS 库
+    url: ${CMS_DB_URL:jdbc:mysql://127.0.0.1:3306/cms?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${CMS_DB_USER:root}
+    password: ${CMS_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    # 全新库可自动建表；schema.sql 幂等（CREATE TABLE IF NOT EXISTS）
+    mode: ${CMS_SQL_INIT_MODE:always}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.cms.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      # 自增主键，与 blog 一致；雪花 ID 序列化成字符串的坑这里没有
+      id-type: auto
+
+# 业务配置
+cms:
+  upload:
+    root: ${CMS_UPLOAD_ROOT:./uploads-cms}
+    url-prefix: /api/cms/media/file
+    max-size-mb: 10
+    allowed-extensions: jpg,jpeg,png,gif,webp,bmp,ico,pdf,mp4,mp3,zip
+  site:
+    base-url: ${CMS_SITE_BASE_URL:http://localhost:9080}
+  # 本服务的对内地址：提审时拼成 callbackUrl 交给 settings，审批结束后 settings 回调它
+  self-base-url: ${CMS_SELF_BASE_URL:http://127.0.0.1:9004}
+  # 服务间准入令牌：本服务 /internal/** 的 X-Internal-Token 必须与它一致
+  internal-token: ${SSO_INTERNAL_TOKEN:}
+
+# 审批中心跨服客户端（settings-client 的 Feign 接口，凭 X-Internal-Token 准入）
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+
+# 单点登录：本服务持应用密钥向 sso-auth 换令牌（密钥由环境变量/配置中心下发）
+sso:
+  cms:
+    app-code: cms
+    app-secret: ${CMS_APP_SECRET:}
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.cms: debug
+    org.springframework.security: warn

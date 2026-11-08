@@ -1,0 +1,84 @@
+server:
+  # 对内服务端口，只允许网关与 sso-auth 访问，不要暴露公网
+  port: ${SSO_ACCOUNT_PORT:9002}
+
+spring:
+  application:
+    name: sso-account
+  config:
+    # 关键：optional: 前缀。没有 Nacos 时自动回退到本文件，服务照常启动
+    import: "optional:nacos:sso-account.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      # 地址/账号两级环境变量：SSO_NACOS_* 优先，其次复用本机已有的 NACOS_*（与博客后端同一套）
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        # 环境靠命名空间隔离：local → sso-ms-local，prod → sso-ms-prod，dataId 两边同名
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  sql:
+    init:
+      # 默认不自动建表（生产安全）；本地调试由 Nacos 的 sso-ms-local 覆盖为 always
+      mode: ${SSO_SQL_INIT_MODE:never}
+      schema-locations: classpath:schema.sql
+  # 数据库连接信息全部由配置中心下发（Nacos: sso-account.yaml / sso-ms-local|sso-ms-prod），
+  # jar 内不留账号口令默认值；无 Nacos 时必须用环境变量 SSO_DB_URL / SSO_DB_USER /
+  # SSO_DB_PASSWORD 提供，缺一个就启动失败——宁可起不来，也不要静默连到错误的库。
+  datasource:
+    url: ${SSO_DB_URL:}
+    username: ${SSO_DB_USER:}
+    password: ${SSO_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    default-property-inclusion: non_null
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: assign_id
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+sso:
+  account:
+    # 本服务 /internal/** 的准入令牌（ehr/auth/settings 调进来时校验）
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+  bootstrap:
+    # 首次初始化用的管理员口令，由配置中心下发（Nacos 内为 ENC 密文）；jar 内不再有默认口令，
+    # 缺失时跳过建号并告警，绝不会创建空口令账号
+    admin-username: ${SSO_ADMIN_USERNAME:admin}
+    admin-password: ${SSO_ADMIN_PASSWORD:}
+    admin-email: ${SSO_ADMIN_EMAIL:admin@laimengchao.site}
+  security:
+    # 连续登录失败达到该次数自动锁定（模板取值，可按需调整）
+    max-login-fail: 5
+    lock-minutes: 30
+
+# 跨服客户端（Feign）目标地址：审批中心（settings）/ EHR
+# 账号中心作为审批中心的对外代理，业务请求一律经 /api/accounts/approvals/** 转过去；
+# 按组织筛账号需要直接问 EHR（不做跨库 JOIN）。
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+
+ehr:
+  client:
+    base-url: ${EHR_URL:http://127.0.0.1:9006}
+    internal-token: ${SSO_INTERNAL_TOKEN:}

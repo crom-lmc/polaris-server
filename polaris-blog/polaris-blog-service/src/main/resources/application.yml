@@ -1,0 +1,109 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${BLOG_ADMIN_PORT:9003}
+
+spring:
+  application:
+    name: blog-admin
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:blog-admin.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        # 复用 SSO 自己的命名空间：local → sso-ms-local，prod → sso-ms-prod
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    # 数据源指向博客库（与原来的 blog-backend 共用同一份数据）
+    url: ${BLOG_DB_URL:}
+    username: ${BLOG_DB_USER:}
+    password: ${BLOG_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    init:
+      # 默认不自动建表：库结构用 tools/blog-migrate.sql 手工执行（有历史数据，不能靠 DDL 覆盖）
+      mode: ${BLOG_SQL_INIT_MODE:never}
+  data:
+    redis:
+      host: ${BLOG_REDIS_HOST:127.0.0.1}
+      port: ${BLOG_REDIS_PORT:6379}
+      database: 0
+      timeout: 5s
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 20MB
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.blog.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      # t_article/t_category 等仍是自增主键；博客侧不用雪花
+      id-type: auto
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+# 业务配置：与单体博客一致，仅去掉登录/验证码相关项（登录已交给账号中心）
+blog:
+  # 服务间准入令牌：本服务 /internal/** 的 X-Internal-Token 必须与它一致
+  # （审批配置的数据绑定会来 /internal/entity/** 拉表清单与真实行；各服务共用同一个 SSO_INTERNAL_TOKEN）
+  internal-token: ${SSO_INTERNAL_TOKEN:}
+  upload:
+    root: ${BLOG_UPLOAD_ROOT:./uploads}
+    url-prefix: /uploads
+    max-size-mb: 5
+    allowed-extensions: jpg,jpeg,png,gif,webp,bmp,ico,pdf,mp4
+  rate-limit:
+    enabled: true
+    public-qpm: 300
+    comment-qpm: 3
+    login-qpm: 10
+  comment:
+    review-on: true
+    sensitive-words: 傻逼,垃圾,广告,代刷,赌博
+  search:
+    mode: fulltext
+  site:
+    base-url: ${BLOG_SITE_BASE_URL:http://localhost:9080}
+
+# 单点登录：本服务持应用密钥向 sso-auth 换令牌（密钥由环境变量/配置中心下发）
+sso:
+  blog:
+    app-code: blog
+    app-secret: ${BLOG_APP_SECRET:}
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.blog: debug
+    org.springframework.security: warn

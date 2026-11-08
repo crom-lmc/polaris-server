@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 300" width="1120" height="300">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b5bdb"/>
+      <stop offset="0.55" stop-color="#5f3dc4"/>
+      <stop offset="1" stop-color="#845ef7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1120" height="300" fill="url(#g1)"/>
+  <circle cx="150" cy="50" r="150" fill="#ffffff" opacity="0.06"/>
+  <circle cx="980" cy="250" r="170" fill="#ffffff" opacity="0.06"/>
+  <circle cx="560" cy="150" r="120" fill="#ffffff" opacity="0.05"/>
+  <text x="560" y="122" fill="#ffffff" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,Helvetica Neue,sans-serif" font-size="42" font-weight="700">统一账号中心 v2.0</text>
+  <text x="560" y="168" fill="#ffffff" fill-opacity="0.86" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="20">一次登录 · 通达全业务线 · 微服务身份中台</text>
+  <text x="560" y="214" fill="#ffffff" fill-opacity="0.62" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="15">OAuth2.1 · OIDC · RBAC · 单点登录</text>
+</svg>

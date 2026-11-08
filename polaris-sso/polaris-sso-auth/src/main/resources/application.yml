@@ -1,0 +1,56 @@
+server:
+  port: ${SSO_AUTH_PORT:9001}
+
+spring:
+  application:
+    name: sso-auth
+  data:
+    redis:
+      # 吊销名单共享存储（SSO 复用博客的 Redis，库 db2 隔离）。本地未配置时走内存兜底。
+      host: ${SSO_REDIS_HOST:127.0.0.1}
+      port: ${SSO_REDIS_PORT:6379}
+      database: ${SSO_REDIS_DB:2}
+      timeout: 3000ms
+  config:
+    # 关键：optional: 前缀。没有 Nacos 时自动回退到本文件，服务照常启动；
+    # 有 Nacos 且 SSO_NACOS_ENABLED=true 时，同名配置集会覆盖下面 sso.auth.* 的值（且支持动态刷新）。
+    import: "optional:nacos:sso-auth.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      # 地址/账号两级环境变量：SSO_NACOS_* 优先，其次复用本机已有的 NACOS_*（与博客后端同一套）
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        # 默认关闭：本机没有 Nacos 时不产生任何连接尝试与启动延迟
+        enabled: ${SSO_NACOS_ENABLED:false}
+        # 环境靠命名空间隔离：local → sso-ms-local，prod → sso-ms-prod，dataId 两边同名
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+
+sso:
+  auth:
+    issuer: sso-auth
+    # 吊销名单存储：redis（多实例共享，需上方 spring.data.redis 可达）/ memory（默认单实例兜底）
+    revocation-store: ${SSO_REVOCATION_STORE:redis}
+    # access 短、refresh 长：网关不查吊销名单，登出的兜底就是 access 自然过期
+    access-ttl-seconds: ${SSO_ACCESS_TTL:7200}
+    refresh-ttl-seconds: ${SSO_REFRESH_TTL:2592000}
+    # 私钥不打包进 jar：由 Nacos 下发（通常为 ENC 密文），启动时解密成内联 PEM；
+    # 缺失即启动失败。支持内联 PEM / classpath: / file: 三种写法，见 KeySources
+    private-key: ${SSO_JWT_PRIVATE_KEY:}
+    public-key: ${SSO_JWT_PUBLIC_KEY:classpath:keys/jwt-public.pem}
+    # 仅 WechatService 直连第三方微信开放平台时的超时（毫秒）。
+    # 服务间调用 sso-account 已迁到 polaris-sso-client 的 Feign 接口，
+    # 地址与内部令牌统一走 sso.client.account-base-url / sso.client.internal-token。
+    account-timeout-millis: 3000
+
+logging:
+  level:
+    com.laimengchao.sso: INFO

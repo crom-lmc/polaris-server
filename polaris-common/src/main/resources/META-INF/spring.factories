@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.laimengchao.sso.common.crypto.EncryptedPropertyEnvironmentPostProcessor

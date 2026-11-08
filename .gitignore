@@ -1,0 +1,23 @@
+# 构建产物
+target/
+*.class
+
+# 运行期日志与 PID
+logs/
+*.log
+
+# 密钥材料：绝不入库（JWT 私钥、app-secret、内部 token、配置主密钥、管理口令备份）
+**/.secrets/
+**/.env
+*.pem
+!**/src/main/resources/keys/jwt-public.pem
+
+# 上传文件
+uploads/
+uploads-*/
+polaris-uploads/
+
+# IDE
+.idea/
+*.iml
+.vscode/

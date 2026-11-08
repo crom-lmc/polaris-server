@@ -1,0 +1,102 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${SETTINGS_PORT:9007}
+
+spring:
+  application:
+    name: settings
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:settings.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    url: ${SETTINGS_DB_URL:jdbc:mysql://127.0.0.1:3306/settings?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${SETTINGS_DB_USER:root}
+    password: ${SETTINGS_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    # 全新库可自动建表；schema.sql 幂等（CREATE TABLE IF NOT EXISTS + ON DUPLICATE KEY）
+    mode: ${SETTINGS_SQL_INIT_MODE:always}
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+  # 待办/消息的邮件通道；host 为空时只落站内消息，不报错
+  mail:
+    host: ${SETTINGS_SMTP_HOST:}
+    port: ${SETTINGS_SMTP_PORT:465}
+    username: ${SETTINGS_SMTP_USER:}
+    password: ${SETTINGS_SMTP_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: ${SETTINGS_SMTP_SSL:true}
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.settings.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      # 雪花主键（BaseEntity 的 ASSIGN_ID），不要自增：ID 序列化成字符串给前端
+      id-type: assign_id
+
+# 审批中心的外部依赖：审批人解析、组织查询、业务回调、数据绑定取数
+approval:
+  # 组织/人员数据在 EHR
+  ehr-base-url: ${EHR_URL:http://127.0.0.1:9006}
+  # 应用注册表在统一账号中心
+  account-base-url: ${SSO_ACCOUNT_URL:http://127.0.0.1:9002}
+  # 数据绑定（真绑定）按 appCode 路由：每个应用都提供 /internal/entity/**，读各自的库。
+  # 表名只在各自库内唯一，所以「绑哪张表」必须和「哪个应用」一起记。
+  # 没配的应用视为未开通数据绑定（如 portal 是纯展示站，自身没有业务库）。
+  entity:
+    base-urls:
+      ehr: ${EHR_URL:http://127.0.0.1:9006}
+      cms: ${CMS_URL:http://127.0.0.1:9004}
+      blog: ${BLOG_URL:http://127.0.0.1:9003}
+      "sso-center": ${SSO_ACCOUNT_URL:http://127.0.0.1:9002}
+      settings: ${SETTINGS_SELF_URL:http://127.0.0.1:9007}
+
+# 跨服务内部接口：/internal/dicts/** 凭 X-Internal-Token（与 sso-account 共用同一个令牌）
+settings:
+  internal-token: ${SSO_INTERNAL_TOKEN:}
+
+# 单点登录：本服务持应用密钥向 sso-auth 换令牌（密钥由环境变量/配置中心下发）
+sso:
+  settings:
+    app-code: settings
+    app-secret: ${SETTINGS_APP_SECRET:}
+# 应用清单下拉：经 polaris-sso-client 的 AccountApi 读 sso-account 内部接口，
+# 地址/令牌走 sso.client.account-base-url / sso.client.internal-token（缺省复用 SSO_ACCOUNT_URL / SSO_INTERNAL_TOKEN）
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.settings: debug
+    org.springframework.security: warn

@@ -1,0 +1,52 @@
+# env    : prod  (namespace sso-ms-prod)
+# dataId : sso-auth.yaml
+# group  : SSO
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
+# IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
+#            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
+#            with MalformedInputException and the config silently falls back to the jar.
+
+# note: prod uses service discovery (lb://), requires SSO_NACOS_DISCOVERY=true.
+#       prod has its OWN RSA keypair (nacos/.secrets/prod-jwt-*.pem): a token forged on a
+#       dev machine is rejected here, and vice versa.
+
+sso:
+  auth:
+    issuer: sso-auth
+    access-ttl-seconds: 7200        # 2h, worst-case logout delay
+    refresh-ttl-seconds: 2592000    # 30d, rotated on every use
+    account-base-url: lb://sso-account
+    internal-token: ENC(9iJGPbUP9f09u4VfJSfZi1SVu40A1IyvoKrOZ9i3ZPYExpr8cvE2vmr8FVH5FX+eil5gebCp1vb9Bod/HtOndnfXK7pEY5dvYDD7UA==)
+    account-timeout-millis: 3000
+    # revocation list storage: redis so it is shared and survives restarts
+    revocation-store: redis
+    # ---- central session + cross-app SSO ----
+    session-store: redis
+    session-ttl-seconds: 604800
+    session-cookie-name: SSO_SID
+    # MUST be the parent domain, otherwise sso/blog subdomains do not share the cookie
+    # and single sign-on silently degrades to "log in on every site"
+    session-cookie-domain: ".laimengchao.site"
+    session-cookie-secure: true
+    # Lax keeps the cookie on top-level cross-site navigation (needed by SSO redirects)
+    # while blocking cross-site XHR; Strict would break single sign-on entirely
+    session-cookie-same-site: Lax
+    ticket-ttl-seconds: 60
+    # encrypted PKCS#8 PEM, decrypted at startup
+    private-key: ENC(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)
+    # the public key is not a secret; inline so auth and gateway always agree
+    public-key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoMbVEy4Va5R6LRNVPx6r
+      q3lS7ylIxwny9CYfFtAas96vxp3nAJvqF8SKL64tYPQLoLXjqAr0m/z3n0IvSQg5
+      I9tS5dlau2qn3ge4erd+mo6XqGfdehWxWfCjnhBdSw7yNXr61wVxqxgpeE1gORvj
+      IkoSOBfF8ucrvmSeG0wxcFRnRpPTkXRSIGZpQJR019fsXWAE7tdMjrUvCjRSFQCa
+      g877QnnTyc/J9vTl32llFKRsGeCI4ubv5fPSoAKbP+81qNCRuREXD5lQx8ZbaN+W
+      yO53F0jjRFduA0Io8yI5R2zUAp8w0xGX98IVvzRZ/lj9tpn5YplAdvo4nMPnjjy6
+      EQIDAQAB
+      -----END PUBLIC KEY-----
+
+logging:
+  level:
+    com.laimengchao.sso: INFO

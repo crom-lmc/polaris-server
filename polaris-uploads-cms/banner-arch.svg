@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 300" width="1120" height="300">
+  <defs>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b7285"/>
+      <stop offset="0.5" stop-color="#0c8599"/>
+      <stop offset="1" stop-color="#20c997"/>
+    </linearGradient>
+  </defs>
+  <rect width="1120" height="300" fill="url(#g2)"/>
+  <g stroke="#ffffff" stroke-opacity="0.10" stroke-width="1.4" fill="none">
+    <rect x="60" y="60" width="120" height="76" rx="12"/>
+    <rect x="940" y="60" width="120" height="76" rx="12"/>
+    <rect x="60" y="180" width="120" height="76" rx="12"/>
+    <rect x="940" y="180" width="120" height="76" rx="12"/>
+  </g>
+  <text x="560" y="122" fill="#ffffff" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="42" font-weight="700">微服务身份中台</text>
+  <text x="560" y="168" fill="#ffffff" fill-opacity="0.88" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="20">网关鉴权 · 令牌签发 · 权限编排，一次接入全域生效</text>
+  <text x="560" y="214" fill="#ffffff" fill-opacity="0.62" text-anchor="middle" font-family="Microsoft YaHei,PingFang SC,sans-serif" font-size="15">Auth · Account · Gateway · CMS 多端统一</text>
+</svg>

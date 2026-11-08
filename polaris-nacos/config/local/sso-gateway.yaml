@@ -1,0 +1,46 @@
+# env    : local  (namespace sso-ms-local)
+# dataId : sso-gateway.yaml   group: SSO
+# WARNING: spring.cloud.gateway.routes is a List; a list from Nacos REPLACES the whole
+#          default list from the jar, so every route must be listed here.
+# IMPORTANT: keep this file pure ASCII (see sso-account.yaml header for why).
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: sso-auth
+          uri: http://127.0.0.1:9001
+          predicates:
+            - Path=/api/auth/**
+        - id: sso-account
+          uri: http://127.0.0.1:9002
+          predicates:
+            - Path=/api/accounts/**,/api/roles/**,/api/permissions/**,/api/applications/**
+        - id: blog-admin
+          uri: http://127.0.0.1:9003
+          predicates:
+            - Path=/api/blog/**
+        - id: blog-uploads
+          uri: http://127.0.0.1:9003
+          predicates:
+            - Path=/uploads/**
+        - id: cms
+          uri: http://127.0.0.1:9004
+          predicates:
+            - Path=/api/cms/**
+        - id: portal
+          uri: http://127.0.0.1:9005
+          predicates:
+            - Path=/api/portal/**
+        - id: ehr
+          uri: http://127.0.0.1:9006
+          predicates:
+            - Path=/api/ehr/**
+
+sso:
+  gateway:
+    issuer: sso-auth
+    # how often to poll the revocation list from auth (smaller = faster logout, more load)
+    revocation-sync-millis: 5000
+    # lb:// prefix switches RevocationCache to the load-balanced WebClient
+    auth-base-url: http://127.0.0.1:9001

@@ -1,0 +1,39 @@
+# env    : local  (namespace sso-ms-local)
+# dataId : sso-account.yaml
+# group  : SSO
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
+# IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
+#            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
+#            with MalformedInputException and the config silently falls back to the jar.
+
+spring:
+  datasource:
+    # local MySQL 5.7 on the same Windows host as the services
+    url: jdbc:mysql://${SSO_DB_HOST:127.0.0.1}:${SSO_DB_PORT:3306}/sso_ms?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    # credentials are encrypted here; the jar ships no default account any more
+    username: ENC(o88raVG1LR+/29dbzLBrmEtCO6UdK14UiRG4+nxjcfU=)
+    password: ENC(3SGkE5aiHkQA+vV6S+Vmqc/Vsm8cFgo5FpQ88Ls7YFI=)
+  sql:
+    init:
+      # dev only: auto create tables / idempotent ALTER on startup. must be never in prod.
+      mode: always
+
+mybatis-plus:
+  configuration:
+    # switch to org.apache.ibatis.logging.stdout.StdOutImpl to see SQL
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+sso:
+  account:
+    # shared secret between sso-auth and sso-account; must match sso-auth.yaml byte for byte
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+  security:
+    # lock the account for 30 min after 5 consecutive failures
+    max-login-fail: 5
+    lock-minutes: 30
+  bootstrap:
+    # only effective when the account table is empty; an existing admin is never overwritten
+    admin-username: admin
+    admin-password: ENC(nR4PtT//qYJQaTrE2BOO26le7dMIxX/9/OUCKGNW73GJQ8ulJE311yBSfEOzrOFNa+VUNQ==)
+    admin-email: admin@laimengchao.site

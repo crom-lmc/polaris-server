@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laimengchao.sso</groupId>
+        <artifactId>polaris-server</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>polaris-sso</artifactId>
+    <packaging>pom</packaging>
+    <name>polaris-sso</name>
+    <description>
+        统一账号平台聚合模块：sso-auth(9001) + sso-account(9002) + sso-gateway(9080)。common 已提为顶层模块。
+        仅做模块聚合；构建/依赖管理仍以根 pom（polaris-server）为准。
+    </description>
+
+    <modules>
+        <module>polaris-sso-auth</module>
+        <module>polaris-sso-account</module>
+        <module>polaris-sso-gateway</module>
+        <!-- 跨服客户端：AccountApi / AuthApi（各业务方按需引入） -->
+        <module>polaris-sso-client</module>
+    </modules>
+</project>
