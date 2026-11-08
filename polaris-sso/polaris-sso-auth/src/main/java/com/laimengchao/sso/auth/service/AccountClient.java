@@ -13,7 +13,7 @@ import com.laimengchao.sso.client.dto.R;
 import com.laimengchao.sso.client.dto.WechatOpenidRequest;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
-import com.laimengchao.sso.util.JsonUtils;
+import com.laimengchao.sso.utils.JsonUtils;
 import feign.FeignException;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;

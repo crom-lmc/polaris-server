@@ -1,8 +1,8 @@
 package com.laimengchao.sso.gateway.support;
 
 import com.laimengchao.sso.gateway.config.GatewayProperties;
-import com.laimengchao.sso.util.KeySources;
-import com.laimengchao.sso.util.PemUtils;
+import com.laimengchao.sso.utils.KeySources;
+import com.laimengchao.sso.utils.PemUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.stereotype.Component;

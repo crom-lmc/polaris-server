@@ -21,7 +21,7 @@ public class SecurityConfig {
     /** 初始密码规则：RANDOM 随机 / FIXED 固定 */
     private String initialPasswordMode;
 
-    /** 固定初始密码（默认 G#191975） */
+    /** 固定初始密码（仅 FIXED 模式使用；RANDOM 模式由开户时随机生成） */
     private String defaultPassword;
 
     /** 密码必须包含的字符类型，逗号分隔：DIGIT/UPPER/LOWER/SPECIAL */

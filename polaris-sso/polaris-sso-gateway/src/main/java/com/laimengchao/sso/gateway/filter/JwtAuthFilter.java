@@ -6,7 +6,7 @@ import com.laimengchao.sso.common.security.JwtClaims;
 import com.laimengchao.sso.gateway.config.GatewayProperties;
 import com.laimengchao.sso.gateway.support.JwtVerifier;
 import com.laimengchao.sso.gateway.support.RevocationCache;
-import com.laimengchao.sso.util.JsonUtils;
+import com.laimengchao.sso.utils.JsonUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;

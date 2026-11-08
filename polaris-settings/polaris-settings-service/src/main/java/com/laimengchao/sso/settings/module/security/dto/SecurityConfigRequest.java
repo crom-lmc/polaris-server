@@ -21,8 +21,7 @@ public class SecurityConfigRequest {
     @NotBlank(message = "初始密码规则不能为空")
     private String initialPasswordMode;
 
-    /** 固定初始密码（默认 G#191975） */
-    @NotBlank(message = "默认密码不能为空")
+    /** 固定初始密码（仅 FIXED 模式必填；RANDOM 模式忽略，由开户时随机生成） */
     @Size(max = 64, message = "默认密码长度不能超过 64")
     private String defaultPassword;
 

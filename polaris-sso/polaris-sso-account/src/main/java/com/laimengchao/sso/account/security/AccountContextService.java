@@ -2,7 +2,7 @@ package com.laimengchao.sso.account.security;
 
 import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.account.mapper.SsoAccountMapper;
-import com.laimengchao.sso.util.AccountContext;
+import com.laimengchao.sso.utils.AccountContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

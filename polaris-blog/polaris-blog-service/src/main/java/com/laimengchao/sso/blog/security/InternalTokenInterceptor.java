@@ -3,7 +3,7 @@ package com.laimengchao.sso.blog.security;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.common.security.JwtClaims;
-import com.laimengchao.sso.util.JsonUtils;
+import com.laimengchao.sso.utils.JsonUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;

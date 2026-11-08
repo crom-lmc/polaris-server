@@ -1,4 +1,4 @@
-package com.laimengchao.sso.util;
+package com.laimengchao.sso.utils;
 
 /**
  * ID 生成工具。内置雪花算法（单机/分布式均安全，无需依赖 MyBatis-Plus）。

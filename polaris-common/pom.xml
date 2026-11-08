@@ -16,7 +16,7 @@
     <description>
         公共模块（原 sso-common + sso-utils 合并）：统一返回体、异常、基础实体、枚举，
         以及 JSON、ID、断言、登录上下文（AccountContext）、密钥解密等工具。
-        包名保持 com.laimengchao.sso.common / com.laimengchao.sso.util 不变，所有服务依赖本模块。
+        包名保持 com.laimengchao.sso.common / com.laimengchao.sso.utils 不变，所有服务依赖本模块。
     </description>
 
     <dependencies>

@@ -54,7 +54,7 @@ public class SecurityConfigService {
 
         SecurityConfig config = get();
         config.setInitialPasswordMode(req.getInitialPasswordMode());
-        config.setDefaultPassword(req.getDefaultPassword().trim());
+        config.setDefaultPassword(req.getDefaultPassword() == null ? "" : req.getDefaultPassword().trim());
         config.setPasswordRules(rules);
         config.setPasswordMinLength(req.getPasswordMinLength());
         config.setPasswordMaxLength(req.getPasswordMaxLength());
@@ -92,6 +92,10 @@ public class SecurityConfigService {
     private void validate(SecurityConfigRequest req, String rules) {
         if (!PASSWORD_MODES.contains(req.getInitialPasswordMode())) {
             throw new BizException(ErrorCode.PARAM_ERROR, "初始密码规则只能是 RANDOM 或 FIXED");
+        }
+        if ("FIXED".equals(req.getInitialPasswordMode())
+                && (req.getDefaultPassword() == null || req.getDefaultPassword().isBlank())) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "固定密码模式下默认密码不能为空");
         }
         if (!LOCK_MODES.contains(req.getPasswordLockMode())) {
             throw new BizException(ErrorCode.PARAM_ERROR, "违约密码锁只能是 ACCOUNT 或 EMAIL");

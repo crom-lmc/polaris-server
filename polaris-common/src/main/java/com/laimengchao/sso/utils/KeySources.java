@@ -1,4 +1,4 @@
-package com.laimengchao.sso.util;
+package com.laimengchao.sso.utils;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;

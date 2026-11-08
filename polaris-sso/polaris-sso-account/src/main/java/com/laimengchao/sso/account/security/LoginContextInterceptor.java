@@ -1,7 +1,7 @@
 package com.laimengchao.sso.account.security;
 
 import com.laimengchao.sso.common.security.JwtClaims;
-import com.laimengchao.sso.util.AccountContext;
+import com.laimengchao.sso.utils.AccountContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

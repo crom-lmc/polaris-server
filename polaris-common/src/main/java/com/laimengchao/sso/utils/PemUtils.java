@@ -1,4 +1,4 @@
-package com.laimengchao.sso.util;
+package com.laimengchao.sso.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

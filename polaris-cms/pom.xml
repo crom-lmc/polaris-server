@@ -21,6 +21,6 @@
     </description>
 
     <modules>
-        <module>cms-service</module>
+        <module>polaris-cms-service</module>
     </modules>
 </project>

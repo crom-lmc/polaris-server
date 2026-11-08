@@ -1,4 +1,4 @@
-package com.laimengchao.sso.util;
+package com.laimengchao.sso.utils;
 
 import java.util.Collections;
 import java.util.Set;

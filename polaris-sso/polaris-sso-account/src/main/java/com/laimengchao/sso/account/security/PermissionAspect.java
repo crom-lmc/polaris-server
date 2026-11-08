@@ -3,7 +3,7 @@ package com.laimengchao.sso.account.security;
 import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
-import com.laimengchao.sso.util.AccountContext;
+import com.laimengchao.sso.utils.AccountContext;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;

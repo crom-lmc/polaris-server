@@ -1,4 +1,4 @@
-package com.laimengchao.sso.util;
+package com.laimengchao.sso.utils;
 
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
