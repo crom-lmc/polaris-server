@@ -35,27 +35,27 @@
   <text class="layer" x="40" y="68">前端应用（Vue 3 · ant-design-vue 4）</text>
   <g>
     <rect class="box fe" x="40"  y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="120" y="104" text-anchor="middle">sso-web</text>
+    <text class="name" x="120" y="104" text-anchor="middle">polaris-sso-web</text>
     <text class="sub"  x="120" y="123" text-anchor="middle">统一账号中心 :5173</text>
 
     <rect class="box fe" x="212" y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="292" y="104" text-anchor="middle">ehr-web</text>
+    <text class="name" x="292" y="104" text-anchor="middle">polaris-ehr-web</text>
     <text class="sub"  x="292" y="123" text-anchor="middle">人力中心 :5179</text>
 
     <rect class="box fe" x="384" y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="464" y="104" text-anchor="middle">settings-web</text>
+    <text class="name" x="464" y="104" text-anchor="middle">polaris-settings-web</text>
     <text class="sub"  x="464" y="123" text-anchor="middle">配置中心 :5180</text>
 
     <rect class="box fe" x="556" y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="636" y="104" text-anchor="middle">cms-web</text>
+    <text class="name" x="636" y="104" text-anchor="middle">polaris-cms-web</text>
     <text class="sub"  x="636" y="123" text-anchor="middle">内容中心 :5177</text>
 
     <rect class="box fe" x="728" y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="808" y="104" text-anchor="middle">portal-web</text>
+    <text class="name" x="808" y="104" text-anchor="middle">polaris-portal-web</text>
     <text class="sub"  x="808" y="123" text-anchor="middle">内容门户 :5178</text>
 
     <rect class="box fe" x="900" y="80" width="160" height="58" rx="10"/>
-    <text class="name" x="980" y="104" text-anchor="middle">blog-web</text>
+    <text class="name" x="980" y="104" text-anchor="middle">polaris-blog-web</text>
     <text class="sub"  x="980" y="123" text-anchor="middle">博客（web/admin）</text>
   </g>
 
@@ -72,7 +72,7 @@
   <!-- ===== 网关层 ===== -->
   <text class="layer" x="40" y="188">统一入口</text>
   <rect class="box gw" x="380" y="198" width="340" height="64" rx="10"/>
-  <text class="name" x="550" y="224" text-anchor="middle">sso-gateway :9080</text>
+  <text class="name" x="550" y="224" text-anchor="middle">polaris-sso-gateway :9080</text>
   <text class="sub"  x="550" y="244" text-anchor="middle">JWT(RS256) 校验 · 吊销名单轮询 · 路由转发 · 内部 token</text>
 
   <!-- 网关 -> 服务（分散出口，避免叠线） -->
@@ -89,28 +89,28 @@
   <text class="layer" x="40" y="310">微服务（Spring Cloud · MyBatis-Plus）</text>
   <g>
     <rect class="box svc" x="40"  y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="120" y="344" text-anchor="middle">sso-auth :9001</text>
-    <text class="sub"  x="120" y="362" text-anchor="middle">登录认证 / Token 签发</text>
+    <text class="name" x="120" y="344" text-anchor="middle">polaris-sso-auth</text>
+    <text class="sub"  x="120" y="362" text-anchor="middle">登录认证 · Token :9001</text>
 
     <rect class="box svc" x="212" y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="292" y="344" text-anchor="middle">sso-account :9002</text>
-    <text class="sub"  x="292" y="362" text-anchor="middle">账号 / 角色权限</text>
+    <text class="name" x="292" y="344" text-anchor="middle">polaris-sso-account</text>
+    <text class="sub"  x="292" y="362" text-anchor="middle">账号 / 权限 :9002</text>
 
     <rect class="box svc" x="384" y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="464" y="344" text-anchor="middle">ehr :9006</text>
-    <text class="sub"  x="464" y="362" text-anchor="middle">组织 / 员工 / 假勤 / 公告</text>
+    <text class="name" x="464" y="344" text-anchor="middle">polaris-ehr</text>
+    <text class="sub"  x="464" y="362" text-anchor="middle">组织/员工/假勤/公告 :9006</text>
 
     <rect class="box svc" x="556" y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="636" y="344" text-anchor="middle">settings :9007</text>
-    <text class="sub"  x="636" y="362" text-anchor="middle">字典 / 单号 / 审批 / 安全</text>
+    <text class="name" x="636" y="344" text-anchor="middle">polaris-settings</text>
+    <text class="sub"  x="636" y="362" text-anchor="middle">字典/单号/审批/安全 :9007</text>
 
     <rect class="box svc" x="728" y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="808" y="344" text-anchor="middle">cms :9004</text>
-    <text class="sub"  x="808" y="362" text-anchor="middle">文章 / 栏目 / 门户配置</text>
+    <text class="name" x="808" y="344" text-anchor="middle">polaris-cms</text>
+    <text class="sub"  x="808" y="362" text-anchor="middle">文章/栏目/门户配置 :9004</text>
 
     <rect class="box svc" x="900" y="320" width="160" height="64" rx="10"/>
-    <text class="name" x="980" y="344" text-anchor="middle">portal :9005</text>
-    <text class="sub"  x="980" y="362" text-anchor="middle">门户聚合（只读）</text>
+    <text class="name" x="980" y="344" text-anchor="middle">polaris-portal</text>
+    <text class="sub"  x="980" y="362" text-anchor="middle">门户聚合（只读）:9005</text>
   </g>
 
   <!-- blog-web 直连 blog（右侧绕行走廊） -->
@@ -134,7 +134,7 @@
   <g>
     <rect class="box db" x="70"  y="482" width="240" height="58" rx="10"/>
     <text class="name" x="190" y="506" text-anchor="middle">sso_ms</text>
-    <text class="sub"  x="190" y="524" text-anchor="middle">账号 / 角色权限 / 登录日志</text>
+    <text class="sub"  x="190" y="524" text-anchor="middle">账号 / 权限 :9002 / 登录日志</text>
 
     <rect class="box db" x="384" y="482" width="160" height="58" rx="10"/>
     <text class="name" x="464" y="506" text-anchor="middle">ehr</text>
@@ -151,8 +151,8 @@
 
   <!-- blog 独立链路 -->
   <rect class="box svc" x="900" y="482" width="160" height="58" rx="10"/>
-  <text class="name" x="980" y="506" text-anchor="middle">blog :9003</text>
-  <text class="sub"  x="980" y="524" text-anchor="middle">博客接口（独立链路）</text>
+  <text class="name" x="980" y="506" text-anchor="middle">polaris-blog</text>
+  <text class="sub"  x="980" y="524" text-anchor="middle">博客接口（独立）:9003</text>
   <path class="edge" d="M980,540 L980,586"/>
   <rect class="box db" x="900" y="588" width="160" height="58" rx="10"/>
   <text class="name" x="980" y="612" text-anchor="middle">blog</text>
