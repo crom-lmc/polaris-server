@@ -20,6 +20,9 @@ uploads/
 uploads-*/
 polaris-uploads/
 
+# 线上配置不入库（只保留 local）
+polaris-nacos/config/prod/
+
 # IDE
 .idea/
 *.iml
