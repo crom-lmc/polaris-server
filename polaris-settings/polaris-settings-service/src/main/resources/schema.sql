@@ -84,6 +84,8 @@ CREATE TABLE IF NOT EXISTS `appr_instance` (
   `callback_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '业务回调：0不需要 1待回调 2成功 3失败',
   `callback_url` varchar(255) DEFAULT '' COMMENT '终审回调地址',
   `finished_at` datetime DEFAULT NULL,
+  `urge_count` int(11) NOT NULL DEFAULT '0' COMMENT '被催办次数',
+  `last_urge_at` datetime DEFAULT NULL COMMENT '最近一次催办时间',
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -265,6 +267,7 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_step` (
   `branch_path` varchar(256) NOT NULL DEFAULT '' COMMENT '路径键：主干=空；分支子链=n/<nodeId>，多段用 / 连接，最多 3 层',
   `depth` int(11) NOT NULL DEFAULT '0' COMMENT '嵌套深度：主干=0，第 N 层分支子链=N；上限 3',
   `ui_kind` varchar(32) NOT NULL DEFAULT 'APPROVER' COMMENT '编辑器提示：APPROVER/GATEWAY/PARALLEL/END；引擎不读',
+  `sla_hours` int(11) DEFAULT NULL COMMENT '时效：在当前步骤停留超过该小时数触发超时提醒，NULL=不提醒',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_appr_step_seq` (`template_id`,`seq`,`deleted`),
   KEY `idx_appr_step_parent` (`template_id`,`parent_node_id`,`seq`)

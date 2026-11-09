@@ -5,18 +5,27 @@ import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.settings.module.approval.dto.ApprovalActionRequest;
+import com.laimengchao.sso.settings.module.approval.dto.BatchApprovalRequest;
 import com.laimengchao.sso.settings.module.approval.dto.BizSceneVO;
 import com.laimengchao.sso.settings.module.approval.dto.SceneTableBindingsDto;
 import com.laimengchao.sso.settings.module.approval.dto.TemplateDetailVO;
 import com.laimengchao.sso.settings.module.approval.dto.TemplateSaveRequest;
+import com.laimengchao.sso.settings.module.approval.entity.ApprInstance;
 import com.laimengchao.sso.settings.module.approval.entity.ApprovalPage;
 import com.laimengchao.sso.settings.module.approval.entity.ApprovalTemplate;
 import com.laimengchao.sso.settings.module.approval.entity.BizScene;
 import com.laimengchao.sso.settings.module.approval.mapper.ApprovalTemplateMapper;
 import com.laimengchao.sso.settings.module.approval.service.ApprovalConfigService;
 import com.laimengchao.sso.settings.module.approval.service.BizPointReferenceService;
+import com.laimengchao.sso.settings.module.approval.service.ApprovalOpsService;
 import com.laimengchao.sso.settings.module.approval.service.ConditionEvaluator;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalApproverStatsVO;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalBacklogVO;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalStatsVO;
+import com.laimengchao.sso.settings.module.approval.vo.BatchApprovalResultVO;
 import com.laimengchao.sso.settings.security.Permit;
+import com.laimengchao.sso.settings.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,6 +63,7 @@ public class AdminApprovalController {
     private final com.laimengchao.sso.settings.module.approval.service.InternalHttpClient internalHttpClient;
     private final com.laimengchao.sso.settings.module.approval.service.EntityDataClient entityDataClient;
     private final ApprovalTemplateMapper templateMapper;
+    private final ApprovalOpsService opsService;
 
     /** 组织数据在 EHR，这里只做代理（前端令牌是 settings 作用域，直连会被 EHR 拒） */
     @org.springframework.beans.factory.annotation.Value("${approval.ehr-base-url:http://127.0.0.1:9006}")
@@ -268,6 +279,99 @@ public class AdminApprovalController {
     @Permit(PermissionCodes.APPROVAL_VIEW)
     public R<Map<String, List<String>>> bizPointReferences() {
         return R.ok(bizPointReferences.all());
+    }
+
+    // ---------------------------------------------------------------- 运营
+
+    /**
+     * 时效总览：默认按起止日期过滤（不传=全量）。
+     * appCode 用于「按应用」看板，orgId 用于「按组织」看板，二者可叠加。
+     */
+    @GetMapping("/stats")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<ApprovalStatsVO> stats(@RequestParam(required = false) String appCode,
+                                    @RequestParam(required = false) String bizType,
+                                    @RequestParam(required = false) Long orgId,
+                                    @RequestParam(required = false)
+                                    @org.springframework.format.annotation.DateTimeFormat(
+                                            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                                    LocalDate from,
+                                    @RequestParam(required = false)
+                                    @org.springframework.format.annotation.DateTimeFormat(
+                                            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                                    LocalDate to) {
+        return R.ok(opsService.stats(appCode, bizType, orgId, from, to));
+    }
+
+    /** 审批人维度时效：谁手里压单、谁处理得快 */
+    @GetMapping("/stats/approver")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<List<ApprovalApproverStatsVO>> approverStats(
+            @RequestParam(required = false) String appCode,
+            @RequestParam(required = false) String bizType,
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            LocalDate from,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            LocalDate to) {
+        return R.ok(opsService.approverStats(appCode, bizType, orgId, from, to));
+    }
+
+    /** 积压列表：在途单按当前节点等待时长倒序，超时标红 */
+    @GetMapping("/backlog")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<List<ApprovalBacklogVO>> backlog(@RequestParam(required = false) String appCode,
+                                              @RequestParam(required = false) String bizType,
+                                              @RequestParam(required = false) Long orgId,
+                                              @RequestParam(defaultValue = "100") int limit) {
+        return R.ok(opsService.backlog(appCode, bizType, orgId, Math.min(Math.max(limit, 1), 200)));
+    }
+
+    /** 催办：给当前待办人发站内提醒，instance.urge_count +1 */
+    @PostMapping("/instances/{id}/urge")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<ApprInstance> urge(@PathVariable Long id,
+                                @RequestBody(required = false) ApprovalActionRequest req) {
+        ApprovalActionRequest body = req == null ? new ApprovalActionRequest() : req;
+        body.setOperatorId(SecurityUtils.currentUserId());
+        body.setOperatorName(SecurityUtils.currentUsername().orElse(""));
+        return R.ok(opsService.urge(id, body));
+    }
+
+    /** 批量通过/驳回：逐条独立事务，部分失败不回滚 */
+    @PostMapping("/tasks/batch")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<BatchApprovalResultVO> batch(@RequestBody BatchApprovalRequest req) {
+        // 操作人只能来自当前令牌，避免前端传别人的 operatorId 替人审批
+        req.setOperatorId(SecurityUtils.currentUserId());
+        req.setOperatorName(SecurityUtils.currentUsername().orElse(""));
+        return R.ok(opsService.batch(req));
+    }
+
+    /**
+     * 导出 CSV：type=pending 我的待办 / instances 审批流水。
+     * 待办固定按当前账号过滤，流水按查询条件；导出行为写操作日志。
+     */
+    @GetMapping("/export")
+    @Permit(PermissionCodes.APPROVAL_VIEW)
+    public R<String> export(@RequestParam(defaultValue = "pending") String type,
+                            @RequestParam(required = false) String appCode,
+                            @RequestParam(required = false) String bizType,
+                            @RequestParam(required = false) Long orgId,
+                            @RequestParam(required = false)
+                            @org.springframework.format.annotation.DateTimeFormat(
+                                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                            LocalDate from,
+                            @RequestParam(required = false)
+                            @org.springframework.format.annotation.DateTimeFormat(
+                                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                            LocalDate to) {
+        Long me = SecurityUtils.currentUserId();
+        return R.ok(opsService.export(type, me, appCode, bizType, orgId, from, to, me));
     }
 
     // ---------------------------------------------------------------- 条件

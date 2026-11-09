@@ -41,6 +41,8 @@ public class ApprovalSnapshot {
         private Integer depth = 0;
         /** 编辑器提示，引擎不读 */
         private String uiKind = "APPROVER";
+        /** 时效小时数（发起时冻结），超时提醒按它判定；旧快照为空=不提醒 */
+        private Integer slaHours;
         private List<Node> nodes = new ArrayList<>();
 
         /** 旧快照缺字段时归一化为主干 */

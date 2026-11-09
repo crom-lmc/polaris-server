@@ -74,4 +74,8 @@ public class ApprInstance extends BaseEntity {
     /** 终审回调地址（业务方提供，空=不回调） */
     private String callbackUrl;
     private LocalDateTime finishedAt;
+    /** 被催办次数（运营页催办按钮累加） */
+    private Integer urgeCount;
+    /** 最近一次催办时间 */
+    private LocalDateTime lastUrgeAt;
 }

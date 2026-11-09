@@ -37,4 +37,6 @@ public class ApprovalStep extends BaseEntity {
     private Integer depth;
     /** 编辑器提示：APPROVER / GATEWAY / PARALLEL / END，引擎不读 */
     private String uiKind;
+    /** 时效小时数：该步骤停留超过此值触发超时提醒，空=不提醒 */
+    private Integer slaHours;
 }

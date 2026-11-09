@@ -134,4 +134,42 @@ public interface ApprovalApi {
 
     @PostMapping("/internal/approval/instances/{id}/terminate")
     R<JsonNode> terminateRaw(@PathVariable("id") Long id, @RequestBody Map<String, Object> body);
+
+    /* ---------------- 审批运营（时效 / 积压 / 催办 / 批量 / 导出） ---------------- */
+
+    @GetMapping("/internal/approval/stats")
+    R<JsonNode> statsRaw(@RequestParam(value = "appCode", required = false) String appCode,
+                         @RequestParam(value = "bizType", required = false) String bizType,
+                         @RequestParam(value = "orgId", required = false) Long orgId,
+                         @RequestParam(value = "from", required = false) String from,
+                         @RequestParam(value = "to", required = false) String to);
+
+    @GetMapping("/internal/approval/stats/approver")
+    R<JsonNode> approverStatsRaw(@RequestParam(value = "appCode", required = false) String appCode,
+                                 @RequestParam(value = "bizType", required = false) String bizType,
+                                 @RequestParam(value = "orgId", required = false) Long orgId,
+                                 @RequestParam(value = "from", required = false) String from,
+                                 @RequestParam(value = "to", required = false) String to);
+
+    @GetMapping("/internal/approval/backlog")
+    R<JsonNode> backlogRaw(@RequestParam(value = "appCode", required = false) String appCode,
+                           @RequestParam(value = "bizType", required = false) String bizType,
+                           @RequestParam(value = "orgId", required = false) Long orgId,
+                           @RequestParam(value = "limit", required = false) Integer limit);
+
+    @PostMapping("/internal/approval/instances/{id}/urge")
+    R<JsonNode> urgeRaw(@PathVariable("id") Long id, @RequestBody Map<String, Object> body);
+
+    @PostMapping("/internal/approval/tasks/batch")
+    R<JsonNode> batchRaw(@RequestBody Map<String, Object> body);
+
+    @GetMapping("/internal/approval/export")
+    R<JsonNode> exportRaw(@RequestParam("type") String type,
+                          @RequestParam(value = "accountId", required = false) Long accountId,
+                          @RequestParam(value = "appCode", required = false) String appCode,
+                          @RequestParam(value = "bizType", required = false) String bizType,
+                          @RequestParam(value = "orgId", required = false) Long orgId,
+                          @RequestParam(value = "from", required = false) String from,
+                          @RequestParam(value = "to", required = false) String to,
+                          @RequestParam(value = "operatorId", required = false) Long operatorId);
 }

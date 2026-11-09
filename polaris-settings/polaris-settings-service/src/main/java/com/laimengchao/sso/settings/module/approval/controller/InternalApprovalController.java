@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.settings.module.approval.dto.ApprovalActionRequest;
 import com.laimengchao.sso.settings.module.approval.dto.ApprovalDelegateRequest;
+import com.laimengchao.sso.settings.module.approval.dto.BatchApprovalRequest;
 import com.laimengchao.sso.settings.module.approval.dto.StartApprovalRequest;
 import com.laimengchao.sso.settings.module.approval.constant.InstanceStatus;
 import com.laimengchao.sso.settings.module.approval.entity.ApprDelegate;
@@ -17,9 +18,14 @@ import com.laimengchao.sso.settings.module.approval.service.ApprovalContextServi
 import com.laimengchao.sso.settings.module.approval.service.ApprovalCallbackService;
 import com.laimengchao.sso.settings.module.approval.service.ApprovalEngine;
 import com.laimengchao.sso.settings.module.approval.service.ApprovalMoveService;
+import com.laimengchao.sso.settings.module.approval.service.ApprovalOpsService;
 import com.laimengchao.sso.settings.module.approval.service.ApprovalQueryService;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalApproverStatsVO;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalBacklogVO;
 import com.laimengchao.sso.settings.module.approval.vo.ApprovalContextVO;
 import com.laimengchao.sso.settings.module.approval.vo.ApprovalInstanceVO;
+import com.laimengchao.sso.settings.module.approval.vo.ApprovalStatsVO;
+import com.laimengchao.sso.settings.module.approval.vo.BatchApprovalResultVO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,6 +59,7 @@ public class InternalApprovalController {
     private final ApprovalEngine engine;
     private final ApprovalQueryService queryService;
     private final ApprovalMoveService moveService;
+    private final ApprovalOpsService opsService;
     private final ApprovalConfigService configService;
     private final ApprovalContextService contextService;
     private final ApprovalCallbackService callbackService;
@@ -328,6 +335,83 @@ public class InternalApprovalController {
                                          @RequestBody ApprovalActionRequest req) {
         ApprInstance inst = engine.approve(taskId, req);
         return R.ok(queryService.detail(inst.getId(), req.getOperatorId()));
+    }
+
+    /** 批量通过/驳回：逐条独立事务，部分失败不回滚 */
+    @PostMapping("/tasks/batch")
+    public R<BatchApprovalResultVO> batch(@RequestBody BatchApprovalRequest req) {
+        return R.ok(opsService.batch(req));
+    }
+
+    // ---------------------------------------------------------------- 运营
+
+    /** 时效总览（按应用/场景/组织/日期过滤） */
+    @GetMapping("/stats")
+    public R<ApprovalStatsVO> stats(
+            @RequestParam(required = false) String appCode,
+            @RequestParam(required = false) String bizType,
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate from,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate to) {
+        return R.ok(opsService.stats(appCode, bizType, orgId, from, to));
+    }
+
+    /** 审批人维度时效 */
+    @GetMapping("/stats/approver")
+    public R<List<ApprovalApproverStatsVO>> approverStats(
+            @RequestParam(required = false) String appCode,
+            @RequestParam(required = false) String bizType,
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate from,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate to) {
+        return R.ok(opsService.approverStats(appCode, bizType, orgId, from, to));
+    }
+
+    /** 积压列表 */
+    @GetMapping("/backlog")
+    public R<List<ApprovalBacklogVO>> backlog(@RequestParam(required = false) String appCode,
+                                              @RequestParam(required = false) String bizType,
+                                              @RequestParam(required = false) Long orgId,
+                                              @RequestParam(defaultValue = "100") int limit) {
+        return R.ok(opsService.backlog(appCode, bizType, orgId, Math.min(Math.max(limit, 1), 200)));
+    }
+
+    /** 催办：写 appr_action(action=URGE) 并给当前待办人发站内提醒 */
+    @PostMapping("/instances/{id}/urge")
+    public R<ApprInstance> urge(@PathVariable Long id,
+                                @RequestBody(required = false) ApprovalActionRequest req) {
+        return R.ok(opsService.urge(id, req == null ? new ApprovalActionRequest() : req));
+    }
+
+    /** 导出 CSV：type=pending 需传 accountId；type=instances 按筛选条件 */
+    @GetMapping("/export")
+    public R<String> export(@RequestParam(defaultValue = "pending") String type,
+                            @RequestParam(required = false) Long accountId,
+                            @RequestParam(required = false) String appCode,
+                            @RequestParam(required = false) String bizType,
+                            @RequestParam(required = false) Long orgId,
+                            @RequestParam(required = false)
+                            @org.springframework.format.annotation.DateTimeFormat(
+                                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                            java.time.LocalDate from,
+                            @RequestParam(required = false)
+                            @org.springframework.format.annotation.DateTimeFormat(
+                                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                            java.time.LocalDate to,
+                            @RequestParam(required = false) Long operatorId) {
+        return R.ok(opsService.export(type, accountId, appCode, bizType, orgId, from, to, operatorId));
     }
 
     @PostMapping("/tasks/{taskId}/transfer")

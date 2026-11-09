@@ -47,6 +47,8 @@ public class TemplateDetailVO {
         private String branchPath;
         private Integer depth;
         private String uiKind;
+        /** 时效小时数：该步骤停留超过此值触发超时提醒，空=不提醒 */
+        private Integer slaHours;
         /** 该步骤是否为条件网关（多分支且带条件/兜底）；前端据此还原树 */
         private Boolean isGateway;
         private List<NodeVO> nodes = new ArrayList<>();

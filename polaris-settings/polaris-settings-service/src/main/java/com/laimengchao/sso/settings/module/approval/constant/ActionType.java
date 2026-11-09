@@ -20,5 +20,9 @@ public enum ActionType {
     /** 发起人撤回 */
     WITHDRAW,
     /** 管理员终止 */
-    TERMINATE
+    TERMINATE,
+    /** 运营催办（给当前待办审批人发提醒） */
+    URGE,
+    /** SLA 超时定时提醒（系统动作，actor 为空） */
+    SLA_REMIND
 }

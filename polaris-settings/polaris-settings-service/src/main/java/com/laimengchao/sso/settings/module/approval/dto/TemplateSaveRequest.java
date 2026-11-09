@@ -52,6 +52,8 @@ public class TemplateSaveRequest {
         private String conditionDesc;
         /** v5 起固定 END（整单终止），保留字段以兼容旧报文 */
         private String rejectAction;
+        /** 时效小时数：该步骤停留超过此值触发超时提醒，空=不提醒 */
+        private Integer slaHours;
         private List<NodeDto> nodes = new ArrayList<>();
     }
 

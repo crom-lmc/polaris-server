@@ -111,6 +111,7 @@ public class ApprovalConfigService {
             sv.setBranchPath(empty(s.getBranchPath()));
             sv.setDepth(s.getDepth() == null ? 0 : s.getDepth());
             sv.setUiKind(empty(s.getUiKind()));
+            sv.setSlaHours(s.getSlaHours());
             for (ApprovalNode n : nodes) {
                 if (!s.getId().equals(n.getStepId())) {
                     continue;
@@ -198,6 +199,7 @@ public class ApprovalConfigService {
             s.setBranchPath(p.branchPath);
             s.setDepth(p.depth);
             s.setUiKind(isBlank(sd.getUiKind()) ? "APPROVER" : sd.getUiKind());
+            s.setSlaHours(sd.getSlaHours());
             stepMapper.insert(s);
 
             for (TemplateSaveRequest.NodeDto nd : sd.getNodes()) {

@@ -258,6 +258,7 @@ public class ApprovalEngine {
             ss.setParentNodeId(s.getParentNodeId());
             ss.setDepth(s.getDepth() == null ? 0 : s.getDepth());
             ss.setUiKind(nullToEmpty(s.getUiKind()));
+            ss.setSlaHours(s.getSlaHours());
             for (ApprovalNode n : nodes) {
                 if (!s.getId().equals(n.getStepId())) {
                     continue;
