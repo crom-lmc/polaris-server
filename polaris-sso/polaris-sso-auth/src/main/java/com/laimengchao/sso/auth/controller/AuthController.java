@@ -5,6 +5,7 @@ import com.laimengchao.sso.auth.dto.AppBrief;
 import com.laimengchao.sso.auth.dto.AuthUser;
 import com.laimengchao.sso.auth.dto.EmailCodeRequest;
 import com.laimengchao.sso.auth.dto.EmailLoginRequest;
+import com.laimengchao.sso.auth.dto.ForgotPasswordResetRequest;
 import com.laimengchao.sso.auth.dto.LoginRequest;
 import com.laimengchao.sso.auth.dto.RefreshRequest;
 import com.laimengchao.sso.auth.dto.TokenResponse;
@@ -145,6 +146,25 @@ public class AuthController {
         AuthUser user = accountClient.principal(accountId);
         String sid = sessionService.create(user.getAccountId(), response);
         return R.ok(tokenService.issuePair(user, sid));
+    }
+
+    /** 忘记密码：发送重置验证码（scene=reset，与登录验证码隔离）。 */
+    @PostMapping("/password/forgot/code")
+    public R<Void> forgotPasswordCode(@Valid @RequestBody EmailCodeRequest req, HttpServletRequest request) {
+        String code = accountClient.createEmailCode(req.getEmail(), "reset", clientIp(request));
+        emailSender.send(req.getEmail(), "SSO 重置密码验证码",
+                "您的验证码为：" + code + "，有效期 " + props.getEmailCodeTtlMinutes() + " 分钟。如非本人操作请忽略。");
+        return R.ok();
+    }
+
+    /** 忘记密码：校验重置验证码并设置新密码。 */
+    @PostMapping("/password/forgot/reset")
+    public R<Void> forgotPasswordReset(@Valid @RequestBody ForgotPasswordResetRequest req) {
+        Long accountId = accountClient.verifyEmail(req.getEmail(), "reset", req.getCode());
+        accountClient.resetPassword(accountId, req.getNewPassword());
+        // 密码已变更，作废此前所有会话，避免旧令牌继续可用
+        sessionService.forceLogout(accountId);
+        return R.ok();
     }
 
     /** 微信扫码登录：未配置开放平台时返回 501（启用 M4 请填写 appid/appsecret）。 */

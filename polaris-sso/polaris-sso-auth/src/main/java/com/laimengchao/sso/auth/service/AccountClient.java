@@ -9,6 +9,7 @@ import com.laimengchao.sso.client.dto.AppInfo;
 import com.laimengchao.sso.client.dto.AppVerifyRequest;
 import com.laimengchao.sso.client.dto.EmailCodeRequest;
 import com.laimengchao.sso.client.dto.EmailVerifyRequest;
+import com.laimengchao.sso.client.dto.PasswordResetRequest;
 import com.laimengchao.sso.client.dto.R;
 import com.laimengchao.sso.client.dto.WechatOpenidRequest;
 import com.laimengchao.sso.common.BizException;
@@ -101,6 +102,18 @@ public class AccountClient {
         req.setScene(scene == null ? "login" : scene);
         req.setIp(ip == null ? "" : ip);
         return unwrap(invoke(() -> accountApi.createEmailCode(req), "/internal/accounts/email/code"));
+    }
+
+    /** 邮箱验证码校验通过后重置密码（不校验原密码）。 */
+    public void resetPassword(Long accountId, String newPassword) {
+        PasswordResetRequest req = new PasswordResetRequest();
+        req.setAccountId(accountId);
+        req.setNewPassword(newPassword);
+        R<Void> res = invoke(() -> accountApi.resetPassword(req), "/internal/accounts/password/reset");
+        if (res == null || !res.ok()) {
+            throw new BizException(ErrorCode.SYSTEM_ERROR,
+                    res == null ? "重置密码失败" : res.getMessage());
+        }
     }
 
     /** 按账户 ID 取可访问应用详情（组装会话快照用）。 */

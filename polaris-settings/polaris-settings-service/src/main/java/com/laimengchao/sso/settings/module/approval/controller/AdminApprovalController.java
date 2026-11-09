@@ -25,7 +25,7 @@ import com.laimengchao.sso.settings.module.approval.vo.ApprovalBacklogVO;
 import com.laimengchao.sso.settings.module.approval.vo.ApprovalStatsVO;
 import com.laimengchao.sso.settings.module.approval.vo.BatchApprovalResultVO;
 import com.laimengchao.sso.settings.security.Permit;
-import com.laimengchao.sso.settings.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;

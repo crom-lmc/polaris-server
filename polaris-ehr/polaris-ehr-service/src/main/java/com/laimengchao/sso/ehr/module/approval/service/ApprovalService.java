@@ -15,8 +15,8 @@ import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveService;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
-import com.laimengchao.sso.ehr.security.SecurityUser;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

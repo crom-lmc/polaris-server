@@ -10,6 +10,7 @@ import java.time.Duration;
 public class RedisSessionStore implements SessionStore {
 
     private static final String PREFIX = "sso:sess:";
+    private static final String ACCOUNT_PREFIX = "sso:sess:acct:";
 
     private final StringRedisTemplate redis;
 
@@ -19,7 +20,11 @@ public class RedisSessionStore implements SessionStore {
 
     @Override
     public void put(String sid, Long accountId, long ttlSeconds) {
-        redis.opsForValue().set(PREFIX + sid, String.valueOf(accountId), Duration.ofSeconds(ttlSeconds));
+        Duration ttl = Duration.ofSeconds(ttlSeconds);
+        redis.opsForValue().set(PREFIX + sid, String.valueOf(accountId), ttl);
+        String accountKey = ACCOUNT_PREFIX + accountId;
+        redis.opsForSet().add(accountKey, sid);
+        redis.expire(accountKey, ttl);
     }
 
     @Override
@@ -37,6 +42,27 @@ public class RedisSessionStore implements SessionStore {
 
     @Override
     public void remove(String sid) {
+        Long accountId = get(sid);
         redis.delete(PREFIX + sid);
+        if (accountId != null) {
+            redis.opsForSet().remove(ACCOUNT_PREFIX + accountId, sid);
+        }
+    }
+
+    @Override
+    public java.util.Set<String> sidsOf(Long accountId) {
+        java.util.Set<String> members = redis.opsForSet().members(ACCOUNT_PREFIX + accountId);
+        if (members == null || members.isEmpty()) {
+            return java.util.Set.of();
+        }
+        java.util.Set<String> alive = new java.util.HashSet<>();
+        for (String sid : members) {
+            if (Boolean.TRUE.equals(redis.hasKey(PREFIX + sid))) {
+                alive.add(sid);
+            } else {
+                redis.opsForSet().remove(ACCOUNT_PREFIX + accountId, sid);
+            }
+        }
+        return alive;
     }
 }

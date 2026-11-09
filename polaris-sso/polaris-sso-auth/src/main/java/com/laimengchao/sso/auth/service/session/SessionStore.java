@@ -1,5 +1,7 @@
 package com.laimengchao.sso.auth.service.session;
 
+import java.util.Set;
+
 /**
  * 中心会话存储。
  * <p>
@@ -17,4 +19,7 @@ public interface SessionStore {
 
     /** 主动登出：立即失效（单点登出靠这一步，所有应用下次跳转都要重新登录） */
     void remove(String sid);
+
+    /** 按账号反查其全部中心会话（管理端「强制下线」用）。 */
+    Set<String> sidsOf(Long accountId);
 }

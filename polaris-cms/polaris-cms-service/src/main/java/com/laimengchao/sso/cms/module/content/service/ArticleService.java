@@ -20,7 +20,7 @@ import com.laimengchao.sso.cms.module.content.mapper.ArticleMapper;
 import com.laimengchao.sso.cms.module.content.mapper.ArticleVersionMapper;
 import com.laimengchao.sso.cms.module.content.mapper.CategoryMapper;
 import com.laimengchao.sso.cms.module.content.mapper.TagMapper;
-import com.laimengchao.sso.cms.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
 import com.laimengchao.sso.settings.client.dto.ApprovalActionDTO;
 import com.laimengchao.sso.settings.client.dto.ApprovalInstanceDTO;

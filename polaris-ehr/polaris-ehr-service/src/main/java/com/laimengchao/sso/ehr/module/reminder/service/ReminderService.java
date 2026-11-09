@@ -15,7 +15,7 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.reminder.entity.Reminder;
 import com.laimengchao.sso.ehr.module.reminder.mapper.JobLockMapper;
 import com.laimengchao.sso.ehr.module.reminder.mapper.ReminderMapper;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

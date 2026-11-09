@@ -2,7 +2,7 @@ package com.laimengchao.sso.blog.common.log;
 
 import com.laimengchao.sso.blog.module.log.entity.OperationLog;
 import com.laimengchao.sso.blog.module.log.service.OperationLogService;
-import com.laimengchao.sso.blog.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.blog.utils.IpUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

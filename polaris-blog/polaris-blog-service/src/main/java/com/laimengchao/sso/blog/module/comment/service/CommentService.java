@@ -15,7 +15,7 @@ import com.laimengchao.sso.blog.module.comment.dto.CommentVO;
 import com.laimengchao.sso.blog.module.comment.entity.Comment;
 import com.laimengchao.sso.blog.module.comment.mapper.CommentMapper;
 import com.laimengchao.sso.blog.module.setting.service.SettingService;
-import com.laimengchao.sso.blog.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.blog.utils.IpUtils;
 import com.laimengchao.sso.blog.utils.SensitiveWordUtils;
 import lombok.RequiredArgsConstructor;
@@ -223,7 +223,7 @@ public class CommentService {
             topId = (parent.getParentId() == null || parent.getParentId() == 0)
                     ? parent.getId() : parent.getParentId();
         }
-        com.laimengchao.sso.blog.security.SecurityUser user = SecurityUtils.currentUser().orElse(null);
+        com.laimengchao.sso.common.security.SecurityUser user = SecurityUtils.currentUser().orElse(null);
         Comment comment = new Comment();
         comment.setArticleId(articleId);
         comment.setParentId(topId);

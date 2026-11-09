@@ -8,8 +8,8 @@ import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.common.ValidateUtil;
-import com.laimengchao.sso.ehr.common.SensitiveMasker;
+import com.laimengchao.sso.utils.ValidateUtil;
+import com.laimengchao.sso.utils.SensitiveMasker;
 import com.laimengchao.sso.ehr.constant.PermissionCodes;
 import com.laimengchao.sso.ehr.integration.AccountClient;
 import com.laimengchao.sso.ehr.integration.AccountDtos;
@@ -46,8 +46,8 @@ import com.laimengchao.sso.ehr.module.employee.vo.EmployeeVO;
 import com.laimengchao.sso.ehr.module.employee.vo.HandoverCandidateVO;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
-import com.laimengchao.sso.ehr.security.SecurityUser;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -174,12 +174,18 @@ public class EmployeeService {
         return vo;
     }
 
-    /** 导出 CSV：只包含当前数据范围内的人，敏感字段按权限掩码，并记 EXPORT 审计 */
-    public String exportCsv(String keyword, Long orgId, Integer status) {
+    /** 导出共用数据行：只包含当前数据范围内的人，敏感字段按权限掩码 */
+    public List<EmployeeVO> exportRows(String keyword, Long orgId, Integer status) {
         LambdaQueryWrapper<Employee> w = listWrapper(keyword, orgId, status);
         w.orderByAsc(Employee::getOrgId).orderByAsc(Employee::getEmpNo);
         boolean reveal = dataScope.canRevealSensitive();
-        List<EmployeeVO> rows = toVOs(employeeMapper.selectList(w), !reveal);
+        return toVOs(employeeMapper.selectList(w), !reveal);
+    }
+
+    /** 导出 CSV：只包含当前数据范围内的人，敏感字段按权限掩码，并记 EXPORT 审计 */
+    public String exportCsv(String keyword, Long orgId, Integer status) {
+        boolean reveal = dataScope.canRevealSensitive();
+        List<EmployeeVO> rows = exportRows(keyword, orgId, status);
         StringBuilder sb = new StringBuilder();
         sb.append("工号,姓名,组织,职位,状态,手机号,身份证号,紧急联系电话,邮箱,入职日期,预计转正日期\n");
         for (EmployeeVO vo : rows) {
@@ -449,6 +455,53 @@ public class EmployeeService {
 
         // 待入职草稿不开户：统一账号在「提交 → 入职审批中」时才开，避免人没来先建号
         return toVOs(List.of(emp)).get(0);
+    }
+
+    /**
+     * 招聘录用审批通过后自动建档：只落一条「待入职」草稿，不开户、不发起入职审批，
+     * 剩余个人信息与入职材料由 HR 在人员档案里补齐后走现有入职流程。
+     * 与 {@link #create} 共用自动工号逻辑，但不做完整性校验（候选人信息本来就不全）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long createPendingArchive(String name, String mobile, String email, Long orgId,
+                                     String position, LocalDate hireDate, String remark) {
+        Employee emp = new Employee();
+        emp.setName(requireText(name, "姓名必填"));
+        emp.setGender(0);
+        emp.setMobile(nvl(mobile));
+        emp.setEmail(resolveEmail(name, email));
+        emp.setIdCard("");
+        emp.setNation("");
+        emp.setMaritalStatus("");
+        emp.setPoliticalStatus("");
+        emp.setEducation("");
+        emp.setEmergencyContact("");
+        emp.setEmergencyPhone("");
+        emp.setCurrentAddress("");
+        emp.setOrgId(orgId);
+        emp.setPosition(nvl(position));
+        emp.setHireDate(hireDate);
+        emp.setExemptProbation(false);
+        emp.setProbationMonths(null);
+        recalcExpectedRegularizeDate(emp);
+        emp.setStatus(EmployeeStatus.PENDING.getCode());
+        emp.setOnboardStep(null);
+        emp.setRegularizeStatus(0);
+        emp.setRemark(nvl(remark));
+        boolean inserted = false;
+        for (int attempt = 0; attempt < 5 && !inserted; attempt++) {
+            emp.setEmpNo(nextEmpNo());
+            try {
+                employeeMapper.insert(emp);
+                inserted = true;
+            } catch (DuplicateKeyException e) {
+                // 并发抢号，循环里重取
+            }
+        }
+        if (!inserted) {
+            throw new BizException(EhrErrorCode.EMP_NO_DUPLICATED, "工号自动生成冲突，请重试");
+        }
+        return emp.getId();
     }
 
     public EmployeeVO update(Long id, EmployeeRequest req) {

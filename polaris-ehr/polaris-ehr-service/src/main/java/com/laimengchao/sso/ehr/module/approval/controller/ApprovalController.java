@@ -13,7 +13,7 @@ import com.laimengchao.sso.ehr.module.approval.vo.ResignApplyVO;
 import com.laimengchao.sso.ehr.module.employee.service.EmployeeService;
 import com.laimengchao.sso.ehr.module.employee.vo.HandoverCandidateVO;
 import com.laimengchao.sso.ehr.security.Permit;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

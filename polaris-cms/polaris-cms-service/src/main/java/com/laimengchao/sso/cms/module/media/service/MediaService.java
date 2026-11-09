@@ -8,7 +8,7 @@ import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
 import com.laimengchao.sso.cms.module.media.entity.Media;
 import com.laimengchao.sso.cms.module.media.mapper.MediaMapper;
-import com.laimengchao.sso.cms.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.cms.storage.StorageService;
 import com.laimengchao.sso.cms.storage.StoredFile;
 import lombok.RequiredArgsConstructor;

@@ -10,7 +10,7 @@ import com.laimengchao.sso.blog.module.media.entity.Media;
 import com.laimengchao.sso.blog.module.media.entity.MediaFolder;
 import com.laimengchao.sso.blog.module.media.mapper.MediaFolderMapper;
 import com.laimengchao.sso.blog.module.media.mapper.MediaMapper;
-import com.laimengchao.sso.blog.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.blog.storage.StorageService;
 import com.laimengchao.sso.blog.storage.StoredFile;
 import lombok.RequiredArgsConstructor;

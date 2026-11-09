@@ -28,6 +28,14 @@ public final class PermissionCodes {
     public static final String EMPLOYEE_DELETE = "employee:delete";
     public static final String EMPLOYEE_ACCOUNT = "employee:account";
     public static final String EMPLOYEE_RESIGN = "employee:resign";
+    /** 批量导入员工（上传预览 → 确认入库） */
+    public static final String EMPLOYEE_IMPORT = "employee:import";
+
+    /* 招聘 */
+    /** 查看招聘候选人看板与 Offer 列表 */
+    public static final String RECRUIT_VIEW = "recruit:view";
+    /** 维护候选人、发起/撤销录用 Offer、审批通过后转建档 */
+    public static final String RECRUIT_MANAGE = "recruit:manage";
 
     /* 请假 */
     public static final String LEAVE_VIEW = "leave:view";

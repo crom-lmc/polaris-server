@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -138,6 +139,33 @@ public class SessionController {
         AuthUser principal = accountClient.principal(payload.accountId(), req.getAppCode());
         // 票据里带着签发时所在的中心会话，换出的令牌继承它 → 任一应用登出即可全线失效
         return R.ok(tokenService.issuePair(principal, payload.sid()));
+    }
+
+    /** 强制下线所需权限码（与 sso_permission 种子保持一致） */
+    private static final String PERM_SESSION_MANAGE = "system:session:manage";
+
+    /**
+     * 管理端强制下线：作废目标账号所有中心会话。
+     * <p>
+     * auth 模块没有 @Permit 体系，这里手工解析 Bearer 并校验操作者权限：
+     * 超管或持有 {@code system:session:manage} 才允许。
+     */
+    @PostMapping("/admin/sessions/{accountId}/logout")
+    public R<Integer> forceLogout(@PathVariable Long accountId,
+                                  @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Claims claims = accessClaims(authorization);
+        if (claims == null) {
+            throw new BizException(ErrorCode.UNAUTHORIZED, "未登录或登录状态已失效");
+        }
+        AuthUser operator = accountClient.principal(Long.valueOf(claims.getSubject()));
+        boolean allowed = operator.isSuperAdmin()
+                || (operator.getPermissions() != null && operator.getPermissions().contains(PERM_SESSION_MANAGE));
+        if (!allowed) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权强制下线其他账号");
+        }
+        int count = sessionService.forceLogout(accountId);
+        log.info("强制下线 operator={} target={} sessions={}", operator.getAccountId(), accountId, count);
+        return R.ok(count);
     }
 
     // ---------------- 内部工具 ----------------

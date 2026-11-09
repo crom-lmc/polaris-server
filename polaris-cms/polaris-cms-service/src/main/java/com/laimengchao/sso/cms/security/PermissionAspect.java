@@ -2,6 +2,8 @@ package com.laimengchao.sso.cms.security;
 
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;

@@ -243,6 +243,19 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPasswordByAccount(Long id, String newPassword) {
+        SsoAccount a = require(id);
+        Asserts.notEmpty(newPassword, ErrorCode.PARAM_ERROR, "新密码必填");
+        PasswordPolicy.validate(newPassword);
+        a.setPasswordHash(passwordEncoder.encode(newPassword));
+        a.setPwdResetRequired(0);
+        a.setLoginFailCount(0);
+        a.setLockedUntil(null);
+        accountMapper.updateById(a);
+    }
+
+    @Override
     public SsoAccount authenticate(String username, String password) {
         // 登录名与邮箱都可作为账号标识：先按登录名查，查不到再按邮箱查（如 yangjinglei / yangjinglei@xckj.com）
         SsoAccount a = accountMapper.selectByUsername(username);

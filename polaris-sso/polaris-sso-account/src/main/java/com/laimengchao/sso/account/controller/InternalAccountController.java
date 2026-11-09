@@ -4,6 +4,7 @@ import com.laimengchao.sso.account.dto.request.InternalAuthenticateRequest;
 import com.laimengchao.sso.account.dto.request.InternalAccountStatusRequest;
 import com.laimengchao.sso.account.dto.request.InternalCreateCodeRequest;
 import com.laimengchao.sso.account.dto.request.InternalOpenAccountRequest;
+import com.laimengchao.sso.account.dto.request.InternalResetPasswordRequest;
 import com.laimengchao.sso.account.dto.request.InternalVerifyEmailRequest;
 import com.laimengchao.sso.account.dto.request.InternalWechatRequest;
 import com.laimengchao.sso.account.dto.response.ApplicationVO;
@@ -130,6 +131,13 @@ public class InternalAccountController {
     public R<String> createEmailCode(@RequestBody InternalCreateCodeRequest req) {
         String code = emailCodeService.create(req.getEmail(), req.getScene(), req.getIp());
         return R.ok(code);
+    }
+
+    /** 忘记密码：auth 已完成「reset」场景验证码校验，这里只按账号重置密码。 */
+    @PostMapping("/password/reset")
+    public R<Void> resetPassword(@Valid @RequestBody InternalResetPasswordRequest req) {
+        accountService.resetPasswordByAccount(req.getAccountId(), req.getNewPassword());
+        return R.ok();
     }
 
     /**

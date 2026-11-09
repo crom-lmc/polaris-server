@@ -1,8 +1,8 @@
 package com.laimengchao.sso.cms.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.cms.security.SecurityUser;
-import com.laimengchao.sso.cms.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.Data;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,8 +1,8 @@
-package com.laimengchao.sso.ehr.common;
+package com.laimengchao.sso.utils;
 
 /**
  * 敏感字段掩码：手机号保留前 3 后 4，身份证保留前 6 后 4，银行卡仅保留后 4。
- * 无敏感权限时所有列表/详情统一走这里，有权限的明文接口单独放行。
+ * <p>无敏感权限时所有列表/详情统一走这里，有权限的明文接口单独放行。
  */
 public final class SensitiveMasker {
 

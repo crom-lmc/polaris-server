@@ -585,3 +585,64 @@ CREATE TABLE IF NOT EXISTS `ehr_job_lock` (
   PRIMARY KEY (`job_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='定时任务锁';
 
+CREATE TABLE IF NOT EXISTS `ehr_candidate` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `name` varchar(64) NOT NULL COMMENT '候选人姓名',
+  `mobile` varchar(32) DEFAULT '' COMMENT '手机号',
+  `email` varchar(128) DEFAULT '' COMMENT '邮箱',
+  `source` varchar(32) DEFAULT 'OTHER' COMMENT '来源：REFERRAL内推/HEADHUNTER猎头/WEBSITE官网/JOB_BOARD招聘网站/OTHER其他',
+  `position` varchar(64) NOT NULL COMMENT '应聘职位',
+  `org_id` bigint(20) DEFAULT NULL COMMENT '用人部门（组织节点ID）',
+  `stage` varchar(16) NOT NULL DEFAULT 'RESUME' COMMENT '阶段：RESUME简历筛选/INTERVIEW面试中/OFFER录用中/REJECTED已淘汰',
+  `owner_id` bigint(20) DEFAULT NULL COMMENT '招聘负责人统一账号ID',
+  `owner_name` varchar(64) DEFAULT '' COMMENT '招聘负责人姓名快照',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_candidate_stage` (`stage`),
+  KEY `idx_candidate_owner` (`owner_id`),
+  KEY `idx_candidate_org` (`org_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招聘候选人';
+
+CREATE TABLE IF NOT EXISTS `ehr_offer` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `candidate_id` bigint(20) NOT NULL COMMENT '候选人ID',
+  `position` varchar(64) NOT NULL COMMENT '录用职位',
+  `salary` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '月薪（元）',
+  `expected_onboard_date` date DEFAULT NULL COMMENT '预计入职日期',
+  `org_id` bigint(20) NOT NULL COMMENT '录用部门（组织节点ID）',
+  `status` varchar(16) NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT草稿/APPROVING审批中/APPROVED已通过/REJECTED已驳回或已撤销',
+  `employee_id` bigint(20) DEFAULT NULL COMMENT '审批通过后生成的待入职档案ID',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注/撤销原因',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_offer_candidate` (`candidate_id`),
+  KEY `idx_offer_status` (`status`),
+  KEY `idx_offer_employee` (`employee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='录用Offer（审批通过后自动生成待入职档案）';
+
+CREATE TABLE IF NOT EXISTS `ehr_import_task` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `type` varchar(32) NOT NULL DEFAULT 'EMPLOYEE' COMMENT '导入类型：EMPLOYEE员工批量导入',
+  `file_id` bigint(20) NOT NULL COMMENT '原始 xlsx 附件ID（ehr_attachment，biz_type=IMPORT）',
+  `file_name` varchar(255) DEFAULT '' COMMENT '原始文件名',
+  `status` varchar(16) NOT NULL DEFAULT 'PREVIEW' COMMENT '状态：PREVIEW待确认/IMPORTING导入中/DONE已完成/FAILED失败',
+  `total` int(11) NOT NULL DEFAULT '0' COMMENT '解析到的数据总行数',
+  `valid_count` int(11) NOT NULL DEFAULT '0' COMMENT '预览校验通过行数',
+  `invalid_count` int(11) NOT NULL DEFAULT '0' COMMENT '预览校验失败行数',
+  `success` int(11) NOT NULL DEFAULT '0' COMMENT '确认导入成功行数',
+  `failed` int(11) NOT NULL DEFAULT '0' COMMENT '确认导入失败行数',
+  `error_file_id` bigint(20) DEFAULT NULL COMMENT '错误明细 xlsx 附件ID',
+  `created_by` bigint(20) DEFAULT NULL COMMENT '创建人统一账号ID',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_import_task_creator` (`created_by`),
+  KEY `idx_import_task_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量导入任务（上传预览→确认入库两段式）';
+

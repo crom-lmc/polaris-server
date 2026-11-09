@@ -44,6 +44,12 @@ sso:
     app-code: portal
     app-secret: ${PORTAL_APP_SECRET:}
 
+# 配置中心跨服客户端：门户统一待办聚合审批中心待办（凭 X-Internal-Token 准入）
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+
 logging:
   level:
     root: info

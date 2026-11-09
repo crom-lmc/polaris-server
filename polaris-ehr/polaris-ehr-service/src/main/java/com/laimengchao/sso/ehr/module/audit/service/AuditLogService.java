@@ -8,8 +8,8 @@ import com.laimengchao.sso.ehr.module.audit.entity.AuditLog;
 import com.laimengchao.sso.ehr.module.audit.mapper.AuditLogMapper;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
-import com.laimengchao.sso.ehr.security.SecurityUser;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,8 +33,12 @@ public class AuditLogService {
     public static final String ACTION_VIEW = "VIEW";
     public static final String ACTION_PLAIN = "PLAIN";
     public static final String ACTION_EXPORT = "EXPORT";
+    public static final String ACTION_IMPORT = "IMPORT";
 
     public static final String TARGET_EMPLOYEE = "EMPLOYEE";
+    public static final String TARGET_CONTRACT = "CONTRACT";
+    public static final String TARGET_ATTENDANCE = "ATTENDANCE";
+    public static final String TARGET_IMPORT = "IMPORT";
 
     private final AuditLogMapper auditLogMapper;
     private final EmployeeMapper employeeMapper;

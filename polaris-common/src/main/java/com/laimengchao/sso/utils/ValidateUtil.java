@@ -1,11 +1,11 @@
-package com.laimengchao.sso.ehr.common;
+package com.laimengchao.sso.utils;
 
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
 
 /**
- * 人员信息格式校验工具。全部纯函数，供 EmployeeService 与子档案服务共用。
+ * 人员信息格式校验工具（纯函数）。
  * <p>
  * 身份证按 GB 11643-1999（18 位，ISO 7064 MOD 11-2 校验码）验证；
  * 15 位老身份证不收——存量数据里如有，也只在前端提示补录，不做自动换算。
@@ -54,7 +54,7 @@ public final class ValidateUtil {
     }
 
     private static boolean isKnownProvince(int code) {
-        // 直辖市 + 各省 + 自治区 + 特别行政区的两位码（不含港澳台证段之外的组合）
+        // 直辖市 + 各省 + 自治区 + 特别行政区的两位码
         return switch (code) {
             case 11, 12, 13, 14, 15, // 京津冀晋蒙
                  21, 22, 23, // 辽吉黑

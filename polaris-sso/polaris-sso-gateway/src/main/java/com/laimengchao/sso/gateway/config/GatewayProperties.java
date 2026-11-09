@@ -31,6 +31,9 @@ public class GatewayProperties {
             "/api/auth/email/code",
             "/api/auth/email/login",
             "/api/auth/wechat/login",
+            // 忘记密码：无登录态，靠邮箱验证码（scene=reset）识别本人
+            "/api/auth/password/forgot/code",
+            "/api/auth/password/forgot/reset",
             // 单点相关：/session 与 /ticket 靠 HttpOnly cookie 识别身份（跨应用共享登录态的前提，
             // 不能要求 Bearer）；/ticket/exchange 靠应用 appSecret 识别调用方，也不带用户 token
             "/api/auth/session",

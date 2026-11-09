@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.laimengchao.sso.blog.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 
 /**
  * 文章服务：查询、详情、保存、发布、置顶、导入导出、阅读数统计。
@@ -293,7 +293,7 @@ public class ArticleService {
             Long accountId = SecurityUtils.currentUserId();
             if (accountId != null) {
                 article.setAuthorId(accountId);
-                article.setAuthorName(SecurityUtils.currentUsername());
+                article.setAuthorName(SecurityUtils.currentUsername().orElse(null));
             }
         }
 

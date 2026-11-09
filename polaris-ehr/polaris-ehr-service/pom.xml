@@ -90,6 +90,13 @@
             <version>2.5.1</version>
         </dependency>
 
+        <!-- Excel 读写（批量导入解析 / 员工·合同·考勤导出 .xlsx） -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

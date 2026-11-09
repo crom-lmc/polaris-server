@@ -5,7 +5,7 @@ import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.settings.module.security.dto.SecurityConfigRequest;
 import com.laimengchao.sso.settings.module.security.entity.SecurityConfig;
 import com.laimengchao.sso.settings.module.security.mapper.SecurityConfigMapper;
-import com.laimengchao.sso.settings.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

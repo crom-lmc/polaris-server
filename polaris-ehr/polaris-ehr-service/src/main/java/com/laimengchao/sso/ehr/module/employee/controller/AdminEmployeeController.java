@@ -18,7 +18,7 @@ import com.laimengchao.sso.ehr.module.employee.service.EmployeeService;
 import com.laimengchao.sso.ehr.module.employee.vo.EmployeeChangeResultVO;
 import com.laimengchao.sso.ehr.module.employee.vo.EmployeeVO;
 import com.laimengchao.sso.ehr.security.Permit;
-import com.laimengchao.sso.ehr.security.SecurityUtils;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

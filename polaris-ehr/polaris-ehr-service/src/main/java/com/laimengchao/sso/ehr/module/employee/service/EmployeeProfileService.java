@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
-import com.laimengchao.sso.ehr.common.SensitiveMasker;
+import com.laimengchao.sso.utils.SensitiveMasker;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
 import com.laimengchao.sso.settings.client.support.SettingsClient;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeProfileDtos.BankRequest;

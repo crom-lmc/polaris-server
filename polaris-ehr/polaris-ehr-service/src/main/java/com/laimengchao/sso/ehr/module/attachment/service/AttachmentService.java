@@ -61,15 +61,38 @@ public class AttachmentService {
             checkReadable(type, bizId);
         }
         String original = file.getOriginalFilename() == null ? "file" : file.getOriginalFilename();
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            log.error("附件读取失败 name={}", original, e);
+            throw new BizException(ErrorCode.SYSTEM_ERROR, "附件读取失败，请稍后重试");
+        }
+        return save(bytes, original, file.getContentType(), type, accountId, bizId);
+    }
+
+    /** 服务端生成的文件（如导入错误明细 xlsx）直接落库，供本人下载 */
+    public AttachmentVO uploadBytes(byte[] bytes, String fileName, String bizType, Long accountId, Long bizId) {
+        if (bytes == null || bytes.length == 0) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "文件内容为空");
+        }
+        if (bytes.length > MAX_SIZE) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "单个附件不能超过 20MB");
+        }
+        String type = normalizeType(bizType);
+        String original = fileName == null || fileName.isBlank() ? "file" : fileName;
+        return save(bytes, original, "", type, accountId, bizId);
+    }
+
+    private AttachmentVO save(byte[] bytes, String original, String contentType,
+                              String type, Long accountId, Long bizId) {
         String suffix = suffixOf(original);
         long id = IdWorker.getId();
         String key = type + "/" + id + suffix;
         Path target = Paths.get(fileRoot).toAbsolutePath().normalize().resolve(key);
         try {
             Files.createDirectories(target.getParent());
-            try (var in = file.getInputStream()) {
-                Files.copy(in, target);
-            }
+            Files.write(target, bytes);
         } catch (IOException e) {
             log.error("附件落盘失败 key={}", key, e);
             throw new BizException(ErrorCode.SYSTEM_ERROR, "附件保存失败，请稍后重试");
@@ -80,20 +103,33 @@ public class AttachmentService {
         a.setBizId(bizId == null ? 0L : bizId);
         a.setFileName(original);
         a.setFileKey(key);
-        a.setSize(file.getSize());
-        a.setMime(file.getContentType() == null ? "" : file.getContentType());
+        a.setSize((long) bytes.length);
+        a.setMime(contentType == null ? "" : contentType);
         a.setUploadedBy(accountId);
         attachmentMapper.insert(a);
         AttachmentVO vo = new AttachmentVO();
         vo.setId(id);
         vo.setFileName(original);
-        vo.setSize(file.getSize());
+        vo.setSize((long) bytes.length);
         vo.setMime(a.getMime());
         vo.setBizType(type);
         vo.setBizId(a.getBizId());
         vo.setUploadedBy(accountId);
         vo.setCreatedAt(a.getCreatedAt());
         return vo;
+    }
+
+    /** 内部解析用（导入 xlsx）：返回落盘路径，不存在直接报错 */
+    public Path localPath(Long attachmentId) {
+        Attachment a = attachmentId == null ? null : attachmentMapper.selectById(attachmentId);
+        if (a == null) {
+            throw new BizException(EhrErrorCode.ATTACHMENT_NOT_FOUND, "附件不存在");
+        }
+        Path p = Paths.get(fileRoot).toAbsolutePath().normalize().resolve(a.getFileKey());
+        if (!Files.exists(p)) {
+            throw new BizException(EhrErrorCode.ATTACHMENT_NOT_FOUND, "附件文件已丢失");
+        }
+        return p;
     }
 
     /** 员工档案 / 合同附件列表：按数据范围校验归属 */
@@ -150,7 +186,7 @@ public class AttachmentService {
             }
             requireAccessibleEmployee(c.getEmployeeId());
         } else if ("TEMP".equals(type)) {
-            var user = com.laimengchao.sso.ehr.security.SecurityUtils.currentUser().orElse(null);
+            var user = com.laimengchao.sso.common.security.SecurityUtils.currentUser().orElse(null);
             if (user == null || !user.isSuperAdmin()) {
                 throw new BizException(ErrorCode.FORBIDDEN, "临时附件仅本人可操作");
             }

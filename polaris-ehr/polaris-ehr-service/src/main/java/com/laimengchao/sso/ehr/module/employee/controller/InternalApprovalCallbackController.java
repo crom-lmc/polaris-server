@@ -54,6 +54,9 @@ public class InternalApprovalCallbackController {
     /** 加班审批 */
     private static final String BIZ_OVERTIME = "ehr.overtime";
     private static final String BIZ_OVERTIME_HR = "ehr.overtime.hr";
+    /** 录用 Offer：普通薪资档位 / 超档位（多一级总经理终审） */
+    private static final String BIZ_RECRUIT_OFFER = "ehr.recruit.offer";
+    private static final String BIZ_RECRUIT_OFFER_SENIOR = "ehr.recruit.offer.senior";
 
     private final EmployeeService employeeService;
     private final EmployeeChangeService employeeChangeService;
@@ -65,6 +68,7 @@ public class InternalApprovalCallbackController {
     private final com.laimengchao.sso.ehr.module.approval.service.RegularizeApplyService regularizeApplyService;
     private final com.laimengchao.sso.ehr.module.contract.service.ContractService contractService;
     private final com.laimengchao.sso.ehr.module.attendance.service.AttendanceService attendanceService;
+    private final com.laimengchao.sso.ehr.module.recruit.service.RecruitService recruitService;
 
     @PostMapping("/approval-callback")
     public ResponseEntity<R<Void>> approvalCallback(@RequestBody ApprovalCallbackRequest req) {
@@ -94,6 +98,9 @@ public class InternalApprovalCallbackController {
                 contractService.handleApprovalResult(req);
             } else if (BIZ_OVERTIME.equals(req.getBizType()) || BIZ_OVERTIME_HR.equals(req.getBizType())) {
                 attendanceService.handleApprovalResult(req);
+            } else if (BIZ_RECRUIT_OFFER.equals(req.getBizType())
+                    || BIZ_RECRUIT_OFFER_SENIOR.equals(req.getBizType())) {
+                recruitService.handleOfferApprovalResult(req);
             } else {
                 // 未知场景收下不处理：直接回 5xx 会让 settings 无意义地重试 8 次
                 log.info("审批回调的业务场景尚未接入，忽略：bizType={}", req.getBizType());

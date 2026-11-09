@@ -10,6 +10,7 @@ import com.laimengchao.sso.client.dto.EmailCodeRequest;
 import com.laimengchao.sso.client.dto.EmailVerifyRequest;
 import com.laimengchao.sso.client.dto.OpenAccountRequest;
 import com.laimengchao.sso.client.dto.OpenAccountResult;
+import com.laimengchao.sso.client.dto.PasswordResetRequest;
 import com.laimengchao.sso.client.dto.R;
 import com.laimengchao.sso.client.dto.WechatOpenidRequest;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -60,6 +61,10 @@ public interface AccountApi {
     /** 生成邮箱验证码，返回发送结果描述 */
     @PostMapping("/internal/accounts/email/code")
     R<String> createEmailCode(@RequestBody EmailCodeRequest request);
+
+    /** 邮箱验证码校验通过后重置密码（不校验原密码，调用方负责验证码校验） */
+    @PostMapping("/internal/accounts/password/reset")
+    R<Void> resetPassword(@RequestBody PasswordResetRequest request);
 
     /** 该账号已授权/可访问的应用 */
     @GetMapping("/internal/accounts/{id}/apps")

@@ -1,6 +1,7 @@
 package com.laimengchao.sso.auth.service.session;
 
 import com.laimengchao.sso.auth.config.AuthProperties;
+import com.laimengchao.sso.auth.service.TokenService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Set;
 
 /**
  * 中心会话的读写与 cookie 落地。
@@ -31,6 +33,7 @@ public class SessionService {
 
     private final SessionStore sessionStore;
     private final AuthProperties props;
+    private final TokenService tokenService;
 
     /** 登录成功后建立中心会话，并把 sessionId 写进 HttpOnly cookie */
     public String create(Long accountId, HttpServletResponse response) {
@@ -73,6 +76,21 @@ public class SessionService {
         }
         writeCookie(response, "", 0);
         return sid == null || sid.isBlank() ? null : sid;
+    }
+
+    /**
+     * 管理端强制下线：作废该账号所有中心会话（含各应用绑定的令牌）。
+     * 逐个 sid 调用 TokenService.logout，使网关的吊销名单同步生效。
+     *
+     * @return 被作废的会话数
+     */
+    public int forceLogout(Long accountId) {
+        Set<String> sids = sessionStore.sidsOf(accountId);
+        for (String sid : sids) {
+            tokenService.logout(null, null, sid);
+            sessionStore.remove(sid);
+        }
+        return sids.size();
     }
 
     // ---------------- cookie 细节 ----------------

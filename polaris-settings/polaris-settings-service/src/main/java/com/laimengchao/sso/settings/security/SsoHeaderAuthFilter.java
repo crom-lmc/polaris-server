@@ -1,6 +1,7 @@
 package com.laimengchao.sso.settings.security;
 
 import com.laimengchao.sso.common.security.JwtClaims;
+import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.utils.AccountContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
