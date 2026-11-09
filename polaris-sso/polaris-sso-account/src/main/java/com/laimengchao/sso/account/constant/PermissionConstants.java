@@ -71,6 +71,8 @@ public final class PermissionConstants {
     public static final String EHR_APP = "ehr";
     public static final String EHR_MENU_ANNOUNCEMENT = "announcement";
     public static final String EHR_ANNOUNCEMENT_MANAGE = "announcement:manage";
+    /** 审批运营：时效统计、积压看板、催办、导出（HR / 超管） */
+    public static final String APPROVAL_OPS = "approval:ops";
 
     /** 通知中心按钮级权限 */
     public static final String NOTICE_VIEW = "notice:view";

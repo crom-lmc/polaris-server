@@ -1,8 +1,10 @@
 package com.laimengchao.sso.account.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.account.dto.request.ApprovalActionRequest;
 import com.laimengchao.sso.account.integration.ApprovalProxyClient;
+import com.laimengchao.sso.account.security.Permit;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -135,6 +138,104 @@ public class ApprovalCenterController {
         return R.ok(approvalClient.terminate(id, accountId(), operatorName(), orEmpty(req)));
     }
 
+    /* ---------------- 审批运营 ---------------- */
+
+    /** 时效总览（HR/超管）：总量、通过/驳回、平均与 P90 时长、积压、驳回率 */
+    @GetMapping("/stats")
+    @Permit(PermissionConstants.APPROVAL_OPS)
+    public R<JsonNode> stats(@RequestParam(required = false) String appCode,
+                             @RequestParam(required = false) String bizType,
+                             @RequestParam(required = false) Long orgId,
+                             @RequestParam(required = false)
+                             @org.springframework.format.annotation.DateTimeFormat(
+                                     iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                             LocalDate from,
+                             @RequestParam(required = false)
+                             @org.springframework.format.annotation.DateTimeFormat(
+                                     iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                             LocalDate to) {
+        accountId();
+        return R.ok(approvalClient.stats(appCode, bizType, orgId, dateStr(from), dateStr(to)));
+    }
+
+    /** 审批人维度时效：谁压单、谁处理快 */
+    @GetMapping("/stats/approver")
+    @Permit(PermissionConstants.APPROVAL_OPS)
+    public R<JsonNode> approverStats(
+            @RequestParam(required = false) String appCode,
+            @RequestParam(required = false) String bizType,
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            LocalDate from,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            LocalDate to) {
+        accountId();
+        return R.ok(approvalClient.approverStats(appCode, bizType, orgId, dateStr(from), dateStr(to)));
+    }
+
+    /** 积压列表：在途单按当前节点等待时长倒序 */
+    @GetMapping("/backlog")
+    @Permit(PermissionConstants.APPROVAL_OPS)
+    public R<JsonNode> backlog(@RequestParam(required = false) String appCode,
+                               @RequestParam(required = false) String bizType,
+                               @RequestParam(required = false) Long orgId,
+                               @RequestParam(required = false) Integer limit) {
+        accountId();
+        return R.ok(approvalClient.backlog(appCode, bizType, orgId, limit));
+    }
+
+    /** 催办：给当前待办人发提醒，次数累加 */
+    @PostMapping("/{id}/urge")
+    @Permit(PermissionConstants.APPROVAL_OPS)
+    public R<JsonNode> urge(@PathVariable Long id,
+                            @RequestBody(required = false) ApprovalActionRequest req) {
+        return R.ok(approvalClient.urge(id, accountId(), operatorName(), req));
+    }
+
+    /**
+     * 批量通过/驳回。
+     * <p>
+     * 不挂 approval:ops——普通审批人也能一次处理多条待办；安全性由 settings 逐条校验
+     * 「任务属于当前登录人」保证，operatorId 也只取当前登录身份，不让前端传。
+     */
+    @PostMapping("/tasks/batch")
+    public R<JsonNode> batch(@RequestBody Map<String, Object> body) {
+        Long me = accountId();
+        Object rawIds = body == null ? null : body.get("taskIds");
+        Object passObj = body == null ? null : body.get("pass");
+        Object noteObj = body == null ? null : body.get("note");
+        Boolean pass = passObj == null ? Boolean.TRUE : Boolean.valueOf(String.valueOf(passObj));
+        String note = noteObj == null ? "" : String.valueOf(noteObj);
+        return R.ok(approvalClient.batch(rawIds == null ? List.of() : rawIds, pass, note, me, operatorName()));
+    }
+
+    /**
+     * 导出 CSV：type=pending 我的待办 / instances 审批流水。
+     * 返回 R 壳里的字符串，前端自行转 Blob 下载，避免二进制流穿透网关时的编码问题。
+     */
+    @GetMapping("/export")
+    @Permit(PermissionConstants.APPROVAL_OPS)
+    public R<JsonNode> export(@RequestParam(defaultValue = "pending") String type,
+                              @RequestParam(required = false) String appCode,
+                              @RequestParam(required = false) String bizType,
+                              @RequestParam(required = false) Long orgId,
+                              @RequestParam(required = false)
+                              @org.springframework.format.annotation.DateTimeFormat(
+                                      iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                              LocalDate from,
+                              @RequestParam(required = false)
+                              @org.springframework.format.annotation.DateTimeFormat(
+                                      iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+                              LocalDate to) {
+        Long me = accountId();
+        return R.ok(approvalClient.export(type, me, appCode, bizType, orgId,
+                dateStr(from), dateStr(to), me));
+    }
+
     /* ---------------- 上下文 ---------------- */
 
     private Long accountId() {
@@ -148,6 +249,10 @@ public class ApprovalCenterController {
     private String operatorName() {
         String name = AccountContext.getUsername();
         return name == null ? "" : name;
+    }
+
+    private String dateStr(LocalDate date) {
+        return date == null ? null : date.toString();
     }
 
     private ApprovalActionRequest orEmpty(ApprovalActionRequest req) {

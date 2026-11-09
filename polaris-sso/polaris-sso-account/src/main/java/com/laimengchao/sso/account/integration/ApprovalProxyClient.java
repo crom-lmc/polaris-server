@@ -116,6 +116,50 @@ public class ApprovalProxyClient {
                 "/internal/approval/instances/" + instanceId + "/terminate");
     }
 
+    /* ---------------- 审批运营 ---------------- */
+
+    /** 时效总览 */
+    public JsonNode stats(String appCode, String bizType, Long orgId, String from, String to) {
+        return call(() -> approvalApi.statsRaw(appCode, bizType, orgId, from, to), "/internal/approval/stats");
+    }
+
+    /** 审批人维度时效 */
+    public JsonNode approverStats(String appCode, String bizType, Long orgId, String from, String to) {
+        return call(() -> approvalApi.approverStatsRaw(appCode, bizType, orgId, from, to),
+                "/internal/approval/stats/approver");
+    }
+
+    /** 积压列表 */
+    public JsonNode backlog(String appCode, String bizType, Long orgId, Integer limit) {
+        return call(() -> approvalApi.backlogRaw(appCode, bizType, orgId, limit), "/internal/approval/backlog");
+    }
+
+    /** 催办 */
+    public JsonNode urge(Long instanceId, Long operatorId, String operatorName, ApprovalActionRequest req) {
+        Map<String, Object> body = actionBody(null, operatorId, operatorName, req);
+        return call(() -> approvalApi.urgeRaw(instanceId, body),
+                "/internal/approval/instances/" + instanceId + "/urge");
+    }
+
+    /** 批量通过/驳回，返回 {success, failed}；settings 侧字段为 action + comment */
+    public JsonNode batch(Object taskIds, Boolean pass, String note,
+                          Long operatorId, String operatorName) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("taskIds", taskIds);
+        body.put("action", Boolean.FALSE.equals(pass) ? "REJECT" : "APPROVE");
+        body.put("comment", note);
+        body.put("operatorId", operatorId);
+        body.put("operatorName", operatorName);
+        return call(() -> approvalApi.batchRaw(body), "/internal/approval/tasks/batch");
+    }
+
+    /** 导出 CSV 文本（R.data 为字符串） */
+    public JsonNode export(String type, Long accountId, String appCode, String bizType,
+                           Long orgId, String from, String to, Long operatorId) {
+        return call(() -> approvalApi.exportRaw(type, accountId, appCode, bizType, orgId, from, to, operatorId),
+                "/internal/approval/export");
+    }
+
     /* ---------------- 内部实现 ---------------- */
 
     private Map<String, Object> actionBody(Long taskId, Long operatorId, String operatorName,
