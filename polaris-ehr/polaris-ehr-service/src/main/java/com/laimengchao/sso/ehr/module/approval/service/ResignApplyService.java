@@ -436,17 +436,11 @@ public class ResignApplyService {
                 apply.getStatus(), req.getResultName());
     }
 
-    /** 清掉申请单与员工档案上的在途审批标记（updateById 跳过 null，必须用 wrapper） */
+    /** 清掉申请单上的在途审批标记（updateById 跳过 null，必须用 wrapper） */
     private void clearApprovalMarks(ResignApply apply) {
         mapper.update(null, new LambdaUpdateWrapper<ResignApply>()
                 .eq(ResignApply::getId, apply.getId())
                 .set(ResignApply::getApprovalInstanceId, null));
-        if (apply.getEmployeeId() != null) {
-            employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                    .eq(Employee::getId, apply.getEmployeeId())
-                    .set(Employee::getApprovalInstanceId, null)
-                    .set(Employee::getApprovalBizType, null));
-        }
     }
 
     /** 驳回 / 撤销后把档案从「离职中」还原回提交前的状态 */

@@ -232,17 +232,11 @@ public class RehireApplyService {
                 applyId, apply.getStatus(), req.getResultName());
     }
 
-    /** 清掉申请单与员工档案上的在途标记（updateById 跳过 null，必须用 wrapper） */
+    /** 清掉申请单上的在途审批标记（updateById 跳过 null，必须用 wrapper） */
     private void clearApprovalMarks(RehireApply apply) {
         mapper.update(null, new LambdaUpdateWrapper<RehireApply>()
                 .eq(RehireApply::getId, apply.getId())
                 .set(RehireApply::getApprovalInstanceId, null));
-        if (apply.getEmployeeId() != null) {
-            employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                    .eq(Employee::getId, apply.getEmployeeId())
-                    .set(Employee::getApprovalInstanceId, null)
-                    .set(Employee::getApprovalBizType, null));
-        }
     }
 
     /* ---------------- 撤销 ---------------- */

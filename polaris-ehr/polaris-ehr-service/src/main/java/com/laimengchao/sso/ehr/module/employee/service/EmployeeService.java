@@ -709,25 +709,11 @@ public class EmployeeService {
                 () -> employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
                         .eq(Employee::getId, emp.getId())
                         .eq(Employee::getStatus, EmployeeStatus.ONBOARDING.getCode())
-                        .isNull(Employee::getApprovalInstanceId)
                         .set(Employee::getStatus, EmployeeStatus.PENDING.getCode())));
 
         // 实例可能在 start() 内当场终态并同步回调，重新读一次拿真实状态
         Employee reloaded = employeeMapper.selectById(emp.getId());
         return toVOs(List.of(reloaded == null ? emp : reloaded)).get(0);
-    }
-
-    /**
-     * 终审回调处理完（通过/驳回/撤回）后清掉在途标记。
-     * <p>
-     * 必须用 UpdateWrapper 显式 set null：MyBatis-Plus 的 updateById 默认跳过 null 字段，
-     * 直接把实体字段置 null 再 updateById 是清不掉数据库里的值的。
-     */
-    private void clearApproval(Long empId) {
-        employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                .eq(Employee::getId, empId)
-                .set(Employee::getApprovalInstanceId, null)
-                .set(Employee::getApprovalBizType, null));
     }
 
     /**
@@ -968,7 +954,6 @@ public class EmployeeService {
     @Transactional(rollbackFor = Exception.class)
     public void handleOnboardApprovalResult(ApprovalCallbackRequest req) {
         Long empId = parseLongOrNull(req.getBizId());
-        Long instId = parseLongOrNull(req.getInstanceId());
         if (empId == null) {
             log.warn("入职审批回调缺少业务ID：{}", req.getBizId());
             return;
@@ -976,11 +961,6 @@ public class EmployeeService {
         Employee emp = employeeMapper.selectById(empId);
         if (emp == null) {
             log.warn("入职审批回调对应的员工不存在 bizId={}", req.getBizId());
-            return;
-        }
-        if (emp.getOnboardInstanceId() != null && !emp.getOnboardInstanceId().equals(instId)) {
-            log.info("忽略过期的入职审批回调 employeeId={} 当前单={} 回调单={}",
-                    empId, emp.getOnboardInstanceId(), instId);
             return;
         }
         EmployeeStatus cur = EmployeeStatus.of(emp.getStatus());
@@ -998,7 +978,6 @@ public class EmployeeService {
             emp.setStatus(EmployeeStatus.ONBOARD_APPROVED.getCode());
             emp.setOnboardApprovals(appendSystemRecord(emp.getOnboardApprovals(), true, "审批中心终审通过"));
             employeeMapper.updateById(emp);
-            clearApproval(empId);
             openAccountQuietly(emp);
         } else {
             if (!EmployeeStatus.ONBOARDING.equals(cur)) {
@@ -1010,7 +989,6 @@ public class EmployeeService {
             emp.setOnboardApprovals(appendSystemRecord(emp.getOnboardApprovals(), false,
                     req.getResultName() == null ? "审批未通过" : req.getResultName()));
             employeeMapper.updateById(emp);
-            clearApproval(empId);
         }
     }
 
@@ -1371,11 +1349,8 @@ public class EmployeeService {
     private void bindAccount(Employee emp, AccountDtos.OpenResult result) {
         emp.setAccountId(result.getAccountId());
         emp.setAccountUsername(result.getUsername());
-        // 只回写开户字段，绝不能用 updateById(emp)：
-        // 入职审批回调的顺序是 updateById(emp) -> clearApproval(清掉在途标记) -> 开户 -> bindAccount，
-        // 此时内存里的 emp 仍带着发起时写入的 approval_instance_id / approval_biz_type，
-        // updateById 会把这两个旧值重新写回库，导致「已完成的单」看起来还在审批中，
-        // 列表误显示「XX审批中 / 审批详情」，assertNoRunningApproval 也会挡住后续发起。
+        // 只回写开户字段，绝不能用 updateById(emp)：回调过程中状态、审批记录已被更新，
+        // 整行回写会用内存里的旧快照覆盖掉刚写入的结果。
         employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
                 .eq(Employee::getId, emp.getId())
                 .set(Employee::getAccountId, result.getAccountId())
@@ -1465,10 +1440,7 @@ public class EmployeeService {
         vo.setOnboardStep(e.getOnboardStep());
         vo.setRegularizeStatus(e.getRegularizeStatus());
         vo.setOnboardApprovals(e.getOnboardApprovals());
-        vo.setOnboardInstanceId(e.getOnboardInstanceId());
         vo.setRegularizeApprovals(e.getRegularizeApprovals());
-        vo.setApprovalInstanceId(e.getApprovalInstanceId());
-        vo.setApprovalBizType(e.getApprovalBizType());
         vo.setResignDate(e.getResignDate());
         vo.setResignReason(e.getResignReason());
         vo.setAccountId(e.getAccountId());

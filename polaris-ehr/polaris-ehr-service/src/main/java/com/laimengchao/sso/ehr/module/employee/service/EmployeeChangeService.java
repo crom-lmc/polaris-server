@@ -272,7 +272,6 @@ public class EmployeeChangeService {
                     .eq(EmpChange::getStatus, 0)
                     .set(EmpChange::getStatus, isWithdrawn(req) ? 3 : 2)
                     .set(EmpChange::getRemark, nvl(req.getResultName())));
-            clearApproval(emp.getId());
             log.info("人员信息变更审批未通过，档案保持原样 changeId={} result={}", master.getId(), req.getResultName());
             return;
         }
@@ -281,7 +280,6 @@ public class EmployeeChangeService {
                 .eq(EmpChange::getId, master.getId())
                 .eq(EmpChange::getStatus, 0)
                 .set(EmpChange::getStatus, 1));
-        clearApproval(emp.getId());
         log.info("人员信息变更审批通过并生效 changeId={} employeeId={}", master.getId(), emp.getId());
     }
 
@@ -1013,22 +1011,11 @@ public class EmployeeChangeService {
         return emp;
     }
 
-    /** 同一员工同时只允许一张在途审批单，避免通用指针被覆盖、列表显示错乱 */
+    /** 同一员工同时只允许一张在途审批单，避免重复发起 */
     private void assertNoRunningApproval(Employee emp) {
         if (approvalLauncher.hasRunning(String.valueOf(emp.getId()), null)) {
             throw new BizException(EhrErrorCode.APPROVAL_DUPLICATED, "该员工已有在审批中的单据，请先到审批中心处理完再提交");
         }
-    }
-
-    /**
-     * 终审回调处理完（通过/驳回/撤回）后清掉在途标记。
-     * 必须用 UpdateWrapper 显式 set null：updateById 默认跳过 null 字段，清不掉列。
-     */
-    private void clearApproval(Long empId) {
-        employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                .eq(Employee::getId, empId)
-                .set(Employee::getApprovalInstanceId, null)
-                .set(Employee::getApprovalBizType, null));
     }
 
     private void assertMobileUnique(Long empId, String mobile) {

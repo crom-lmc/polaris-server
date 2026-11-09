@@ -63,13 +63,6 @@ public class EmployeeVO {
     private Integer onboardStep;
     /** 入职审批记录（JSON 数组） */
     private String onboardApprovals;
-    /**
-     * 入职审批单 ID（审批中心 settings 的 appr_instance.id）。
-     * <p>
-     * 雪花 ID 必须转字符串：19 位数字在浏览器里会丢精度，前端拿去做「查看审批详情」的入参会查到别的单。
-     */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long onboardInstanceId;
     /** 转正状态：0 未申请 / 1 待部门审批 / 2 待人事审批 / 3 已通过 / -1 已驳回 */
     private Integer regularizeStatus;
     /** 转正审批记录（JSON 数组） */
@@ -89,16 +82,6 @@ public class EmployeeVO {
      * 只在 update 的响应里可能出现；前端据此把提示从「已保存」换成「已提交审批」。
      */
     private Boolean pendingApproval;
-
-    /* ---------- 当前在途审批（统一走审批中心后新增） ---------- */
-
-    /** 当前在途审批单 ID；有值即表示「XX审批中」，前端据此点开审批详情 */
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long approvalInstanceId;
-    /** ehr.onboard / ehr.regularize / ehr.emp_update / ehr.resign */
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    private String approvalBizType;
 
     /** 本次开户的账号信息（只在创建/补开户的响应里出现，初始密码仅此一次） */
     private AccountBrief account;

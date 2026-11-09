@@ -69,34 +69,12 @@ public class Employee extends BaseEntity {
     /** 入职审批记录（JSON 数组，见 ApprovalRecord）；status 回到 10 时不清空，保留痕迹 */
     private String onboardApprovals;
     /**
-     * 入职审批单 ID（settings 库 appr_instance.id）。
-     * <p>
-     * 审批流搬到配置中心后，本地不再自己驱动步骤，只记一个指针：
-     * 提交时写入，回调时用它判断「这条回调是不是当前这张单」（重试会重复投递）。
-     * 为空说明是老数据或本地两步审批时代遗留的单，需要去审批中心查。
-     */
-    private Long onboardInstanceId;
-    /**
      * 转正状态：0 未申请 / 1 待部门审批 / 2 待人事审批 / 3 已通过（转正） / -1 已驳回。
      * 仅 status=30（试用期）期间可被员工自助申请。
      */
     private Integer regularizeStatus;
     /** 转正审批记录（JSON 数组） */
     private String regularizeApprovals;
-
-    /** 转正审批单 ID（回调幂等比对用；流程结束即清空） */
-    private Long regularizeInstanceId;
-
-    /**
-     * 当前在途审批单 ID（settings 库 appr_instance.id）。
-     * <p>
-     * 入职 / 转正 / 人员信息变更 / 离职 都在同一员工上可能各起一张单，但业务互斥，
-     * 所以用一个通用指针即可：任何一次发起审批都写它，终审回调（通过/驳回/撤回）清空它。
-     * 人员列表据此展示「XX审批中」并支持点开查看审批详情。
-     */
-    private Long approvalInstanceId;
-    /** 当前在途审批的业务场景（ehr.onboard / ehr.regularize / ...），决定列表显示的审批名称 */
-    private String approvalBizType;
 
     /** 离职日期：status=60 时记录，复职后清空 */
     private LocalDate resignDate;

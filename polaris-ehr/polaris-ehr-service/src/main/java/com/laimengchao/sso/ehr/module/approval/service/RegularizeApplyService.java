@@ -267,7 +267,7 @@ public class RegularizeApplyService {
         // 存量单（bizIdKind 为空 / SUBJECT）的 bizId 就是员工 ID，走老分支；
         // DOC 单按 bizId 精确定位申请单，绝不再「selectById 查不到就猜老单」。
         if (!req.docBizId()) {
-            handleLegacyCallback(req, bizId, instId);
+            handleLegacyCallback(req, bizId);
             return;
         }
         RegularizeApply apply = mapper.selectById(bizId);
@@ -296,17 +296,12 @@ public class RegularizeApplyService {
 
     /**
      * 兼容改造前的实例：bizId 是员工 ID，没有申请单。
-     * 员工档案上的 regularizeInstanceId / regularizeStatus 仍是老语义，这里照旧处理。
+     * 员工档案上的 regularizeStatus 仍是老语义，这里照旧处理。
      */
-    private void handleLegacyCallback(ApprovalCallbackRequest req, Long empId, Long instId) {
+    private void handleLegacyCallback(ApprovalCallbackRequest req, Long empId) {
         Employee emp = employeeMapper.selectById(empId);
         if (emp == null) {
             log.warn("转正审批回调对应的员工不存在 bizId={}", empId);
-            return;
-        }
-        if (emp.getRegularizeInstanceId() != null && !emp.getRegularizeInstanceId().equals(instId)) {
-            log.info("忽略过期的转正审批回调 employeeId={} 当前单={} 回调单={}",
-                    empId, emp.getRegularizeInstanceId(), instId);
             return;
         }
         if (!EmployeeStatus.PROBATION.equals(EmployeeStatus.of(emp.getStatus()))
@@ -321,11 +316,6 @@ public class RegularizeApplyService {
             emp.setStatus(EmployeeStatus.ACTIVE.getCode());
         }
         employeeMapper.updateById(emp);
-        employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                .eq(Employee::getId, empId)
-                .set(Employee::getApprovalInstanceId, null)
-                .set(Employee::getApprovalBizType, null)
-                .set(Employee::getRegularizeInstanceId, null));
         log.info("转正审批终审已处理（存量实例）employeeId={} approved={} result={}",
                 empId, approved, req.getResultName());
     }
@@ -334,7 +324,7 @@ public class RegularizeApplyService {
      * 终审结果落到员工档案。
      * <p>
      * 注意：这里只更新状态相关的列，<b>不能</b>用 {@code updateById(emp)} 整行回写——
-     * 内存里那份 emp 可能还带着已被清掉的 approval_instance_id，回写会把已完成的单「复活」成在途。
+     * 内存里那份 emp 是回调前的旧快照，回写会覆盖掉刚才写入的结果。
      */
     private void applyOutcome(Long employeeId, boolean approved, String resultName) {
         if (employeeId == null) {
@@ -469,18 +459,11 @@ public class RegularizeApplyService {
         return me == null ? user.getUsername() : me.getName();
     }
 
-    /** 清掉申请单与员工档案上的在途标记（updateById 跳过 null，必须用 wrapper） */
+    /** 清掉申请单上的在途审批标记（updateById 跳过 null，必须用 wrapper） */
     private void clearApprovalMarks(RegularizeApply apply) {
         mapper.update(null, new LambdaUpdateWrapper<RegularizeApply>()
                 .eq(RegularizeApply::getId, apply.getId())
                 .set(RegularizeApply::getApprovalInstanceId, null));
-        if (apply.getEmployeeId() != null) {
-            employeeMapper.update(null, new LambdaUpdateWrapper<Employee>()
-                    .eq(Employee::getId, apply.getEmployeeId())
-                    .set(Employee::getApprovalInstanceId, null)
-                    .set(Employee::getApprovalBizType, null)
-                    .set(Employee::getRegularizeInstanceId, null));
-        }
     }
 
     /** result=3 撤销 / 4 终止 → 算「已撤销」，其余未通过都算「已驳回」 */
