@@ -9,9 +9,12 @@ import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.common.ValidateUtil;
+import com.laimengchao.sso.ehr.common.SensitiveMasker;
 import com.laimengchao.sso.ehr.constant.PermissionCodes;
 import com.laimengchao.sso.ehr.integration.AccountClient;
 import com.laimengchao.sso.ehr.integration.AccountDtos;
+import com.laimengchao.sso.ehr.module.audit.service.AuditLogService;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
 import com.laimengchao.sso.settings.client.api.NoticeApi;
 import com.laimengchao.sso.settings.client.dto.ApprovalActionDTO;
@@ -84,6 +87,10 @@ public class EmployeeService {
     private final EmployeeEducationMapper educationMapper;
     private final EmployeeWorkMapper workMapper;
     private final EmployeeFamilyMapper familyMapper;
+    /** 人员数据范围（按权限码解析 ALL / ORG_TREE / ORG / SELF） */
+    private final DataScopeService dataScope;
+    /** 查看 / 明文 / 导出审计 */
+    private final AuditLogService auditLogService;
     private final AccountClient accountClient;
     private final SettingsClient settingsClient;
     /** 配置中心待办接口：关闭账号后把群发的待办统一置读 */
@@ -107,7 +114,20 @@ public class EmployeeService {
     /* ---------------- 查询 ---------------- */
 
     public R.Page<EmployeeVO> page(String keyword, Long orgId, Integer status, int page, int size) {
+        LambdaQueryWrapper<Employee> w = listWrapper(keyword, orgId, status);
+        w.orderByAsc(Employee::getOrgId).orderByAsc(Employee::getEmpNo);
+        IPage<Employee> ip = employeeMapper.selectPage(new Page<>(page, size), w);
+        List<EmployeeVO> rows = toVOs(ip.getRecords());
+        return R.Page.of(rows, ip.getTotal());
+    }
+
+    /**
+     * 列表/导出的公共查询条件：数据范围在前，业务筛选在后，两者条件叠加即自动取交集；
+     * 选了范围外的组织时自然返回空，不会越权。
+     */
+    private LambdaQueryWrapper<Employee> listWrapper(String keyword, Long orgId, Integer status) {
         LambdaQueryWrapper<Employee> w = new LambdaQueryWrapper<>();
+        dataScope.applyTo(w);
         if (keyword != null && !keyword.isBlank()) {
             String kw = keyword.trim();
             w.and(q -> q.like(Employee::getName, kw)
@@ -123,14 +143,62 @@ public class EmployeeService {
         if (status != null) {
             w.eq(Employee::getStatus, status);
         }
-        w.orderByAsc(Employee::getOrgId).orderByAsc(Employee::getEmpNo);
-        IPage<Employee> ip = employeeMapper.selectPage(new Page<>(page, size), w);
-        List<EmployeeVO> rows = toVOs(ip.getRecords());
-        return R.Page.of(rows, ip.getTotal());
+        return w;
     }
 
+    /** 详情：先校验数据范围（越权 403），再按敏感权限决定明文/掩码，并记审计 */
     public EmployeeVO detail(Long id) {
-        return toVOs(List.of(require(id))).get(0);
+        Employee emp = require(id);
+        if (!dataScope.canAccess(emp)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工档案");
+        }
+        boolean reveal = dataScope.canRevealSensitive();
+        EmployeeVO vo = toVOs(List.of(emp), !reveal).get(0);
+        auditLogService.record(reveal ? AuditLogService.ACTION_PLAIN : AuditLogService.ACTION_VIEW,
+                AuditLogService.TARGET_EMPLOYEE, id, reveal ? sensitiveFields(vo) : "");
+        return vo;
+    }
+
+    /** 查看敏感明文：数据范围 + 敏感权限双校验，必留 PLAIN 审计 */
+    public EmployeeVO sensitiveView(Long id) {
+        Employee emp = require(id);
+        if (!dataScope.canAccess(emp)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工档案");
+        }
+        if (!dataScope.canRevealSensitive()) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无查看敏感字段权限");
+        }
+        EmployeeVO vo = toVOs(List.of(emp), false).get(0);
+        auditLogService.record(AuditLogService.ACTION_PLAIN,
+                AuditLogService.TARGET_EMPLOYEE, id, sensitiveFields(vo));
+        return vo;
+    }
+
+    /** 导出 CSV：只包含当前数据范围内的人，敏感字段按权限掩码，并记 EXPORT 审计 */
+    public String exportCsv(String keyword, Long orgId, Integer status) {
+        LambdaQueryWrapper<Employee> w = listWrapper(keyword, orgId, status);
+        w.orderByAsc(Employee::getOrgId).orderByAsc(Employee::getEmpNo);
+        boolean reveal = dataScope.canRevealSensitive();
+        List<EmployeeVO> rows = toVOs(employeeMapper.selectList(w), !reveal);
+        StringBuilder sb = new StringBuilder();
+        sb.append("工号,姓名,组织,职位,状态,手机号,身份证号,紧急联系电话,邮箱,入职日期,预计转正日期\n");
+        for (EmployeeVO vo : rows) {
+            sb.append(csv(vo.getEmpNo())).append(',')
+                    .append(csv(vo.getName())).append(',')
+                    .append(csv(vo.getOrgPathName())).append(',')
+                    .append(csv(vo.getPosition())).append(',')
+                    .append(csv(vo.getStatusName())).append(',')
+                    .append(csv(vo.getMobile())).append(',')
+                    .append(csv(vo.getIdCard())).append(',')
+                    .append(csv(vo.getEmergencyPhone())).append(',')
+                    .append(csv(vo.getEmail())).append(',')
+                    .append(csv(vo.getHireDate() == null ? "" : vo.getHireDate().toString())).append(',')
+                    .append(csv(vo.getExpectedRegularizeDate() == null ? "" : vo.getExpectedRegularizeDate().toString()))
+                    .append('\n');
+        }
+        auditLogService.record(AuditLogService.ACTION_EXPORT, AuditLogService.TARGET_EMPLOYEE, null,
+                reveal ? "mobile,idCard,emergencyPhone" : "rows=" + rows.size());
+        return sb.toString();
     }
 
     /** 当前登录人对应的员工档案（请假模块用；超管/HR 可能没有档案） */
@@ -140,7 +208,8 @@ public class EmployeeService {
         if (emp == null) {
             return null;
         }
-        return toVOs(List.of(emp)).get(0);
+        // 本人档案返回明文，供「我的」相关页面回填编辑
+        return toVOs(List.of(emp), false).get(0);
     }
 
     /**
@@ -1391,6 +1460,10 @@ public class EmployeeService {
     }
 
     private List<EmployeeVO> toVOs(List<Employee> rows) {
+        return toVOs(rows, true);
+    }
+
+    private List<EmployeeVO> toVOs(List<Employee> rows, boolean maskSensitive) {
         if (rows.isEmpty()) {
             return List.of();
         }
@@ -1398,23 +1471,24 @@ public class EmployeeService {
         for (OrgNode n : orgMapper.selectList(new LambdaQueryWrapper<OrgNode>())) {
             orgs.put(n.getId(), n);
         }
-        return rows.stream().map(e -> toVO(e, orgs)).collect(Collectors.toList());
+        return rows.stream().map(e -> toVO(e, orgs, maskSensitive)).collect(Collectors.toList());
     }
 
-    private EmployeeVO toVO(Employee e, Map<Long, OrgNode> orgs) {
+    private EmployeeVO toVO(Employee e, Map<Long, OrgNode> orgs, boolean maskSensitive) {
         EmployeeVO vo = new EmployeeVO();
         vo.setId(e.getId());
         vo.setEmpNo(e.getEmpNo());
         vo.setName(e.getName());
         vo.setGender(e.getGender());
-        vo.setMobile(e.getMobile());
+        // 手机号 / 身份证 / 紧急联系电话统一走掩码，只有敏感权限接口才返回明文
+        vo.setMobile(maskSensitive ? SensitiveMasker.maskMobile(e.getMobile()) : e.getMobile());
         vo.setEmail(e.getEmail());
         vo.setNativePlace(e.getNativePlace());
         vo.setNativeProvince(e.getNativeProvince());
         vo.setNativeCity(e.getNativeCity());
         vo.setNativeDistrict(e.getNativeDistrict());
         vo.setNativeDetail(e.getNativeDetail());
-        vo.setIdCard(e.getIdCard());
+        vo.setIdCard(maskSensitive ? SensitiveMasker.maskIdCard(e.getIdCard()) : e.getIdCard());
         vo.setBirthday(e.getBirthday());
         vo.setAge(ValidateUtil.age(e.getBirthday()));
         vo.setNation(e.getNation());
@@ -1426,7 +1500,7 @@ public class EmployeeService {
         vo.setEducation(e.getEducation());
         vo.setEducationName(bizLabel("education", e.getEducation()));
         vo.setEmergencyContact(e.getEmergencyContact());
-        vo.setEmergencyPhone(e.getEmergencyPhone());
+        vo.setEmergencyPhone(maskSensitive ? SensitiveMasker.maskMobile(e.getEmergencyPhone()) : e.getEmergencyPhone());
         vo.setCurrentAddress(e.getCurrentAddress());
         vo.setOrgId(e.getOrgId());
         vo.setPosition(e.getPosition());
@@ -1447,12 +1521,43 @@ public class EmployeeService {
         vo.setAccountUsername(e.getAccountUsername());
         vo.setRemark(e.getRemark());
         vo.setCreatedAt(e.getCreatedAt() == null ? null : e.getCreatedAt().toString().replace('T', ' '));
+        vo.setSensitiveMasked(maskSensitive && (!isBlank(e.getMobile())
+                || !isBlank(e.getIdCard())
+                || !isBlank(e.getEmergencyPhone())));
         OrgNode org = e.getOrgId() == null ? null : orgs.get(e.getOrgId());
         if (org != null) {
             vo.setOrgName(org.getName());
             vo.setOrgPathName(pathName(org, orgs));
         }
         return vo;
+    }
+
+    /** 审计用：本次明文涉及哪些敏感字段 */
+    private String sensitiveFields(EmployeeVO vo) {
+        List<String> fields = new ArrayList<>();
+        if (!isBlank(vo.getMobile())) {
+            fields.add("mobile");
+        }
+        if (!isBlank(vo.getIdCard())) {
+            fields.add("idCard");
+        }
+        if (!isBlank(vo.getEmergencyPhone())) {
+            fields.add("emergencyPhone");
+        }
+        return String.join(",", fields);
+    }
+
+    /** CSV 单元格转义：含逗号/引号/换行时加引号，内部引号翻倍 */
+    private String csv(String value) {
+        String v = value == null ? "" : value;
+        if (v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("\r")) {
+            return "\"" + v.replace("\"", "\"\"") + "\"";
+        }
+        return v;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private String pathName(OrgNode node, Map<Long, OrgNode> orgs) {

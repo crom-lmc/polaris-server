@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
+import com.laimengchao.sso.ehr.common.SensitiveMasker;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
 import com.laimengchao.sso.settings.client.support.SettingsClient;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeProfileDtos.BankRequest;
@@ -22,6 +23,7 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeFamilyMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeWorkMapper;
 import com.laimengchao.sso.ehr.module.employee.vo.EmployeeProfileVO;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +52,8 @@ public class EmployeeProfileService {
     private final SettingsClient settingsClient;
     /** 主档案 VO 组装（组织路径/字典名翻译）复用 EmployeeService，避免两处各写一份 */
     private final EmployeeService employeeService;
+    /** 银行卡号按敏感权限掩码 */
+    private final DataScopeService dataScope;
 
     /* ---------------- 聚合查询 ---------------- */
 
@@ -356,7 +360,9 @@ public class EmployeeProfileService {
         vo.setEmployeeId(r.getEmployeeId());
         vo.setBank(r.getBank());
         vo.setBankName(bizLabel("bank", r.getBank()));
-        vo.setAccountNo(r.getAccountNo());
+        boolean reveal = dataScope.canRevealSensitive();
+        vo.setAccountNo(reveal ? r.getAccountNo() : SensitiveMasker.maskBankAccount(r.getAccountNo()));
+        vo.setSensitiveMasked(!reveal && r.getAccountNo() != null && !r.getAccountNo().isBlank());
         vo.setHolderName(r.getHolderName());
         vo.setBranch(r.getBranch());
         vo.setIsPrimary(r.getIsPrimary());

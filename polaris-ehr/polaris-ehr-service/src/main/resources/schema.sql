@@ -258,6 +258,8 @@ CREATE TABLE IF NOT EXISTS `ehr_leave` (
   `reason` varchar(500) NOT NULL COMMENT '请假事由',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批 1已通过 2已驳回 3已撤销 4已销假',
   `return_date` date DEFAULT NULL COMMENT '实际返岗日期（销假后写入）',
+  `delegate_account_id` bigint(20) DEFAULT NULL COMMENT '审批转办接收人账户ID（负责人请假时必填）',
+  `delegate_name` varchar(64) DEFAULT '' COMMENT '审批转办人姓名快照',
   `approver_account_id` bigint(20) DEFAULT NULL COMMENT '审批人账户ID',
   `approver_name` varchar(64) DEFAULT '' COMMENT '审批人',
   `approve_note` varchar(255) DEFAULT '' COMMENT '审批意见',
@@ -457,19 +459,72 @@ CREATE TABLE IF NOT EXISTS `ehr_work_calendar` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作日历（未配置的日期按周末规则判断）';
 
 CREATE TABLE IF NOT EXISTS `ehr_attachment` (
-  `id` bigint(20) NOT NULL,
-  `biz_type` varchar(32) NOT NULL COMMENT 'LEAVE/EMPLOYEE/CONTRACT/...',
-  `biz_id` bigint(20) NOT NULL,
-  `file_name` varchar(255) NOT NULL,
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `biz_type` varchar(32) NOT NULL COMMENT '业务类型：TEMP临时/LEAVE请假/EMPLOYEE档案/CONTRACT合同',
+  `biz_id` bigint(20) NOT NULL COMMENT '业务单据ID；上传时为0，提交成功后回写',
+  `file_name` varchar(255) NOT NULL COMMENT '原始文件名',
   `file_key` varchar(255) NOT NULL COMMENT '存储 key，不暴露真实路径',
-  `size` bigint(20) NOT NULL DEFAULT '0',
-  `mime` varchar(128) DEFAULT '',
-  `uploaded_by` bigint(20) DEFAULT NULL,
-  `deleted` tinyint(4) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `size` bigint(20) NOT NULL DEFAULT '0' COMMENT '文件大小（字节）',
+  `mime` varchar(128) DEFAULT '' COMMENT '文件 MIME 类型',
+  `uploaded_by` bigint(20) DEFAULT NULL COMMENT '上传人统一账号ID',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
   PRIMARY KEY (`id`),
   KEY `idx_attach_biz` (`biz_type`,`biz_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务附件';
+
+CREATE TABLE IF NOT EXISTS `ehr_emp_contract` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工档案ID',
+  `contract_no` varchar(64) DEFAULT '' COMMENT '合同编号',
+  `contract_type` varchar(16) NOT NULL COMMENT '合同类型：FIXED固定期限/UNFIXED无固定期限/INTERN实习/LABOR劳务',
+  `start_date` date NOT NULL COMMENT '合同开始日期',
+  `end_date` date DEFAULT NULL COMMENT '合同结束日期（无固定期限为空）',
+  `sign_date` date DEFAULT NULL COMMENT '签订日期',
+  `status` varchar(16) NOT NULL DEFAULT 'ACTIVE' COMMENT '状态：ACTIVE生效/PENDING续签审批中/TERMINATING终止审批中/EXPIRED已到期/RENEWED已续签/TERMINATED已终止',
+  `renew_from_id` bigint(20) DEFAULT NULL COMMENT '续签来源合同ID（PENDING 行使用）',
+  `file_id` bigint(20) DEFAULT NULL COMMENT '合同附件ID（ehr_attachment）',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_contract_emp` (`employee_id`),
+  KEY `idx_contract_end` (`end_date`),
+  KEY `idx_contract_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工合同（起止日期/类型/状态/续签）';
+
+CREATE TABLE IF NOT EXISTS `ehr_overtime` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工档案ID',
+  `account_id` bigint(20) DEFAULT NULL COMMENT '申请人统一账号ID',
+  `work_date` date NOT NULL COMMENT '加班日期',
+  `hours` decimal(6,2) NOT NULL COMMENT '加班时长（小时）',
+  `type` varchar(16) NOT NULL DEFAULT 'NORMAL' COMMENT '加班类型：NORMAL工作日/HOLIDAY节假日/RESTDAY休息日',
+  `reason` varchar(255) DEFAULT '' COMMENT '加班事由',
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态：0待审批/1已通过/2已驳回/3已撤销',
+  `approve_note` varchar(255) DEFAULT '' COMMENT '审批意见',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_overtime_emp_date` (`employee_id`,`work_date`),
+  KEY `idx_overtime_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='加班申请（审批通过后按小时折算调休额度）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_month` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工档案ID',
+  `month` varchar(7) NOT NULL COMMENT '考勤月份：yyyy-MM',
+  `should_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '应出勤天数',
+  `actual_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '实际出勤天数',
+  `leave_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '请假天数',
+  `overtime_hours` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '加班小时数',
+  `absent_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '缺勤天数',
+  `confirmed` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'HR 是否已确认：0未确认/1已确认',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '生成时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_att_month_emp` (`employee_id`,`month`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='月度考勤汇总';
 
 CREATE TABLE IF NOT EXISTS `ehr_leave_quota_adjust` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
@@ -490,4 +545,43 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota_adjust` (
   KEY `idx_quota_adjust_emp` (`employee_id`),
   KEY `idx_quota_adjust_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='假期额度调整申请';
+
+CREATE TABLE IF NOT EXISTS `ehr_audit_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `operator_id` bigint(20) NOT NULL COMMENT '操作人统一账号ID',
+  `operator_name` varchar(64) DEFAULT '' COMMENT '操作人账号名',
+  `action` varchar(16) NOT NULL COMMENT '动作：VIEW查看/PLAIN查看明文/EXPORT导出/EDIT修改',
+  `target_type` varchar(32) NOT NULL COMMENT '目标类型：EMPLOYEE/LEAVE/CONTRACT等',
+  `target_id` bigint(20) DEFAULT NULL COMMENT '目标业务ID，如员工ID',
+  `fields` varchar(255) DEFAULT '' COMMENT '涉及的敏感字段，逗号分隔；导出时为行数',
+  `ip` varchar(64) DEFAULT '' COMMENT '客户端IP（优先取X-Forwarded-For）',
+  `ua` varchar(255) DEFAULT '' COMMENT '客户端User-Agent',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_target` (`target_type`,`target_id`),
+  KEY `idx_audit_time` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='敏感操作审计（查看/明文/导出留痕）';
+
+CREATE TABLE IF NOT EXISTS `ehr_reminder` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '被提醒的员工ID',
+  `receiver_id` bigint(20) NOT NULL COMMENT '接收人统一账号ID',
+  `type` varchar(32) NOT NULL COMMENT '提醒类型：PROBATION_DUE试用期/CONTRACT_DUE合同',
+  `biz_id` bigint(20) DEFAULT NULL COMMENT '业务ID：员工ID或合同ID',
+  `trigger_date` date NOT NULL COMMENT '触发节点日期（如转正到期日）',
+  `title` varchar(128) NOT NULL COMMENT '提醒标题',
+  `content` varchar(512) DEFAULT '' COMMENT '提醒正文',
+  `read_flag` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否已读：0未读 1已读',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '生成时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_reminder_once` (`employee_id`,`type`,`trigger_date`,`receiver_id`),
+  KEY `idx_reminder_receiver` (`receiver_id`,`read_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='到期提醒（同一员工+节点+接收人只生成一次）';
+
+CREATE TABLE IF NOT EXISTS `ehr_job_lock` (
+  `job_name` varchar(64) NOT NULL COMMENT '任务名，如probation-reminder-daily',
+  `locked_until` datetime NOT NULL COMMENT '锁到期时间，过期后可被其它实例抢占',
+  `locked_by` varchar(64) DEFAULT '' COMMENT '持有锁的实例标识',
+  PRIMARY KEY (`job_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='定时任务锁';
 

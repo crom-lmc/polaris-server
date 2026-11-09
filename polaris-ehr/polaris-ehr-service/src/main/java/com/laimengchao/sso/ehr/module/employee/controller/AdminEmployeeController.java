@@ -21,6 +21,9 @@ import com.laimengchao.sso.ehr.security.Permit;
 import com.laimengchao.sso.ehr.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +33,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 /**
  * 人员管理。创建人员时同时跨服务开户（默认开通 sso-center / portal / ehr），
@@ -63,10 +69,34 @@ public class AdminEmployeeController {
         return R.ok(employeeService.current(accountId));
     }
 
+    /** 导出人员数据（CSV）：只含当前数据范围内的人，敏感字段按权限掩码，并记 EXPORT 审计 */
+    @GetMapping("/export")
+    @Permit(PermissionCodes.EMPLOYEE_EXPORT)
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false) Integer status) {
+        String csv = employeeService.exportCsv(keyword, orgId, status);
+        // 带 UTF-8 BOM，Excel 直接双击打开不会乱码
+        byte[] bytes = ("\uFEFF" + csv).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"employees-" + LocalDate.now() + ".csv\"")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(bytes);
+    }
+
     @GetMapping("/{id}")
     @Permit(PermissionCodes.EMPLOYEE_VIEW)
     public R<EmployeeVO> detail(@PathVariable Long id) {
         return R.ok(employeeService.detail(id));
+    }
+
+    /** 查看手机号 / 身份证 / 紧急联系电话明文（有 employee:sensitive:view，且留 PLAIN 审计） */
+    @GetMapping("/{id}/sensitive")
+    @Permit(PermissionCodes.EMPLOYEE_SENSITIVE_VIEW)
+    public R<EmployeeVO> sensitive(@PathVariable Long id) {
+        return R.ok(employeeService.sensitiveView(id));
     }
 
     @PostMapping

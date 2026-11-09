@@ -44,6 +44,26 @@ public final class PermissionCodes {
     /** 维护请假类型规则（半天/工作日/附件/天数上限） */
     public static final String LEAVE_RULE_MANAGE = "leave:rule:manage";
 
+    /* 合同与档案附件 */
+    /** 查看合同列表 / 合同详情 / 合同附件 */
+    public static final String CONTRACT_VIEW = "contract:view";
+    /** 新增 / 编辑 / 续签 / 终止合同，上传与删除档案附件 */
+    public static final String CONTRACT_MANAGE = "contract:manage";
+
+    /* 轻量考勤（P1-2） */
+    /** 查看加班/调休与月度考勤汇总（含本人提交加班） */
+    public static final String OVERTIME_VIEW = "overtime:view";
+    /** 加班终审 / 月度汇总确认 / 团队考勤查看 */
+    public static final String OVERTIME_APPROVE = "overtime:approve";
+
+    /* 人员数据范围（决定列表/详情能看到哪些人的数据） */
+    /** 全部人员 */
+    public static final String EMPLOYEE_DATA_ALL = "employee:data:all";
+    /** 本组织及下级 */
+    public static final String EMPLOYEE_DATA_ORG_TREE = "employee:data:org_tree";
+    /** 仅本组织 */
+    public static final String EMPLOYEE_DATA_ORG = "employee:data:org";
+
     /* 人员敏感数据与审计 */
     /** 查看手机号 / 身份证 / 银行卡明文 */
     public static final String EMPLOYEE_SENSITIVE_VIEW = "employee:sensitive:view";

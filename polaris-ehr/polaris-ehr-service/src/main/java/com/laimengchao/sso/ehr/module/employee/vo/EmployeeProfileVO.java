@@ -30,6 +30,8 @@ public class EmployeeProfileVO {
         private String bank;
         private String bankName;
         private String accountNo;
+        /** 卡号是否已掩码（无 employee:sensitive:view 时为 true） */
+        private Boolean sensitiveMasked;
         private String holderName;
         private String branch;
         private Integer isPrimary;

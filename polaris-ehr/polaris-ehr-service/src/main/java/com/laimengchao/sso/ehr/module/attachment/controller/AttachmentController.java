@@ -12,6 +12,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /** 附件上传/下载：上传给请假申请人用，下载本人或有审批/HR 权限的人可用。 */
 @RestController
@@ -31,16 +33,31 @@ public class AttachmentController {
 
     private final AttachmentService attachmentService;
 
+    @GetMapping
+    @Permit({PermissionCodes.CONTRACT_VIEW, PermissionCodes.EMPLOYEE_VIEW})
+    public R<List<AttachmentVO>> list(@RequestParam String bizType, @RequestParam Long bizId) {
+        return R.ok(attachmentService.list(bizType, bizId));
+    }
+
     @PostMapping
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit({PermissionCodes.LEAVE_APPLY, PermissionCodes.CONTRACT_MANAGE, PermissionCodes.EMPLOYEE_EDIT})
     public R<AttachmentVO> upload(@RequestParam("file") MultipartFile file,
-                                  @RequestParam(defaultValue = "TEMP") String bizType) {
+                                  @RequestParam(defaultValue = "TEMP") String bizType,
+                                  @RequestParam(required = false) Long bizId) {
         SecurityUser user = SecurityUtils.currentUser().orElseThrow();
-        return R.ok(attachmentService.upload(file, bizType, user.getAccountId()));
+        return R.ok(attachmentService.upload(file, bizType, user.getAccountId(), bizId));
+    }
+
+    @DeleteMapping("/{id}")
+    @Permit({PermissionCodes.CONTRACT_MANAGE, PermissionCodes.EMPLOYEE_EDIT})
+    public R<Void> delete(@PathVariable Long id) {
+        SecurityUser user = SecurityUtils.currentUser().orElseThrow();
+        attachmentService.delete(id, user.getAccountId());
+        return R.ok();
     }
 
     @GetMapping("/{id}/download")
-    @Permit(PermissionCodes.LEAVE_VIEW)
+    @Permit({PermissionCodes.LEAVE_VIEW, PermissionCodes.CONTRACT_VIEW, PermissionCodes.EMPLOYEE_VIEW})
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         SecurityUser user = SecurityUtils.currentUser().orElseThrow();
         boolean canViewAll = user.isSuperAdmin()

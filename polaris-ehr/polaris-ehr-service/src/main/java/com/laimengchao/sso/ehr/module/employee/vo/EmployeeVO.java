@@ -74,6 +74,9 @@ public class EmployeeVO {
     private String accountUsername;
     private String remark;
     private String createdAt;
+    /** 本次返回的手机号/身份证/紧急联系电话是否为掩码值（无敏感权限或列表场景为 true） */
+    private Boolean sensitiveMasked;
+
     /** 离职/复职时是否实际变更了统一账号状态（仅这两个接口的响应里有值） */
     private Boolean accountDisabled;
 

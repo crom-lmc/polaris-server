@@ -48,6 +48,12 @@ public class InternalApprovalCallbackController {
     private static final String BIZ_REHIRE = "ehr.rehire";
     /** 假期额度调整审批 */
     private static final String BIZ_LEAVE_QUOTA = "ehr.leave_quota";
+    /** 合同续签 / 终止审批 */
+    private static final String BIZ_CONTRACT_RENEW = "ehr.contract.renew";
+    private static final String BIZ_CONTRACT_TERMINATE = "ehr.contract.terminate";
+    /** 加班审批 */
+    private static final String BIZ_OVERTIME = "ehr.overtime";
+    private static final String BIZ_OVERTIME_HR = "ehr.overtime.hr";
 
     private final EmployeeService employeeService;
     private final EmployeeChangeService employeeChangeService;
@@ -57,6 +63,8 @@ public class InternalApprovalCallbackController {
     private final com.laimengchao.sso.ehr.module.approval.service.ResignApplyService resignApplyService;
     private final com.laimengchao.sso.ehr.module.approval.service.RehireApplyService rehireApplyService;
     private final com.laimengchao.sso.ehr.module.approval.service.RegularizeApplyService regularizeApplyService;
+    private final com.laimengchao.sso.ehr.module.contract.service.ContractService contractService;
+    private final com.laimengchao.sso.ehr.module.attendance.service.AttendanceService attendanceService;
 
     @PostMapping("/approval-callback")
     public ResponseEntity<R<Void>> approvalCallback(@RequestBody ApprovalCallbackRequest req) {
@@ -81,6 +89,11 @@ public class InternalApprovalCallbackController {
                 resignApplyService.handleResignApprovalResult(req);
             } else if (BIZ_REHIRE.equals(req.getBizType())) {
                 rehireApplyService.handleRehireApprovalResult(req);
+            } else if (BIZ_CONTRACT_RENEW.equals(req.getBizType())
+                    || BIZ_CONTRACT_TERMINATE.equals(req.getBizType())) {
+                contractService.handleApprovalResult(req);
+            } else if (BIZ_OVERTIME.equals(req.getBizType()) || BIZ_OVERTIME_HR.equals(req.getBizType())) {
+                attendanceService.handleApprovalResult(req);
             } else {
                 // 未知场景收下不处理：直接回 5xx 会让 settings 无意义地重试 8 次
                 log.info("审批回调的业务场景尚未接入，忽略：bizType={}", req.getBizType());

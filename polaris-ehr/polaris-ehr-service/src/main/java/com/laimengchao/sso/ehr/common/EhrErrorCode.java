@@ -73,7 +73,15 @@ public enum EhrErrorCode implements IErrorCode {
     /** 假期额度记录不存在 */
     LEAVE_QUOTA_NOT_FOUND(7047, "假期额度记录不存在"),
     /** 附件不存在或不属于当前业务单据 */
-    ATTACHMENT_NOT_FOUND(7048, "附件不存在");
+    ATTACHMENT_NOT_FOUND(7048, "附件不存在"),
+    /** 合同不存在或不属于当前员工 */
+    CONTRACT_NOT_FOUND(7049, "合同不存在"),
+    /** 合同起止日期 / 类型 / 状态不合法 */
+    CONTRACT_INVALID(7050, "合同信息不合法"),
+    /** 同一员工同类型合同日期重叠，或已有在途续签/终止审批 */
+    CONTRACT_CONFLICT(7051, "合同存在重叠或已有在途审批"),
+    /** 合同当前状态不允许续签 / 终止 */
+    CONTRACT_STATE_INVALID(7052, "合同当前状态不允许该操作");
 
     private final int code;
     private final String message;
