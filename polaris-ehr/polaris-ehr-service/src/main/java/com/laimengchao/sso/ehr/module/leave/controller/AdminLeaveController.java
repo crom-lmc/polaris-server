@@ -2,6 +2,7 @@ package com.laimengchao.sso.ehr.module.leave.controller;
 
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.ehr.module.leave.dto.EarlyReturnRequest;
 import com.laimengchao.sso.ehr.module.leave.dto.LeaveApplyRequest;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveService;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
@@ -52,6 +53,31 @@ public class AdminLeaveController {
     @Permit(PermissionCodes.LEAVE_APPLY)
     public R<LeaveVO> cancel(@PathVariable Long id) {
         return R.ok(leaveService.cancel(id));
+    }
+
+    /** 提前返岗销假：按实际返岗日期重算天数并退回额度 */
+    @PostMapping("/{id}/early-return")
+    @Permit(PermissionCodes.LEAVE_APPLY)
+    public R<LeaveVO> earlyReturn(@PathVariable Long id,
+                                  @Valid @RequestBody EarlyReturnRequest req) {
+        return R.ok(leaveService.earlyReturn(id, req));
+    }
+
+    /** 提交前的时段冲突提示（只查本人） */
+    @GetMapping("/conflicts")
+    @Permit(PermissionCodes.LEAVE_APPLY)
+    public R<List<LeaveVO>> conflicts(@RequestParam String startDate,
+                                      @RequestParam String endDate) {
+        return R.ok(leaveService.conflicts(startDate, endDate));
+    }
+
+    /** 团队请假视图：按组织子树 + 日期区间 */
+    @GetMapping("/team")
+    @Permit(PermissionCodes.LEAVE_VIEW_TEAM)
+    public R<List<LeaveVO>> team(@RequestParam(required = false) Long orgId,
+                                 @RequestParam(required = false) String from,
+                                 @RequestParam(required = false) String to) {
+        return R.ok(leaveService.team(orgId, from, to));
     }
 
     /** 请假类型下拉（配置中心 biz_leave_type 主数据；登录即可，提交请假的人都要用） */

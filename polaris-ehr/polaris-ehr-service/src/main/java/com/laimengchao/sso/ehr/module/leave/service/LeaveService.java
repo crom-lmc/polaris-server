@@ -14,8 +14,12 @@ import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
+import com.laimengchao.sso.ehr.module.attachment.entity.Attachment;
+import com.laimengchao.sso.ehr.module.attachment.service.AttachmentService;
+import com.laimengchao.sso.ehr.module.leave.dto.EarlyReturnRequest;
 import com.laimengchao.sso.ehr.module.leave.dto.LeaveApplyRequest;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveRequest;
+import com.laimengchao.sso.ehr.module.leave.entity.LeaveTypeRule;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
@@ -41,6 +45,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,7 +88,8 @@ public class LeaveService {
             0, "待审批",
             1, "已通过",
             2, "已驳回",
-            3, "已撤销");
+            3, "已撤销",
+            4, "已销假");
 
     private final LeaveMapper leaveMapper;
     private final EmployeeMapper employeeMapper;
@@ -92,6 +98,10 @@ public class LeaveService {
     private final ApprovalApi approvalApi;
     /** 统一的三段式发起：本地先提交 → 远程发起 → 仅在途才回写实例号 */
     private final ApprovalLauncher approvalLauncher;
+    private final LeaveTypeRuleService ruleService;
+    private final LeaveDaysCalculator daysCalculator;
+    private final LeaveQuotaService quotaService;
+    private final AttachmentService attachmentService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -157,25 +167,60 @@ public class LeaveService {
             throw new BizException(EhrErrorCode.EMP_STATUS_INVALID,
                     "当前状态为「" + (status == null ? "未知" : status.getLabel()) + "」，只有试用期 / 在职员工可以提交请假");
         }
-        // 部门负责人请假必须指定审批转办人：请假期间他的审批任务由该人代收
-        Long delegateAccountId = resolveDelegate(req.getDelegateAccountId(), emp, user);
+
+        String type = req.getLeaveType().trim().toUpperCase();
+        if (!typeNames().containsKey(type)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请假类型不合法");
+        }
+        LeaveTypeRule rule = ruleService.get(type);
+        if (!Integer.valueOf(1).equals(rule.getEnabled())) {
+            throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID, "该请假类型已停用");
+        }
+        LocalDate start = parseDate(req.getStartDate());
+        LocalDate end = parseDate(req.getEndDate());
+        String startPeriod = periodOr(req.getStartPeriod(), LeaveDaysCalculator.PERIOD_AM);
+        String endPeriod = periodOr(req.getEndPeriod(), LeaveDaysCalculator.PERIOD_PM);
+        String dayMode = dayModeOr(req.getDayMode());
+        LeaveDaysCalculator.Result calc = daysCalculator.calculate(start, startPeriod, end, endPeriod, dayMode);
+        BigDecimal days = calc.days();
+        if (days.compareTo(nvl(rule.getMinDays())) < 0) {
+            throw new BizException(EhrErrorCode.LEAVE_LEAVE_DAYS_INVALID,
+                    "该请假类型最少请 " + rule.getMinDays() + " 天（当前 " + days + " 天）");
+        }
+        if (rule.getMaxDaysPerRequest() != null && days.compareTo(rule.getMaxDaysPerRequest()) > 0) {
+            throw new BizException(EhrErrorCode.LEAVE_LEAVE_DAYS_INVALID,
+                    "该请假类型单次最多 " + rule.getMaxDaysPerRequest() + " 天（当前 " + days + " 天）");
+        }
+        // 补请与提前申请限制
+        LocalDate today = LocalDate.now();
+        int allowPast = rule.getAllowPastDays() == null ? 0 : rule.getAllowPastDays();
+        if (start.isBefore(today.minusDays(allowPast))) {
+            throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                    allowPast <= 0 ? "不允许补请历史日期" : "最多允许补请 " + allowPast + " 天内的日期");
+        }
+        int notice = rule.getMinNoticeDays() == null ? 0 : rule.getMinNoticeDays();
+        if (notice > 0 && ChronoUnit.DAYS.between(today, start) < notice) {
+            throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                    "该请假类型需提前 " + notice + " 天申请");
+        }
+        // 附件：规则要求必传；不要求时带了也要校验归属
+        Attachment attachment = req.getAttachmentId() == null ? null
+                : attachmentService.requireOwned(req.getAttachmentId(), user.getAccountId());
+        if (Integer.valueOf(1).equals(rule.getAttachmentRequired()) && attachment == null) {
+            throw new BizException(EhrErrorCode.LEAVE_ATTACHMENT_REQUIRED,
+                    "「" + typeName(type) + "」必须上传证明材料");
+        }
+        // 部门负责人请假必须指定审批转办人；类型规则也支持强制转办
+        Long delegateAccountId = resolveDelegate(req.getDelegateAccountId(), emp, user,
+                Integer.valueOf(1).equals(rule.getNeedDelegate()));
         String delegateName = "";
         if (delegateAccountId != null) {
             Employee delegate = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
                     .eq(Employee::getAccountId, delegateAccountId).last("limit 1"));
             delegateName = nvl(delegate == null ? null : delegate.getName());
         }
-
-        String type = req.getLeaveType().trim().toUpperCase();
-        if (!typeNames().containsKey(type)) {
-            throw new BizException(ErrorCode.PARAM_ERROR, "请假类型不合法");
-        }
-        LocalDate start = parseDate(req.getStartDate());
-        LocalDate end = parseDate(req.getEndDate());
-        if (end.isBefore(start)) {
-            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "结束日期不能早于开始日期");
-        }
-        long dayCount = ChronoUnit.DAYS.between(start, end) + 1;
+        // 同一员工同一时间段不可重叠（同一天上午+下午可拼成一天）
+        checkOverlap(user.getAccountId(), start, startPeriod, end, endPeriod);
 
         LeaveRequest leave = new LeaveRequest();
         leave.setEmployeeId(emp.getId());
@@ -184,13 +229,23 @@ public class LeaveService {
         leave.setLeaveType(type);
         leave.setStartDate(start);
         leave.setEndDate(end);
-        leave.setDays(BigDecimal.valueOf(dayCount));
+        leave.setStartPeriod(startPeriod);
+        leave.setEndPeriod(endPeriod);
+        leave.setDayMode(dayMode);
+        leave.setDays(days);
         leave.setReason(req.getReason().trim());
+        leave.setAttachmentId(attachment == null ? null : attachment.getId());
         leave.setDelegateAccountId(delegateAccountId);
         leave.setDelegateName(delegateName);
         leave.setStatus(0);
-        // ① 本地写入独立提交：settings 的同步回调发生时，这行一定可见
-        approvalLauncher.inTx(() -> leaveMapper.insert(leave));
+        // ① 本地写入独立提交（请假单 + 附件绑定 + 额度冻结同一事务，余额不足整单回滚）
+        approvalLauncher.inTx(() -> {
+            leaveMapper.insert(leave);
+            if (attachment != null) {
+                attachmentService.bind(attachment.getId(), "LEAVE", leave.getId());
+            }
+            quotaService.freezeForLeave(leave, user.getAccountId());
+        });
 
         // ②③ 远程发起 + 条件回写（发起确认失败时会把这张单自动撤销）
         approvalLauncher.launch(
@@ -273,15 +328,26 @@ public class LeaveService {
         } else {
             st = 2;
         }
-        leave.setStatus(st);
-        leave.setApproveNote(req.getResultName() == null ? "" : req.getResultName());
-        leave.setApprovedAt(LocalDateTime.now());
-        leaveMapper.updateById(leave);
-        if (st == 1) {
-            // 负责人请假通过：按其请假起止时间登记审批委托，期间他的审批任务由转办人代收
-            registerLeaveDelegate(leave);
+        // 条件更新兜住重复投递：只有仍在待审批时才能落终态，后到的回调直接忽略
+        int updated = leaveMapper.update(null, new LambdaUpdateWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getId, leaveId)
+                .eq(LeaveRequest::getStatus, 0)
+                .set(LeaveRequest::getStatus, st)
+                .set(LeaveRequest::getApproveNote, req.getResultName() == null ? "" : req.getResultName())
+                .set(LeaveRequest::getApprovedAt, LocalDateTime.now())
+                .set(LeaveRequest::getApprovalInstanceId, null));
+        if (updated == 0) {
+            log.info("请假审批回调已处理过，忽略 leaveId={} 目标状态={}", leaveId, st);
+            return;
         }
-        clearInstance(leaveId);
+        if (st == 1) {
+            // 通过：冻结额度转已用；负责人请假按起止时间登记审批委托
+            quotaService.consumeForLeave(leave, null);
+            registerLeaveDelegate(leave);
+        } else {
+            // 驳回 / 撤回 / 终止：释放提交时冻结的额度
+            quotaService.releaseForLeave(leave, null);
+        }
         log.info("请假审批终审已处理 leaveId={} status={} result={}", leaveId, st, req.getResultName());
     }
 
@@ -306,8 +372,13 @@ public class LeaveService {
             withdrawInstance(runningId, user);
         }
         leave.setStatus(3);
-        leaveMapper.updateById(leave);
-        clearInstance(id);
+        leaveMapper.update(null, new LambdaUpdateWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getId, id)
+                .eq(LeaveRequest::getStatus, 0)
+                .set(LeaveRequest::getStatus, 3)
+                .set(LeaveRequest::getApprovalInstanceId, null));
+        // 撤回后释放冻结额度（若回调已释放，幂等流水会跳过）
+        quotaService.releaseForLeave(leave, user.getAccountId());
         return toVO(leave, user);
     }
 
@@ -369,9 +440,12 @@ public class LeaveService {
         return vo;
     }
 
-    /** 部门负责人请假必填转办人；普通人填了就校验，不填就不登记委托 */
-    private Long resolveDelegate(Long raw, Employee applicant, SecurityUser user) {
+    /** 部门负责人请假必填转办人；类型规则 forceRequired=true 时普通员工也必须填 */
+    private Long resolveDelegate(Long raw, Employee applicant, SecurityUser user, boolean forceRequired) {
         if (raw == null) {
+            if (forceRequired) {
+                throw new BizException(ErrorCode.PARAM_ERROR, "该请假类型要求指定审批转办人");
+            }
             if (isDepartmentLeader(applicant)) {
                 throw new BizException(ErrorCode.PARAM_ERROR, "部门负责人请假必须指定审批转办人");
             }
@@ -431,6 +505,190 @@ public class LeaveService {
             log.error("登记请假审批委托失败 leaveId={} delegateAccountId={}",
                     leave.getId(), leave.getDelegateAccountId(), e);
         }
+    }
+
+    /** 当前登录人对应的员工档案ID（额度/团队视图用） */
+    public Long myEmployeeId() {
+        SecurityUser user = currentUser();
+        Employee me = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
+                .eq(Employee::getAccountId, user.getAccountId()).last("limit 1"));
+        if (me == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "当前账号未关联员工档案");
+        }
+        return me.getId();
+    }
+
+    /** 我的请假时间冲突：提交前给前端提示已占用的时段 */
+    public List<LeaveVO> conflicts(String startRaw, String endRaw) {
+        SecurityUser user = currentUser();
+        LocalDate start = parseDate(startRaw);
+        LocalDate end = parseDate(endRaw);
+        return leaveMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                        .eq(LeaveRequest::getAccountId, user.getAccountId())
+                        .in(LeaveRequest::getStatus, 0, 1)
+                        .le(LeaveRequest::getStartDate, end)
+                        .ge(LeaveRequest::getEndDate, start))
+                .stream().map(r -> toVO(r, user)).toList();
+    }
+
+    /**
+     * 团队请假视图：按组织子树 + 日期区间查询待审批 / 已通过记录。
+     * 有审批权或超管可查任意组织；普通主管只能查自己组织范围内。
+     */
+    public List<LeaveVO> team(Long orgId, String fromRaw, String toRaw) {
+        SecurityUser user = currentUser();
+        boolean canAll = user.isSuperAdmin() || user.getPermissions().contains(PermissionCodes.LEAVE_APPROVE);
+        if (!canAll && !user.getPermissions().contains(PermissionCodes.LEAVE_VIEW_TEAM)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "没有查看团队请假的权限");
+        }
+        Employee me = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
+                .eq(Employee::getAccountId, user.getAccountId()).last("limit 1"));
+        Long root = orgId != null ? orgId : (me == null ? null : me.getOrgId());
+        if (root == null) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "缺少组织参数，且当前账号未关联组织");
+        }
+        List<Long> orgIds = subtreeOrgIds(root);
+        if (!canAll) {
+            List<Long> mine = subtreeOrgIds(me.getOrgId());
+            orgIds = orgIds.stream().filter(mine::contains).toList();
+            if (orgIds.isEmpty()) {
+                throw new BizException(ErrorCode.FORBIDDEN, "只能查看自己组织范围内的团队请假");
+            }
+        }
+        List<Long> empIds = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                        .in(Employee::getOrgId, orgIds))
+                .stream().map(Employee::getId).toList();
+        if (empIds.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<LeaveRequest> w = new LambdaQueryWrapper<LeaveRequest>()
+                .in(LeaveRequest::getEmployeeId, empIds)
+                .in(LeaveRequest::getStatus, 0, 1)
+                .orderByAsc(LeaveRequest::getStartDate);
+        if (fromRaw != null && !fromRaw.isBlank()) {
+            w.ge(LeaveRequest::getEndDate, parseDate(fromRaw));
+        }
+        if (toRaw != null && !toRaw.isBlank()) {
+            w.le(LeaveRequest::getStartDate, parseDate(toRaw));
+        }
+        return leaveMapper.selectList(w).stream().map(r -> toVO(r, user)).toList();
+    }
+
+    /**
+     * 提前返岗销假：按实际返岗日期重算天数，退回多请的额度，状态置 4。
+     * 只允许对「已通过」的单据操作一次；本人或 HR 可操作。
+     */
+    public LeaveVO earlyReturn(Long id, EarlyReturnRequest req) {
+        SecurityUser user = currentUser();
+        LeaveRequest leave = require(id);
+        boolean owner = user.getAccountId().equals(leave.getAccountId());
+        boolean hr = user.isSuperAdmin()
+                || user.getPermissions().contains(PermissionCodes.LEAVE_QUOTA_ADJUST);
+        if (!owner && !hr) {
+            throw new BizException(ErrorCode.FORBIDDEN, "只能为自己的请假办理销假");
+        }
+        if (leave.getStatus() == null || leave.getStatus() != 1) {
+            throw new BizException(EhrErrorCode.LEAVE_EARLY_RETURN_INVALID,
+                    "只有已通过的请假单可以销假，且不可重复销假");
+        }
+        LocalDate returnDate = parseDate(req.getReturnDate());
+        if (returnDate.isBefore(leave.getStartDate()) || returnDate.isAfter(leave.getEndDate())) {
+            throw new BizException(EhrErrorCode.LEAVE_EARLY_RETURN_INVALID, "返岗日期需在请假起止日期内");
+        }
+        LocalDate actualEnd = returnDate.minusDays(1);
+        BigDecimal actual;
+        if (leave.getStartDate().isAfter(actualEnd)) {
+            actual = BigDecimal.ZERO;
+        } else {
+            actual = daysCalculator.calculate(
+                    leave.getStartDate(), periodOr(leave.getStartPeriod(), LeaveDaysCalculator.PERIOD_AM),
+                    actualEnd, LeaveDaysCalculator.PERIOD_PM, dayModeOr(leave.getDayMode())).days();
+        }
+        BigDecimal refund = nvl(leave.getDays()).subtract(actual);
+        int updated = leaveMapper.update(null, new LambdaUpdateWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getId, id)
+                .eq(LeaveRequest::getStatus, 1)
+                .set(LeaveRequest::getStatus, 4)
+                .set(LeaveRequest::getReturnDate, returnDate)
+                .set(LeaveRequest::getDays, actual)
+                .set(LeaveRequest::getApproveNote,
+                        req.getNote() == null || req.getNote().isBlank() ? "提前返岗销假" : req.getNote()));
+        if (updated == 0) {
+            throw new BizException(EhrErrorCode.LEAVE_EARLY_RETURN_INVALID, "请假单状态已变化，请刷新后重试");
+        }
+        quotaService.returnDays(leave, refund, user.getAccountId());
+        log.info("请假销假完成 leaveId={} 原{}天 实际{}天 退回{}天", id,
+                leave.getDays(), actual, refund);
+        return toVO(leaveMapper.selectById(id), user);
+    }
+
+    /** 组织子树ID：自身 + path 中包含该节点ID的所有后代（path 形如 1/2/3） */
+    private List<Long> subtreeOrgIds(Long rootId) {
+        List<Long> ids = new ArrayList<>();
+        String r = String.valueOf(rootId);
+        for (OrgNode n : orgMapper.selectList(new LambdaQueryWrapper<OrgNode>())) {
+            if (n.getId().equals(rootId)) {
+                ids.add(n.getId());
+                continue;
+            }
+            String p = n.getPath();
+            if (p == null) continue;
+            if (p.startsWith(r + "/") || p.contains("/" + r + "/") || p.endsWith("/" + r)) {
+                ids.add(n.getId());
+            }
+        }
+        return ids;
+    }
+
+    /** 同一员工同一时段不可重叠；同一天「上午 + 下午」可拼成一天，不算冲突 */
+    private void checkOverlap(Long accountId, LocalDate start, String startPeriod,
+                              LocalDate end, String endPeriod) {
+        List<LeaveRequest> exist = leaveMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
+                .eq(LeaveRequest::getAccountId, accountId)
+                .in(LeaveRequest::getStatus, 0, 1)
+                .le(LeaveRequest::getStartDate, end)
+                .ge(LeaveRequest::getEndDate, start));
+        for (LeaveRequest e : exist) {
+            boolean sameSingleDay = start.equals(end)
+                    && e.getStartDate() != null && e.getStartDate().equals(e.getEndDate())
+                    && start.equals(e.getStartDate());
+            if (sameSingleDay && sameDayNoOverlap(startPeriod, endPeriod,
+                    e.getStartPeriod(), e.getEndPeriod())) {
+                continue;
+            }
+            throw new BizException(EhrErrorCode.LEAVE_DATE_OVERLAP,
+                    "与已有请假单（" + e.getStartDate() + " ~ " + e.getEndDate() + "）时间重叠");
+        }
+    }
+
+    private boolean sameDayNoOverlap(String sp, String ep, String existSp, String existEp) {
+        String nsp = periodOr(sp, LeaveDaysCalculator.PERIOD_AM);
+        String nep = periodOr(ep, LeaveDaysCalculator.PERIOD_PM);
+        String osp = periodOr(existSp, LeaveDaysCalculator.PERIOD_AM);
+        String oep = periodOr(existEp, LeaveDaysCalculator.PERIOD_PM);
+        boolean newMorning = LeaveDaysCalculator.PERIOD_AM.equals(nsp)
+                && LeaveDaysCalculator.PERIOD_AM.equals(nep);
+        boolean newAfternoon = LeaveDaysCalculator.PERIOD_PM.equals(nsp)
+                && LeaveDaysCalculator.PERIOD_PM.equals(nep);
+        return (newMorning && LeaveDaysCalculator.PERIOD_PM.equals(osp))
+                || (newAfternoon && LeaveDaysCalculator.PERIOD_AM.equals(oep));
+    }
+
+    private String periodOr(String raw, String fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        String p = raw.trim().toUpperCase();
+        return LeaveDaysCalculator.PERIOD_AM.equals(p) || LeaveDaysCalculator.PERIOD_PM.equals(p) ? p : fallback;
+    }
+
+    private String dayModeOr(String raw) {
+        return raw != null && LeaveDaysCalculator.MODE_WORKDAY.equalsIgnoreCase(raw.trim())
+                ? LeaveDaysCalculator.MODE_WORKDAY : LeaveDaysCalculator.MODE_NATURAL;
+    }
+
+    private BigDecimal nvl(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 
     /* ---------------- 内部工具 ---------------- */
@@ -508,8 +766,14 @@ public class LeaveService {
         vo.setLeaveTypeName(typeName(r.getLeaveType()));
         vo.setStartDate(r.getStartDate() == null ? null : r.getStartDate().toString());
         vo.setEndDate(r.getEndDate() == null ? null : r.getEndDate().toString());
+        vo.setStartPeriod(r.getStartPeriod());
+        vo.setEndPeriod(r.getEndPeriod());
+        vo.setDayMode(r.getDayMode());
         vo.setDays(r.getDays());
         vo.setReason(r.getReason());
+        vo.setReturnDate(r.getReturnDate() == null ? null : r.getReturnDate().toString());
+        vo.setAttachmentId(r.getAttachmentId());
+        vo.setAttachmentName(attachmentService.nameOf(r.getAttachmentId()));
         vo.setStatus(r.getStatus());
         vo.setStatusName(STATUS_NAMES.getOrDefault(r.getStatus(), "未知"));
         vo.setApproverAccountId(r.getApproverAccountId());

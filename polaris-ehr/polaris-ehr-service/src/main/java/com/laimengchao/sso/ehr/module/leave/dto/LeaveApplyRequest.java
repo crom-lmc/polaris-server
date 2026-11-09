@@ -16,6 +16,18 @@ public class LeaveApplyRequest {
     @NotBlank(message = "结束日期必填")
     private String endDate;
 
+    /** 开始半天：AM / PM，默认 AM */
+    private String startPeriod;
+
+    /** 结束半天：AM / PM，默认 PM */
+    private String endPeriod;
+
+    /** NATURAL 自然日（默认） / WORKDAY 工作日 */
+    private String dayMode;
+
+    /** 证明材料附件ID：病假/婚假/产假等规则要求必传 */
+    private Long attachmentId;
+
     @NotBlank(message = "请假事由必填")
     private String reason;
 

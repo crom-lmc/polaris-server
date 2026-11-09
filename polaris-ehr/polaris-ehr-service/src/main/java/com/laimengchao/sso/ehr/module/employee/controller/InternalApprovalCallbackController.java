@@ -46,11 +46,14 @@ public class InternalApprovalCallbackController {
     private static final String BIZ_RESIGN = "ehr.resign";
     private static final String BIZ_REDUCE = "ehr.reduce";
     private static final String BIZ_REHIRE = "ehr.rehire";
+    /** 假期额度调整审批 */
+    private static final String BIZ_LEAVE_QUOTA = "ehr.leave_quota";
 
     private final EmployeeService employeeService;
     private final EmployeeChangeService employeeChangeService;
     private final com.laimengchao.sso.ehr.module.org.service.OrgService orgService;
     private final com.laimengchao.sso.ehr.module.leave.service.LeaveService leaveService;
+    private final com.laimengchao.sso.ehr.module.leave.service.LeaveQuotaAdjustService leaveQuotaAdjustService;
     private final com.laimengchao.sso.ehr.module.approval.service.ResignApplyService resignApplyService;
     private final com.laimengchao.sso.ehr.module.approval.service.RehireApplyService rehireApplyService;
     private final com.laimengchao.sso.ehr.module.approval.service.RegularizeApplyService regularizeApplyService;
@@ -71,6 +74,8 @@ public class InternalApprovalCallbackController {
                 regularizeApplyService.handleRegularizeApprovalResult(req);
             } else if (BIZ_LEAVE.equals(req.getBizType())) {
                 leaveService.handleLeaveApprovalResult(req);
+            } else if (BIZ_LEAVE_QUOTA.equals(req.getBizType())) {
+                leaveQuotaAdjustService.handleResult(req);
             } else if (BIZ_RESIGN.equals(req.getBizType()) || BIZ_REDUCE.equals(req.getBizType())) {
                 // 离职（员工自助）与减员（HR）是两条流程，但终态动作一样：置离职 + 停用账号
                 resignApplyService.handleResignApprovalResult(req);

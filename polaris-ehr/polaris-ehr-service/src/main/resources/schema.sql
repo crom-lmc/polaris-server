@@ -251,9 +251,13 @@ CREATE TABLE IF NOT EXISTS `ehr_leave` (
   `leave_type` varchar(16) NOT NULL COMMENT 'ANNUAL/SICK/PERSONAL/MARRIAGE/MATERNITY/OTHER',
   `start_date` date NOT NULL COMMENT '开始日期',
   `end_date` date NOT NULL COMMENT '结束日期',
+  `start_period` char(2) NOT NULL DEFAULT 'AM' COMMENT '开始半天 AM/PM',
+  `end_period` char(2) NOT NULL DEFAULT 'PM' COMMENT '结束半天 AM/PM',
+  `day_mode` varchar(16) NOT NULL DEFAULT 'NATURAL' COMMENT 'NATURAL/WORKDAY',
   `days` decimal(5,1) NOT NULL COMMENT '请假天数',
   `reason` varchar(500) NOT NULL COMMENT '请假事由',
-  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批 1已通过 2已驳回 3已撤销',
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批 1已通过 2已驳回 3已撤销 4已销假',
+  `return_date` date DEFAULT NULL COMMENT '实际返岗日期（销假后写入）',
   `approver_account_id` bigint(20) DEFAULT NULL COMMENT '审批人账户ID',
   `approver_name` varchar(64) DEFAULT '' COMMENT '审批人',
   `approve_note` varchar(255) DEFAULT '' COMMENT '审批意见',
@@ -262,6 +266,7 @@ CREATE TABLE IF NOT EXISTS `ehr_leave` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `approval_instance_id` bigint(20) DEFAULT NULL COMMENT '请假审批实例ID',
+  `attachment_id` bigint(20) DEFAULT NULL COMMENT '证明材料附件ID（病假/婚假/产假必填）',
   PRIMARY KEY (`id`),
   KEY `idx_leave_status` (`status`),
   KEY `idx_leave_account` (`account_id`),
@@ -391,3 +396,98 @@ CREATE TABLE IF NOT EXISTS `ehr_resign_apply` (
   KEY `idx_resign_applicant` (`applicant_account_id`),
   KEY `idx_resign_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='离职/减员申请（部门负责人审批）';
+
+CREATE TABLE IF NOT EXISTS `ehr_leave_quota` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `leave_type` varchar(32) NOT NULL COMMENT 'ANNUAL/COMPENSATORY/SICK...',
+  `year` int(11) NOT NULL COMMENT '年度',
+  `total_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '总额度',
+  `used_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '已使用',
+  `frozen_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '审批中冻结',
+  `version` int(11) NOT NULL DEFAULT '0' COMMENT '乐观锁',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_quota_emp_type_year` (`employee_id`,`leave_type`,`year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工假期额度';
+
+CREATE TABLE IF NOT EXISTS `ehr_leave_quota_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `quota_id` bigint(20) NOT NULL,
+  `employee_id` bigint(20) NOT NULL,
+  `leave_id` bigint(20) DEFAULT NULL COMMENT '关联请假单',
+  `biz_key` varchar(96) NOT NULL COMMENT '幂等键，如 LEAVE:123:DEDUCT',
+  `action` varchar(16) NOT NULL COMMENT 'FREEZE/DEDUCT/RELEASE/ADJUST/SETTLE',
+  `days` decimal(6,2) NOT NULL,
+  `before_available` decimal(6,2) NOT NULL,
+  `after_available` decimal(6,2) NOT NULL,
+  `operator_id` bigint(20) DEFAULT NULL,
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_quota_log_bizkey` (`biz_key`),
+  KEY `idx_quota_log_quota` (`quota_id`),
+  KEY `idx_quota_log_emp` (`employee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='额度流水';
+
+CREATE TABLE IF NOT EXISTS `ehr_leave_type_rule` (
+  `leave_type` varchar(16) NOT NULL COMMENT '与字典编码一致',
+  `enabled` tinyint(4) NOT NULL DEFAULT '1',
+  `quota_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否占用假期额度',
+  `default_quota_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '年度默认额度（首次自动建额度用）',
+  `attachment_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否必须上传证明',
+  `min_days` decimal(4,1) NOT NULL DEFAULT '0.5',
+  `max_days_per_request` decimal(5,1) NOT NULL DEFAULT '30.0',
+  `min_notice_days` int(11) NOT NULL DEFAULT '0' COMMENT '需提前几天申请',
+  `allow_past_days` int(11) NOT NULL DEFAULT '0' COMMENT '允许补请的天数',
+  `need_delegate` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否必须指定转办人',
+  `sort_no` int(11) NOT NULL DEFAULT '0',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`leave_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请假类型规则';
+
+CREATE TABLE IF NOT EXISTS `ehr_work_calendar` (
+  `work_date` date NOT NULL COMMENT '日期',
+  `is_workday` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1工作日 0休息日/法定节假日',
+  `holiday_name` varchar(64) DEFAULT '' COMMENT '节假日名称',
+  PRIMARY KEY (`work_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作日历（未配置的日期按周末规则判断）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attachment` (
+  `id` bigint(20) NOT NULL,
+  `biz_type` varchar(32) NOT NULL COMMENT 'LEAVE/EMPLOYEE/CONTRACT/...',
+  `biz_id` bigint(20) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_key` varchar(255) NOT NULL COMMENT '存储 key，不暴露真实路径',
+  `size` bigint(20) NOT NULL DEFAULT '0',
+  `mime` varchar(128) DEFAULT '',
+  `uploaded_by` bigint(20) DEFAULT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_attach_biz` (`biz_type`,`biz_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务附件';
+
+CREATE TABLE IF NOT EXISTS `ehr_leave_quota_adjust` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `quota_id` bigint(20) NOT NULL COMMENT '额度记录ID',
+  `employee_id` bigint(20) NOT NULL,
+  `leave_type` varchar(32) NOT NULL,
+  `year` int(11) NOT NULL,
+  `delta` decimal(6,2) NOT NULL COMMENT '调整增量，可为负',
+  `reason` varchar(255) NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批 1已通过 2已驳回 3已撤销',
+  `approval_instance_id` bigint(20) DEFAULT NULL,
+  `operator_id` bigint(20) DEFAULT NULL COMMENT '发起人账号',
+  `operator_name` varchar(64) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_quota_adjust_emp` (`employee_id`),
+  KEY `idx_quota_adjust_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='假期额度调整申请';
+

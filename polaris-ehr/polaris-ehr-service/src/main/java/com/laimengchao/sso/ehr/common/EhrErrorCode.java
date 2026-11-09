@@ -55,7 +55,25 @@ public enum EhrErrorCode implements IErrorCode {
     /** 审批单不存在、已结束，或当前步骤不由你办理 */
     APPROVAL_INSTANCE_MISSING(7036, "审批单不存在或已结束"),
     /** 同一部门已有负责人变更审批在途：一次只允许一单，避免两个新负责人先后落库 */
-    ORG_LEADER_APPROVING(7039, "该部门已有负责人变更审批在进行中，请等审批结束后再操作");
+    ORG_LEADER_APPROVING(7039, "该部门已有负责人变更审批在进行中，请等审批结束后再操作"),
+    /** 假期额度不足（并发冻结的条件更新影响行数为 0） */
+    LEAVE_QUOTA_NOT_ENOUGH(7040, "假期余额不足"),
+    /** 请假类型规则不允许本次申请（未启用 / 天数越界 / 提前申请不足） */
+    LEAVE_RULE_INVALID(7041, "请假类型规则不允许该申请"),
+    /** 与已有待审批 / 已通过的请假单日期重叠 */
+    LEAVE_DATE_OVERLAP(7042, "请假时间与已有请假单重叠"),
+    /** 该类型必须上传证明材料 */
+    LEAVE_ATTACHMENT_REQUIRED(7043, "该请假类型必须上传证明材料"),
+    /** 请假天数不在类型规则允许区间 */
+    LEAVE_LEAVE_DAYS_INVALID(7044, "请假天数不符合类型规则"),
+    /** 只有已通过的请假单可以销假，且不可重复销假 */
+    LEAVE_EARLY_RETURN_INVALID(7045, "当前请假单不可销假"),
+    /** 审批转办人不合法（本人 / 离职 / 重复） */
+    LEAVE_DELEGATE_INVALID(7046, "审批转办人不合法"),
+    /** 假期额度记录不存在 */
+    LEAVE_QUOTA_NOT_FOUND(7047, "假期额度记录不存在"),
+    /** 附件不存在或不属于当前业务单据 */
+    ATTACHMENT_NOT_FOUND(7048, "附件不存在");
 
     private final int code;
     private final String message;

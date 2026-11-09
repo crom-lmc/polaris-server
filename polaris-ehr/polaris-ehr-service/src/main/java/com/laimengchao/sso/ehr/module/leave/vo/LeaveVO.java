@@ -24,8 +24,18 @@ public class LeaveVO {
     private String leaveTypeName;
     private String startDate;
     private String endDate;
+    private String startPeriod;
+    private String endPeriod;
+    private String dayMode;
     private BigDecimal days;
     private String reason;
+    /** 销假后的实际返岗日期 */
+    private String returnDate;
+    /** 证明材料附件 */
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long attachmentId;
+    private String attachmentName;
     private Integer status;
     private String statusName;
 

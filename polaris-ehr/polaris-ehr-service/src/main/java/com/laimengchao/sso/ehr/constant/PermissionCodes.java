@@ -33,6 +33,27 @@ public final class PermissionCodes {
     public static final String LEAVE_VIEW = "leave:view";
     public static final String LEAVE_APPLY = "leave:apply";
     public static final String LEAVE_APPROVE = "leave:approve";
+    /** 查看团队请假视图（按组织/数据范围） */
+    public static final String LEAVE_VIEW_TEAM = "leave:view:team";
+    /** 查看指定员工的假期额度与流水 */
+    public static final String LEAVE_QUOTA_VIEW = "leave:quota:view";
+    /** 发起额度调整审批 */
+    public static final String LEAVE_QUOTA_ADJUST = "leave:quota:adjust";
+    /** 初始化 / 直接维护员工额度 */
+    public static final String LEAVE_QUOTA_MANAGE = "leave:quota:manage";
+    /** 维护请假类型规则（半天/工作日/附件/天数上限） */
+    public static final String LEAVE_RULE_MANAGE = "leave:rule:manage";
+
+    /* 人员敏感数据与审计 */
+    /** 查看手机号 / 身份证 / 银行卡明文 */
+    public static final String EMPLOYEE_SENSITIVE_VIEW = "employee:sensitive:view";
+    /** 导出人员数据 */
+    public static final String EMPLOYEE_EXPORT = "employee:export";
+    /** 查看敏感操作审计日志 */
+    public static final String AUDIT_VIEW = "audit:view";
+
+    /* 审批运营 */
+    public static final String APPROVAL_OPS = "approval:ops";
 
     /* 离职 / 减员 / 审批中心 */
     /** 员工自助提交离职申请 */

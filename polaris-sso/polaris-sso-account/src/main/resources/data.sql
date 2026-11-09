@@ -2895,6 +2895,15 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900540571648,'leave:view','查看请假记录',2,375175900486045696,1,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900544765952,'leave:apply','提交/撤销请假',2,375175900486045696,2,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900548960256,'leave:approve','审批请假（旧码，兼容保留）',2,375175900486045696,3,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000001,'leave:view:team','查看团队请假',2,375175900486045696,4,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000002,'leave:quota:view','查看员工假期额度',2,375175900486045696,5,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000003,'leave:quota:adjust','发起额度调整审批',2,375175900486045696,6,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000004,'leave:quota:manage','初始化员工额度',2,375175900486045696,7,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000005,'leave:rule:manage','维护请假类型规则',2,375175900486045696,8,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000006,'employee:sensitive:view','查看手机号/身份证/银行卡明文',2,375175900481851392,7,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000007,'employee:export','导出人员数据',2,375175900481851392,8,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000008,'audit','审计日志',1,0,9,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000009,'audit:view','查看敏感操作审计日志',2,375182598000000008,1,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182597246029824,'employee:resign','减员申请/复职（HR）',2,375175900481851392,6,'','2026-11-01 15:21:42','2026-11-01 15:21:42',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196740542464,'approval','审批中心',1,0,6,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196757319680,'resign:apply','提交离职申请（员工自助）',2,8563807562621573408,1,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
@@ -3714,3 +3723,25 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573426);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573426);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573426);
+-- P0：假期额度 / 团队请假 / 敏感字段 / 审计 权限授予
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
+(2116193763556519940,375182598000000001),(2116193763556519940,375182598000000002),
+(2116193763556519940,375182598000000003),(2116193763556519940,375182598000000004),
+(2116193763556519940,375182598000000005),(2116193763556519940,375182598000000006),
+(2116193763556519940,375182598000000007),(2116193763556519940,375182598000000008),
+(2116193763556519940,375182598000000009),
+(2116193763556519942,375182598000000001),(2116193763556519942,375182598000000002),
+(2116193763556519942,375182598000000003),(2116193763556519942,375182598000000004),
+(2116193763556519942,375182598000000005),(2116193763556519942,375182598000000006),
+(2116193763556519942,375182598000000007),(2116193763556519942,375182598000000009),
+(2116193763556519943,375182598000000001),(2116193763556519943,375182598000000002),
+(2116193763556519943,375182598000000006),(2116193763556519943,375182598000000007),
+(2116193763556519944,375182598000000002),(2116193763556519944,375182598000000003),
+(2116193763556519944,375182598000000004),(2116193763556519944,375182598000000006),
+(2116193763556519944,375182598000000007),
+(2116193763556519945,375182598000000001),(2116193763556519945,375182598000000002),
+(2116193763556519945,375182598000000003),(2116193763556519945,375182598000000005),
+(2116193763556519945,375182598000000006),(2116193763556519945,375182598000000007),
+(2116193763556519945,375182598000000009),
+(2116193763556519946,375182598000000001),(2116193763556519946,375182598000000002),
+(2116193763556519953,375182598000000009);
