@@ -20,14 +20,10 @@ public class ApprovalPage extends BaseEntity {
     private Long templateId;
     /** APPROVAL 审批人 / DETAIL 发起人回看 / AUDIT 审计 */
     private String view;
-    /** GRID / SECTIONS / TEMPLATE / COMPONENT / ROUTE */
+    /** SECTIONS / ROUTE */
     private String renderMode;
     /** 字段与布局 JSON */
     private String config;
-    /** renderMode=TEMPLATE 的模板正文 */
-    private String htmlTpl;
-    /** renderMode=COMPONENT 的前端组件 key */
-    private String componentKey;
     /** renderMode=ROUTE 的自定义页面地址（应用内路由或完整 URL） */
     private String routePath;
     private Integer version;

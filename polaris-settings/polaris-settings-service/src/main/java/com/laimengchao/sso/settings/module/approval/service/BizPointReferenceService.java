@@ -181,7 +181,7 @@ public class BizPointReferenceService {
         }
     }
 
-    /** 审批页面：SECTIONS/GRID 的 FORM 字段 key，以及 TEMPLATE 模式 htmlTpl 里的占位符 */
+    /** 审批页面：SECTIONS 配置里的 FORM 字段 key */
     private void scanPages(Map<Long, ApprovalTemplate> tplById, Map<String, Set<String>> codesByBiz,
                            Map<String, List<String>> refs) {
         for (ApprovalPage p : pageMapper.selectList(null)) {
@@ -207,8 +207,6 @@ public class BizPointReferenceService {
                     }
                 }
             }
-            // htmlTpl 是 HTML 文本，带引号的属性很多，这里不做字面量剔除，按保守口径匹配
-            scanExpr(p.getHtmlTpl(), t.getBizType(), codes, where + " · 自定义模板", refs, false);
         }
     }
 

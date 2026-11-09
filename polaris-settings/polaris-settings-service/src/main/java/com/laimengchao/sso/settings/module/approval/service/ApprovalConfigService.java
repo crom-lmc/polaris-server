@@ -143,8 +143,6 @@ public class ApprovalConfigService {
             pv.setView(page.getView());
             pv.setRenderMode(page.getRenderMode());
             pv.setConfig(page.getConfig());
-            pv.setHtmlTpl(page.getHtmlTpl());
-            pv.setComponentKey(page.getComponentKey());
             pv.setRoutePath(page.getRoutePath());
             pv.setVersion(page.getVersion());
             vo.setPage(pv);
@@ -437,8 +435,6 @@ public class ApprovalConfigService {
         }
         page.setRenderMode(isBlank(dto.getRenderMode()) ? "SECTIONS" : dto.getRenderMode());
         page.setConfig(dto.getConfig() == null ? "{}" : dto.getConfig());
-        page.setHtmlTpl(dto.getHtmlTpl());
-        page.setComponentKey(empty(dto.getComponentKey()));
         page.setRoutePath(empty(dto.getRoutePath()));
         if (page.getId() == null) {
             pageMapper.insert(page);

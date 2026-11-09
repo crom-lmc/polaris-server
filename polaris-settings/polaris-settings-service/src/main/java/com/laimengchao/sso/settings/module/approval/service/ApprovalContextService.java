@@ -105,13 +105,7 @@ public class ApprovalContextService {
             Map<String, Object> parsed = parseConfig(page.getConfig());
             vo.setPage(parsed);
             vo.setActions(readActions(parsed));
-            // TEMPLATE / COMPONENT / ROUTE 这几种版式的正文、组件 key、页面地址一并带上，前端按 renderMode 分支
-            if ("TEMPLATE".equalsIgnoreCase(page.getRenderMode())) {
-                vo.getPage().put("htmlTpl", page.getHtmlTpl());
-            }
-            if ("COMPONENT".equalsIgnoreCase(page.getRenderMode())) {
-                vo.getPage().put("componentKey", page.getComponentKey());
-            }
+            // ROUTE 版式的自定义页面地址一并带上，前端按 renderMode 分支
             if ("ROUTE".equalsIgnoreCase(page.getRenderMode())) {
                 vo.getPage().put("routePath", page.getRoutePath());
             }

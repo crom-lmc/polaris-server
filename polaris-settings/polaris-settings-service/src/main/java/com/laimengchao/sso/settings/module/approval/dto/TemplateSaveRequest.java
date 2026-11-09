@@ -80,8 +80,6 @@ public class TemplateSaveRequest {
         private String view;
         private String renderMode;
         private String config;
-        private String htmlTpl;
-        private String componentKey;
         /** renderMode=ROUTE 的自定义页面地址 */
         private String routePath;
     }
