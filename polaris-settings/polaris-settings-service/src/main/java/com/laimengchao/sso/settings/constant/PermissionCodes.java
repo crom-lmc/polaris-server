@@ -21,6 +21,14 @@ public final class PermissionCodes {
     public static final String NOTICE_MENU = "notice";
     /** 单号规则菜单 */
     public static final String CODE_MENU = "code";
+    /** 埋点管理菜单 */
+    public static final String EMBED_MENU = "embed";
+
+    /* 埋点配置 */
+    /** 查看埋点配置与历史 */
+    public static final String EMBED_VIEW = "embed:view";
+    /** 编辑埋点配置 */
+    public static final String EMBED_MANAGE = "embed:manage";
 
     /* 单号规则 */
     /** 查看业务单号规则 */

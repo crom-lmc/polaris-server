@@ -33,6 +33,8 @@ public class LeaveQuota extends BaseEntity {
     private BigDecimal carryoverIn;
     /** 结转到下期 */
     private BigDecimal carryoverOut;
+    /** 结转部分已消耗（冻结+已用中归属上年结转的量，消耗优先扣结转） */
+    private BigDecimal carryoverUsed;
     /** 结转额度失效日 */
     private LocalDate carryoverExpireAt;
     /** 来源 AUTO 自动生成 / MANUAL 手工 / CARRYOVER 结转 */

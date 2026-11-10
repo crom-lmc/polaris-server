@@ -422,3 +422,32 @@ CREATE TABLE IF NOT EXISTS `notice_message` (
   PRIMARY KEY (`id`),
   KEY `idx_notice_acc` (`account_id`,`read_at`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内待办/消息';
+CREATE TABLE IF NOT EXISTS `cfg_embed_point` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `code` varchar(128) NOT NULL COMMENT '埋点 key',
+  `app_code` varchar(64) NOT NULL DEFAULT '' COMMENT '所属应用编码，空=通用',
+  `module` varchar(32) NOT NULL DEFAULT '' COMMENT '模块（左侧树分组）',
+  `name` varchar(128) NOT NULL COMMENT '描述',
+  `value` text NOT NULL COMMENT '埋点值（JSON 文本）',
+  `built_in` tinyint(4) NOT NULL DEFAULT '0' COMMENT '1内置（种子数据）',
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_embed_point_code` (`code`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置';
+CREATE TABLE IF NOT EXISTS `cfg_embed_point_history` (
+  `id` bigint(20) NOT NULL,
+  `point_id` bigint(20) NOT NULL COMMENT '埋点ID',
+  `code` varchar(128) NOT NULL,
+  `app_code` varchar(64) NOT NULL DEFAULT '',
+  `module` varchar(32) NOT NULL DEFAULT '',
+  `name` varchar(128) NOT NULL DEFAULT '',
+  `value` text NOT NULL COMMENT '本次保存后的 value 快照',
+  `operated_by` bigint(20) DEFAULT NULL COMMENT '操作人账号ID',
+  `operated_name` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人名称',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_embed_history_point` (`point_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置历史';

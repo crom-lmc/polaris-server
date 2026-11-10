@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
+import com.laimengchao.sso.ehr.module.leave.entity.LeaveCarryoverWaiver;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveQuota;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveQuotaLog;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveRequest;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveTypeRule;
+import com.laimengchao.sso.ehr.module.leave.mapper.LeaveCarryoverWaiverMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaLogMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaMapper;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveQuotaVO;
@@ -43,6 +45,7 @@ public class LeaveQuotaService {
 
     private final LeaveQuotaMapper quotaMapper;
     private final LeaveQuotaLogMapper logMapper;
+    private final LeaveCarryoverWaiverMapper waiverMapper;
     private final LeaveTypeRuleService ruleService;
     private final AnnualLeaveService annualLeaveService;
 
@@ -104,6 +107,60 @@ public class LeaveQuotaService {
         return nvl(q.getTotalDays()).subtract(nvl(q.getUsedDays())).subtract(nvl(q.getFrozenDays()));
     }
 
+    /** 结转剩余 = 结转进来 - 结转已消耗（消耗优先扣结转） */
+    public BigDecimal carryoverRemaining(LeaveQuota q) {
+        if (q == null) {
+            return BigDecimal.ZERO;
+        }
+        return nvl(q.getCarryoverIn()).subtract(nvl(q.getCarryoverUsed())).max(BigDecimal.ZERO);
+    }
+
+    /** 冻结时归属结转的增量：不超过结转剩余 */
+    private BigDecimal carryDelta(LeaveQuota q, BigDecimal days) {
+        return days.min(carryoverRemaining(q));
+    }
+
+    /** 释放时归属结转的减量：释放优先还当年部分，冻结中归属结转的量 = carryoverUsed - usedDays */
+    private BigDecimal releaseCarryDelta(LeaveQuota q, BigDecimal days) {
+        BigDecimal frozenCarry = nvl(q.getCarryoverUsed()).subtract(nvl(q.getUsedDays())).max(BigDecimal.ZERO);
+        return days.min(frozenCarry);
+    }
+
+    /**
+     * 签署自动放弃上年结转剩余：写签署记录（幂等 uk 员工+年度），额度总额减去放弃天数、
+     * 结转占用同步增加（视同已消耗），并写 SETTLE 流水。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public BigDecimal waiveCarryover(LeaveQuota q, Long operatorId) {
+        BigDecimal remaining = carryoverRemaining(q);
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BizException(EhrErrorCode.LEAVE_QUOTA_NOT_ENOUGH, "当前没有可放弃的结转年假");
+        }
+        LeaveCarryoverWaiver w = new LeaveCarryoverWaiver();
+        w.setId(IdWorker.getId());
+        w.setEmployeeId(q.getEmployeeId());
+        w.setYear(q.getYear());
+        w.setQuotaId(q.getId());
+        w.setWaiveDays(remaining);
+        w.setRemark("自动放弃 " + q.getYear() + " 年结转剩余 " + remaining.stripTrailingZeros().toPlainString() + " 天");
+        try {
+            waiverMapper.insert(w);
+        } catch (DuplicateKeyException e) {
+            throw new BizException(EhrErrorCode.LEAVE_QUOTA_NOT_ENOUGH, "已签署过自动放弃，请勿重复操作");
+        }
+        change(q, ACTION_SETTLE, remaining, null,
+                "WAIVE:" + q.getEmployeeId() + ":" + q.getYear(), operatorId, w.getRemark(),
+                id -> quotaMapper.waiveCarryover(id, remaining), "放弃 " + remaining + " 天");
+        return remaining;
+    }
+
+    /** 是否已签署过某年度结转放弃 */
+    public boolean hasWaived(Long employeeId, int year) {
+        return waiverMapper.selectCount(new LambdaQueryWrapper<LeaveCarryoverWaiver>()
+                .eq(LeaveCarryoverWaiver::getEmployeeId, employeeId)
+                .eq(LeaveCarryoverWaiver::getYear, year)) > 0;
+    }
+
     public LeaveQuotaVO toVO(LeaveQuota q) {
         LeaveQuotaVO vo = new LeaveQuotaVO();
         vo.setId(q.getId());
@@ -119,6 +176,13 @@ public class LeaveQuotaService {
         vo.setCarryoverIn(nvl(q.getCarryoverIn()));
         vo.setCarryoverOut(nvl(q.getCarryoverOut()));
         vo.setCarryoverExpireAt(q.getCarryoverExpireAt() == null ? null : q.getCarryoverExpireAt().toString());
+        vo.setCarryoverUsed(nvl(q.getCarryoverUsed()));
+        vo.setCarryoverRemaining(carryoverRemaining(q));
+        boolean annual = AnnualLeaveService.LEAVE_TYPE_ANNUAL.equalsIgnoreCase(q.getLeaveType());
+        boolean waived = annual && hasWaived(q.getEmployeeId(), q.getYear());
+        vo.setCarryoverWaived(waived);
+        vo.setCarryoverNotice(annual && !waived && LocalDate.now().getMonthValue() == 12
+                && carryoverRemaining(q).compareTo(BigDecimal.ZERO) > 0);
         vo.setSource(q.getSource());
         vo.setCalcDetail(nvl(q.getCalcDetail()));
         return vo;
@@ -161,7 +225,8 @@ public class LeaveQuotaService {
         }
         change(q, ACTION_FREEZE, leave.getDays(), leave.getId(),
                 "LEAVE:" + leave.getId() + ":FREEZE", operatorId, "提交请假冻结",
-                id -> quotaMapper.freeze(id, leave.getDays()), "可用 " + available(q) + " 天");
+                id -> quotaMapper.freezeWithCarryover(id, leave.getDays(), carryDelta(q, leave.getDays())),
+                "可用 " + available(q) + " 天");
     }
 
     /** 审批通过：冻结转已用 */
@@ -193,7 +258,8 @@ public class LeaveQuotaService {
         }
         change(q, ACTION_RELEASE, leave.getDays(), leave.getId(),
                 "LEAVE:" + leave.getId() + ":RELEASE", operatorId, "驳回/撤回释放冻结",
-                id -> quotaMapper.release(id, leave.getDays()), "释放冻结");
+                id -> quotaMapper.releaseWithCarryover(id, leave.getDays(), releaseCarryDelta(q, leave.getDays())),
+                "释放冻结");
     }
 
     /** 销假提前返岗：退回多请的天数（写 RELEASE 流水，幂等键按请假单唯一） */
@@ -209,7 +275,8 @@ public class LeaveQuotaService {
         }
         change(q, ACTION_RELEASE, returnDays, leave.getId(),
                 "LEAVE:" + leave.getId() + ":EARLY_RETURN", operatorId, "销假退回额度",
-                id -> quotaMapper.release(id, returnDays), "退回 " + returnDays + " 天");
+                id -> quotaMapper.releaseWithCarryover(id, returnDays, releaseCarryDelta(q, returnDays)),
+                "退回 " + returnDays + " 天");
     }
 
     /** 额度调整审批通过：delta 可为负，调整后总额度不得低于已用 + 冻结 */

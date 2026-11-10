@@ -28,6 +28,13 @@ public class LeaveQuotaVO {
     private BigDecimal carryoverIn;
     private BigDecimal carryoverOut;
     private String carryoverExpireAt;
+    /** 结转部分已消耗 / 结转剩余（=carryoverIn-carryoverUsed，消耗优先扣结转） */
+    private BigDecimal carryoverUsed;
+    private BigDecimal carryoverRemaining;
+    /** 是否已签署自动放弃结转（年假） */
+    private Boolean carryoverWaived;
+    /** 12 月待办提示标记：当年 12 月且结转剩余 >0 且未签署放弃（年假） */
+    private Boolean carryoverNotice;
     /** AUTO 自动生成 / MANUAL 手工调整 */
     private String source;
     private String calcDetail;

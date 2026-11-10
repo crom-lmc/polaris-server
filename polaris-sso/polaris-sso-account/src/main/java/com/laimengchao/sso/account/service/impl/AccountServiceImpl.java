@@ -445,35 +445,45 @@ public class AccountServiceImpl implements AccountService {
         return result;
     }
 
-    /** 期望登录名 → 邮箱前缀 → 手机号 → 随机串，逐个消解冲突（最多试 50 次） */
+    /**
+     * 生成登录名：有邮箱就直接用邮箱全地址（库内存量账号即此形态，登录接口也支持邮箱登录），
+     * 没有邮箱时依次退化为期望登录名 → 手机号 → 随机串，逐个消解冲突（最多试 50 次）。
+     */
     private String generateUniqueUsername(String wanted, String email, String phone) {
-        String base = trimToNull(wanted);
-        // 前端可能把邮箱直接作为期望登录名传入，取 @ 前的前缀，避免拼成 xxxdomaincom
-        if (base != null && base.indexOf('@') > 0) {
-            base = base.substring(0, base.indexOf('@'));
-        }
-        if (base == null && email != null) {
-            base = email.substring(0, email.indexOf('@') > 0 ? email.indexOf('@') : email.length());
-        }
-        if (base == null && phone != null && !phone.isBlank()) {
-            base = phone;
-        }
+        String base = trimToNull(email);
         if (base == null) {
+            base = trimToNull(wanted);
+        }
+        if (base != null) {
+            base = base.replaceAll("\\s", "").toLowerCase();
+            int at = base.indexOf('@');
+            if (at > 0) {
+                // 邮箱必须保留 @ 与域名：这里若截前缀或清洗掉 @，就会生成 laimengchao 这种短名
+                String local = base.substring(0, at).replaceAll("[^a-z0-9_.+-]", "");
+                String domain = base.substring(at + 1).replaceAll("[^a-z0-9.-]", "");
+                base = local.isEmpty() || domain.isEmpty() ? null : local + "@" + domain;
+            } else {
+                base = base.replaceAll("[^a-z0-9_]", "");
+            }
+        }
+        if (base == null || base.isEmpty()) {
+            base = phone != null && !phone.isBlank() ? phone.replaceAll("[^0-9]", "") : "";
+        }
+        if (base.isEmpty()) {
             base = "u" + System.currentTimeMillis() % 1000000;
         }
-        String cleaned = base.toLowerCase().replaceAll("[^a-z0-9_]", "");
-        if (cleaned.length() < 3) {
-            cleaned = "u" + cleaned + "001";
+        if (base.length() < 3) {
+            base = "u" + base + "001";
         }
-        if (cleaned.length() > 24) {
-            cleaned = cleaned.substring(0, 24);
+        if (base.length() > 64) {
+            base = base.substring(0, 64);
         }
-        String candidate = cleaned;
+        String candidate = base;
         for (int i = 1; i <= 50 && accountMapper.selectByUsername(candidate) != null; i++) {
-            candidate = cleaned + i;
+            candidate = base + i;
         }
         if (accountMapper.selectByUsername(candidate) != null) {
-            candidate = cleaned + (System.currentTimeMillis() % 10000);
+            candidate = base + (System.currentTimeMillis() % 10000);
         }
         return candidate;
     }

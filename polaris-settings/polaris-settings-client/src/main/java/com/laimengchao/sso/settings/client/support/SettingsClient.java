@@ -3,12 +3,14 @@ package com.laimengchao.sso.settings.client.support;
 import com.laimengchao.sso.settings.client.api.BankApi;
 import com.laimengchao.sso.settings.client.api.DictApi;
 import com.laimengchao.sso.settings.client.api.EducationApi;
+import com.laimengchao.sso.settings.client.api.EmbedPointApi;
 import com.laimengchao.sso.settings.client.api.FamilyRelationApi;
 import com.laimengchao.sso.settings.client.api.LeaveTypeApi;
 import com.laimengchao.sso.settings.client.api.PositionApi;
 import com.laimengchao.sso.settings.client.api.ResignReasonApi;
 import com.laimengchao.sso.settings.client.dto.DictBatchRequest;
 import com.laimengchao.sso.settings.client.dto.DictItemDTO;
+import com.laimengchao.sso.settings.client.dto.EmbedPointDTO;
 import com.laimengchao.sso.settings.client.dto.R;
 import com.laimengchao.sso.settings.client.dto.BizItemDTO;
 import feign.FeignException;
@@ -45,6 +47,7 @@ public class SettingsClient {
     private final LeaveTypeApi leaveTypeApi;
     private final ResignReasonApi resignReasonApi;
     private final FamilyRelationApi familyRelationApi;
+    private final EmbedPointApi embedPointApi;
 
     /** typeCode → (items, 过期时间)；dict() 的 value→label 从 items 派生，保证两个方法同源 */
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
@@ -52,9 +55,15 @@ public class SettingsClient {
     /** 主数据缓存：biz:{type} → (items, expireAt)，与字典缓存分开避免 key 撞车 */
     private final Map<String, BizCacheEntry> bizCache = new ConcurrentHashMap<>();
 
+    /** 埋点单条缓存：code → (point, expireAt)；__all__ 缓存整表 */
+    private final Map<String, EmbedPointCacheEntry> embedCache = new ConcurrentHashMap<>();
+
+    private static final String EMBED_ALL_KEY = "__all__";
+
     public SettingsClient(DictApi dictApi, BankApi bankApi, EducationApi educationApi,
                           PositionApi positionApi, LeaveTypeApi leaveTypeApi,
-                          ResignReasonApi resignReasonApi, FamilyRelationApi familyRelationApi) {
+                          ResignReasonApi resignReasonApi, FamilyRelationApi familyRelationApi,
+                          EmbedPointApi embedPointApi) {
         this.dictApi = dictApi;
         this.bankApi = bankApi;
         this.educationApi = educationApi;
@@ -62,6 +71,7 @@ public class SettingsClient {
         this.leaveTypeApi = leaveTypeApi;
         this.resignReasonApi = resignReasonApi;
         this.familyRelationApi = familyRelationApi;
+        this.embedPointApi = embedPointApi;
     }
 
     /**
@@ -162,6 +172,70 @@ public class SettingsClient {
     }
 
     /**
+     * 读取埋点配置（单条）：不存在 / 配置中心异常返回 null，调用方走自身兜底。
+     * 60s 本地缓存，配置中心改完最多 60 秒生效。
+     */
+    public EmbedPointDTO embedPoint(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        long now = Instant.now().toEpochMilli();
+        EmbedPointCacheEntry entry = embedCache.get(code);
+        if (entry != null && now < entry.expireAt) {
+            return entry.point();
+        }
+        List<EmbedPointDTO> all = embedPoints();
+        EmbedPointDTO found = all.stream()
+                .filter(p -> code.equals(p.getCode()))
+                .findFirst().orElse(null);
+        if (found != null) {
+            embedCache.put(code, new EmbedPointCacheEntry(found, now + CACHE_TTL_MS));
+        }
+        return found;
+    }
+
+    /** 全部埋点：code → value（JSON 文本）；配置中心异常返回空 Map */
+    public Map<String, String> embedPointValues() {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (EmbedPointDTO p : embedPoints()) {
+            out.put(p.getCode(), p.getValue());
+        }
+        return out;
+    }
+
+    /** 全部埋点（60s 缓存、故障返回空列表） */
+    public List<EmbedPointDTO> embedPoints() {
+        long now = Instant.now().toEpochMilli();
+        EmbedPointCacheEntry entry = embedCache.get(EMBED_ALL_KEY);
+        if (entry != null && now < entry.expireAt) {
+            return entry.points;
+        }
+        List<EmbedPointDTO> result = fetchEmbedPoints();
+        if (!result.isEmpty()) {
+            embedCache.put(EMBED_ALL_KEY, new EmbedPointCacheEntry(result, now + CACHE_TTL_MS));
+        }
+        return result;
+    }
+
+    /** 失效埋点缓存：不区分 key 全清，埋点数量很少 */
+    public void evictEmbedPoints() {
+        embedCache.clear();
+    }
+
+    private List<EmbedPointDTO> fetchEmbedPoints() {
+        try {
+            R<List<EmbedPointDTO>> resp = embedPointApi.list();
+            return resp != null && resp.ok() && resp.getData() != null ? resp.getData() : List.of();
+        } catch (FeignException e) {
+            log.warn("读取配置中心埋点失败（HTTP {}），本次走内置兜底", e.status());
+            return List.of();
+        } catch (Exception e) {
+            log.warn("读取配置中心埋点失败（{}），本次走内置兜底", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
      * 类型编码 → 对应 Api 的查询调用。每个主数据类型一个 Api 接口，
      * 这里只做「类型 → 接口方法」的路由，不承载业务逻辑。
      */
@@ -232,5 +306,16 @@ public class SettingsClient {
     }
 
     private record BizCacheEntry(List<BizItemDTO> items, long expireAt) {
+    }
+
+    private record EmbedPointCacheEntry(List<EmbedPointDTO> points, long expireAt) {
+
+        EmbedPointCacheEntry(EmbedPointDTO point, long expireAt) {
+            this(List.of(point), expireAt);
+        }
+
+        EmbedPointDTO point() {
+            return points.isEmpty() ? null : points.get(0);
+        }
     }
 }

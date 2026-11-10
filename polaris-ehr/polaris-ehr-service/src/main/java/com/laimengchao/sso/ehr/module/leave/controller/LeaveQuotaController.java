@@ -83,6 +83,20 @@ public class LeaveQuotaController {
         return R.ok(adjustService.apply(quotaId, req));
     }
 
+    /** 自动放弃上年结转剩余年假（12 月待办入口，登录即可，幂等） */
+    @PostMapping("/me/annual-carryover/waive")
+    public R<java.math.BigDecimal> waiveCarryover() {
+        Long employeeId = leaveService.myEmployeeId();
+        int year = LocalDate.now().getYear();
+        LeaveQuota q = quotaService.find(employeeId,
+                com.laimengchao.sso.ehr.module.leave.service.AnnualLeaveService.LEAVE_TYPE_ANNUAL, year);
+        if (q == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "当年没有年假额度");
+        }
+        Long operatorId = SecurityUtils.currentUser().map(SecurityUser::getAccountId).orElse(null);
+        return R.ok(quotaService.waiveCarryover(q, operatorId));
+    }
+
     private List<LeaveQuotaVO> fillNames(List<LeaveQuotaVO> list) {
         Map<String, String> names = leaveService.typeNames();
         for (LeaveQuotaVO vo : list) {

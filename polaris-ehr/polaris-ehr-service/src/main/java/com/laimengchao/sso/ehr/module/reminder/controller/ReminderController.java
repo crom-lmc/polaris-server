@@ -26,19 +26,26 @@ public class ReminderController {
     public R<R.Page<Reminder>> my(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "false") boolean unreadOnly) {
-        return R.ok(reminderService.my(unreadOnly, page, size));
+            @RequestParam(defaultValue = "false") boolean unreadOnly,
+            @RequestParam(required = false) String type) {
+        return R.ok(reminderService.my(unreadOnly, type, page, size));
     }
 
     @GetMapping("/unread-count")
-    public R<Integer> unreadCount() {
-        return R.ok(reminderService.unreadCount());
+    public R<Integer> unreadCount(@RequestParam(required = false) String type) {
+        return R.ok(reminderService.unreadCount(type));
     }
 
     @PostMapping("/{id}/read")
     public R<Void> read(@PathVariable Long id) {
         reminderService.markRead(id);
         return R.ok(null);
+    }
+
+    /** 手动触发一次试用期提醒生成（补跑历史超期数据用，幂等） */
+    @PostMapping("/generate-probation")
+    public R<Integer> generateProbation() {
+        return R.ok(reminderService.generateDaily());
     }
 
     @PostMapping("/read-all")

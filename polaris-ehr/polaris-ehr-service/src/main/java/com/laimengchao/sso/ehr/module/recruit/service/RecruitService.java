@@ -479,7 +479,7 @@ public class RecruitService {
                 com.laimengchao.sso.ehr.module.employee.dto.PendingArchiveCommand.builder()
                         .name(c.getName())
                         .mobile(c.getMobile())
-                        .email(c.getEmail())
+                        // 邮箱不沿用招聘简历里的个人邮箱，统一按系统规则（姓名拼音@公司域名）生成
                         .gender(c.getGender())
                         .birthday(c.getBirthday())
                         .idCard(c.getIdCard())

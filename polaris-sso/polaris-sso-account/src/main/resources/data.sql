@@ -1206,6 +1206,9 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026110800000000004,'code','单号规则',1,0,6,'',NULL,NULL,0,'settings');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026110800000000005,'code:view','查看单号规则',2,2026110800000000004,1,'',NULL,NULL,0,'settings');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026110800000000006,'code:manage','单号规则增删改',2,2026110800000000004,2,'',NULL,NULL,0,'settings');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026111100000000101,'embed','埋点管理',1,0,7,'埋点 key / JSON 值配置',NULL,NULL,0,'settings');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026111100000000102,'embed:view','查看埋点配置',2,2026111100000000101,1,'',NULL,NULL,0,'settings');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026111100000000103,'embed:manage','编辑埋点配置',2,2026111100000000101,2,'',NULL,NULL,0,'settings');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026110800000020001,'messages','待办提醒',1,0,2,'消息中心：待办与站内消息',NULL,NULL,0,'sso');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2026110800000020002,'messages:view','查看待办提醒',2,2026110800000020001,1,'进入消息中心查看待办与站内消息',NULL,NULL,0,'sso');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2116193763304861697,'account','账户管理',1,0,3,'','2026-10-30 23:41:25','2026-10-30 23:41:25',0,'sso');
@@ -1608,6 +1611,15 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2026110800000000010,2026110800000000003);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026110800000000003);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,2026110800000000003);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2026110800000000010,2026111100000000101);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026111100000000101);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,2026111100000000101);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2026110800000000010,2026111100000000102);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026111100000000102);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,2026111100000000102);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2026110800000000010,2026111100000000103);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026111100000000103);
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,2026111100000000103);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026110800000000004);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,2026110800000000004);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,2026110800000000005);

@@ -4,6 +4,7 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.constant.PermissionCodes;
 import com.laimengchao.sso.ehr.module.leave.entity.AnnualLeavePolicy;
 import com.laimengchao.sso.ehr.module.leave.service.AnnualLeaveService;
+import com.laimengchao.sso.ehr.module.leave.vo.AnnualLeaveLedgerVO;
 import com.laimengchao.sso.ehr.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,5 +61,24 @@ public class AnnualLeaveController {
     public R<Integer> generate(@RequestParam(required = false) Integer year) {
         int y = year == null ? LocalDate.now().getYear() : year;
         return R.ok(annualLeaveService.generateAll(y));
+    }
+
+    /** 按新规则重算指定年度全员年假额度（含已离职按在册折算），返回新建+有变化的条数 */
+    @PostMapping("/annual-leave/recalculate")
+    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    public R<Integer> recalculate(@RequestParam(required = false) Integer year) {
+        int y = year == null ? LocalDate.now().getYear() : year;
+        return R.ok(annualLeaveService.recalculateYear(y, true));
+    }
+
+    /** 年假台账：每人当年产生 / 上年结转 / 已用 / 剩余 */
+    @GetMapping("/annual-leave/ledger")
+    @Permit(PermissionCodes.LEAVE_QUOTA_VIEW)
+    public R<R.Page<AnnualLeaveLedgerVO>> ledger(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return R.ok(annualLeaveService.pageLedger(keyword, year, page, size));
     }
 }

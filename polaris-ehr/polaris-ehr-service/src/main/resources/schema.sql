@@ -426,6 +426,7 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota` (
   `frozen_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '审批中冻结',
   `carryover_in` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '上期结转进来',
   `carryover_out` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '结转到下期',
+  `carryover_used` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '结转部分已消耗（冻结+已用中归属上年结转的量，消耗优先扣结转）',
   `carryover_expire_at` date DEFAULT NULL COMMENT '结转额度失效日',
   `source` varchar(16) NOT NULL DEFAULT 'MANUAL' COMMENT '来源 AUTO自然年生成/MANUAL手工/CARRYOVER结转',
   `calc_detail` varchar(500) DEFAULT '' COMMENT '生成依据快照（工龄/档位/折算）',
@@ -457,6 +458,19 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota_log` (
   KEY `idx_quota_log_quota` (`quota_id`),
   KEY `idx_quota_log_emp` (`employee_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='额度流水';
+
+-- 上年结转年假「自动放弃」签署记录：每人每年一条，签署后 12 月不再发到期提醒待办
+CREATE TABLE IF NOT EXISTS `ehr_leave_carryover_waiver` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `year` int(11) NOT NULL COMMENT '结转额度所在年度（在该年 12 月签署放弃）',
+  `quota_id` bigint(20) NOT NULL COMMENT '当年年假额度ID',
+  `waive_days` decimal(6,2) NOT NULL COMMENT '放弃的结转剩余天数',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_waiver_emp_year` (`employee_id`,`year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='结转年假自动放弃签署记录';
 
 CREATE TABLE IF NOT EXISTS `ehr_leave_type_rule` (
   `leave_type` varchar(16) NOT NULL COMMENT '与字典编码一致',
@@ -628,6 +642,15 @@ CREATE TABLE IF NOT EXISTS `ehr_reminder` (
   UNIQUE KEY `uk_reminder_once` (`employee_id`,`type`,`trigger_date`,`receiver_id`),
   KEY `idx_reminder_receiver` (`receiver_id`,`read_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='到期提醒（同一员工+节点+接收人只生成一次）';
+
+CREATE TABLE IF NOT EXISTS `ehr_probation_notice_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '试用期员工ID',
+  `notice_date` date NOT NULL COMMENT '消息发送日期（每天一条）',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_probation_notice_day` (`employee_id`,`notice_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='试用期到期站内消息发送去重（T-3起每天一条直到转正）';
 
 CREATE TABLE IF NOT EXISTS `ehr_job_lock` (
   `job_name` varchar(64) NOT NULL COMMENT '任务名，如probation-reminder-daily',

@@ -35,11 +35,35 @@ public interface LeaveQuotaMapper extends BaseMapper<LeaveQuota> {
             + "WHERE id = #{id} AND deleted = 0 AND total_days + #{delta} >= used_days + frozen_days")
     int adjust(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
-    /** 自动生成场景（年假跨档补差）：只加不减，并覆盖生成依据快照 */
-    @Update("UPDATE ehr_leave_quota SET total_days = total_days + #{delta}, calc_detail = #{detail}, "
-            + "version = version + 1 WHERE id = #{id} AND deleted = 0")
-    int increaseTotal(@Param("id") Long id, @Param("delta") BigDecimal delta,
-                      @Param("detail") String detail);
+    /** 每日重算 AUTO 额度：直接覆盖总额度与生成依据，仅在数值有变化时更新 */
+    @Update("UPDATE ehr_leave_quota SET total_days = #{total}, calc_detail = #{detail}, "
+            + "version = version + 1 WHERE id = #{id} AND deleted = 0 AND total_days <> #{total}")
+    int recalcTotal(@Param("id") Long id, @Param("total") BigDecimal total,
+                    @Param("detail") String detail);
+
+    /** 消耗优先扣结转：冻结时同步增加 carryover_used（不超过结转剩余） */
+    @Update("UPDATE ehr_leave_quota SET frozen_days = frozen_days + #{days}, "
+            + "carryover_used = carryover_used + #{carryDelta}, version = version + 1 "
+            + "WHERE id = #{id} AND deleted = 0 AND total_days - used_days - frozen_days >= #{days}")
+    int freezeWithCarryover(@Param("id") Long id, @Param("days") BigDecimal days,
+                            @Param("carryDelta") BigDecimal carryDelta);
+
+    /** 释放冻结：优先释放当年部分，再释放结转占用（carryover_used 相应减少） */
+    @Update("UPDATE ehr_leave_quota SET frozen_days = frozen_days - #{days}, "
+            + "carryover_used = carryover_used - #{carryDelta}, version = version + 1 "
+            + "WHERE id = #{id} AND deleted = 0 AND frozen_days >= #{days} AND carryover_used >= #{carryDelta}")
+    int releaseWithCarryover(@Param("id") Long id, @Param("days") BigDecimal days,
+                             @Param("carryDelta") BigDecimal carryDelta);
+
+    /** 签署放弃结转：总额度减去放弃天数，结转占用同步增加（视同消耗），不低于已用+冻结 */
+    @Update("UPDATE ehr_leave_quota SET total_days = total_days - #{days}, carryover_used = carryover_used + #{days}, "
+            + "version = version + 1 WHERE id = #{id} AND deleted = 0 "
+            + "AND total_days - #{days} >= used_days + frozen_days")
+    int waiveCarryover(@Param("id") Long id, @Param("days") BigDecimal days);
+
+    /** 生成新年度额度后，回写上一年实际结转量 */
+    @Update("UPDATE ehr_leave_quota SET carryover_out = #{carry} WHERE id = #{id} AND deleted = 0")
+    int updateCarryoverOut(@Param("id") Long id, @Param("carry") BigDecimal carry);
 
     /**
      * 加班结算等场景按自然年建额度行。

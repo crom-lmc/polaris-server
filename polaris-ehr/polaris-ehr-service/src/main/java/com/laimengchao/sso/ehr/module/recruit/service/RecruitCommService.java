@@ -46,7 +46,11 @@ public class RecruitCommService {
 
     @Transactional(rollbackFor = Exception.class)
     public CandidateCommVO add(Long candidateId, CandidateCommRequest req) {
-        requireCandidate(candidateId);
+        Candidate candidate = requireCandidate(candidateId);
+        // 已淘汰候选人只读：淘汰后不允许再补沟通记录，避免事后篡改淘汰依据
+        if (RecruitService.STAGE_REJECTED.equals(candidate.getStage())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "候选人已淘汰，不可新增沟通记录");
+        }
         SecurityUser user = SecurityUtils.currentUser()
                 .orElseThrow(() -> new BizException(ErrorCode.UNAUTHORIZED));
         CandidateComm comm = new CandidateComm();
@@ -78,11 +82,12 @@ public class RecruitCommService {
         return map;
     }
 
-    private void requireCandidate(Long candidateId) {
+    private Candidate requireCandidate(Long candidateId) {
         Candidate c = candidateId == null ? null : candidateMapper.selectById(candidateId);
         if (c == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "候选人不存在");
         }
+        return c;
     }
 
     private CandidateCommVO toVO(CandidateComm comm) {

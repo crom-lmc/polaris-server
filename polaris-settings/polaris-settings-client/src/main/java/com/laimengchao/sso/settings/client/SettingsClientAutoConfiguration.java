@@ -5,6 +5,7 @@ import com.laimengchao.sso.settings.client.api.BankApi;
 import com.laimengchao.sso.settings.client.api.CodeRuleApi;
 import com.laimengchao.sso.settings.client.api.DictApi;
 import com.laimengchao.sso.settings.client.api.EducationApi;
+import com.laimengchao.sso.settings.client.api.EmbedPointApi;
 import com.laimengchao.sso.settings.client.api.FamilyRelationApi;
 import com.laimengchao.sso.settings.client.api.LeaveTypeApi;
 import com.laimengchao.sso.settings.client.api.NoticeApi;
@@ -28,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 @EnableFeignClients(clients = {
         ApprovalApi.class,
         NoticeApi.class,
+        EmbedPointApi.class,
         CodeRuleApi.class,
         DictApi.class,
         BankApi.class,
@@ -43,8 +45,9 @@ public class SettingsClientAutoConfiguration {
     @ConditionalOnMissingBean
     public SettingsClient settingsClient(DictApi dictApi, BankApi bankApi, EducationApi educationApi,
                                          PositionApi positionApi, LeaveTypeApi leaveTypeApi,
-                                         ResignReasonApi resignReasonApi, FamilyRelationApi familyRelationApi) {
+                                         ResignReasonApi resignReasonApi, FamilyRelationApi familyRelationApi,
+                                         EmbedPointApi embedPointApi) {
         return new SettingsClient(dictApi, bankApi, educationApi, positionApi,
-                leaveTypeApi, resignReasonApi, familyRelationApi);
+                leaveTypeApi, resignReasonApi, familyRelationApi, embedPointApi);
     }
 }

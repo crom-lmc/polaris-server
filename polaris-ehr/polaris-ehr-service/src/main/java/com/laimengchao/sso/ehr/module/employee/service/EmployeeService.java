@@ -37,6 +37,8 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeEducationMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeFamilyMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeWorkMapper;
+import com.laimengchao.sso.ehr.module.contract.entity.Contract;
+import com.laimengchao.sso.ehr.module.contract.mapper.ContractMapper;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
 import com.laimengchao.sso.ehr.module.employee.constant.ApprovalRecord;
 import com.laimengchao.sso.ehr.module.employee.constant.CloseAccountNotice;
@@ -88,6 +90,7 @@ public class EmployeeService {
     private final EmployeeEducationMapper educationMapper;
     private final EmployeeWorkMapper workMapper;
     private final EmployeeFamilyMapper familyMapper;
+    private final ContractMapper contractMapper;
     /** 人员数据范围（按权限码解析 ALL / ORG_TREE / ORG / SELF） */
     private final DataScopeService dataScope;
     /** 查看 / 明文 / 导出审计 */
@@ -970,7 +973,9 @@ public class EmployeeService {
                 .eq(EmployeeWork::getEmployeeId, empId)));
         long family = countSub(familyMapper.selectCount(new LambdaQueryWrapper<EmployeeFamily>()
                 .eq(EmployeeFamily::getEmployeeId, empId)));
-        return "银行卡 " + bank + " · 教育 " + edu + " · 工作 " + work + " · 家庭 " + family;
+        long contract = countSub(contractMapper.selectCount(new LambdaQueryWrapper<Contract>()
+                .eq(Contract::getEmployeeId, empId)));
+        return "银行卡 " + bank + " · 教育 " + edu + " · 工作 " + work + " · 家庭 " + family + " · 合同 " + contract;
     }
 
     /** 组织全路径，如「集团 / 子公司 / 研发部」；节点不存在返回空串 */
@@ -1418,6 +1423,11 @@ public class EmployeeService {
         if (countSub(familyMapper.selectCount(new LambdaQueryWrapper<EmployeeFamily>()
                 .eq(EmployeeFamily::getEmployeeId, id))) == 0) {
             emptyCards.add("家庭成员");
+        }
+        // 合同是入职的法定前置：提交前必须至少录入 1 条（档案-合同页签录入）
+        if (countSub(contractMapper.selectCount(new LambdaQueryWrapper<Contract>()
+                .eq(Contract::getEmployeeId, id))) == 0) {
+            emptyCards.add("合同");
         }
 
         if (missing.isEmpty() && emptyCards.isEmpty()) {

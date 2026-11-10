@@ -1,5 +1,7 @@
 package com.laimengchao.sso.ehr.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laimengchao.sso.client.api.AccountApi;
 import com.laimengchao.sso.client.dto.AccountStatusRequest;
 import com.laimengchao.sso.client.dto.OpenAccountRequest;
@@ -7,11 +9,14 @@ import com.laimengchao.sso.client.dto.OpenAccountResult;
 import com.laimengchao.sso.client.dto.R;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
+import com.laimengchao.sso.settings.client.dto.EmbedPointDTO;
+import com.laimengchao.sso.settings.client.support.SettingsClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,7 +31,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AccountClient {
 
+    /** 配置中心埋点：新开账户默认授权角色 */
+    private static final String EMBED_DEFAULT_ROLES = "ehr.account.default-roles";
+    /** 配置中心读不到时的内置兜底角色 */
+    private static final List<String> FALLBACK_ROLES = List.of("EMPLOYEE_SELF");
+
     private final AccountApi accountApi;
+    private final SettingsClient settingsClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${sso.client.internal-token:${SSO_INTERNAL_TOKEN:}}")
     private String internalToken;
@@ -34,15 +46,38 @@ public class AccountClient {
     @Value("${ehr.account.default-apps:sso-center,portal,ehr}")
     private String defaultApps;
 
-    @Value("${ehr.account.default-roles:EHR_BASIC}")
-    private String defaultRoles;
-
     public List<String> defaultApps() {
         return split(defaultApps);
     }
 
+    /**
+     * 默认授权角色：读配置中心埋点 {@code ehr.account.default-roles} 的 JSON
+     * （{@code {"roleCodes":["EMPLOYEE_SELF"]}}）。
+     * 配置中心不可用 / 埋点不存在 / JSON 非法时兜底 EMPLOYEE_SELF，保证开户不被打断。
+     */
     public List<String> defaultRoles() {
-        return split(defaultRoles);
+        EmbedPointDTO point = settingsClient.embedPoint(EMBED_DEFAULT_ROLES);
+        if (point != null && point.getValue() != null && !point.getValue().isBlank()) {
+            try {
+                JsonNode root = objectMapper.readTree(point.getValue());
+                JsonNode roles = root.get("roleCodes");
+                List<String> out = new ArrayList<>();
+                if (roles != null && roles.isArray()) {
+                    for (JsonNode node : roles) {
+                        String role = node.asText("").trim();
+                        if (!role.isEmpty()) {
+                            out.add(role);
+                        }
+                    }
+                }
+                if (!out.isEmpty()) {
+                    return out;
+                }
+            } catch (Exception e) {
+                log.warn("埋点 {} 解析失败，使用内置默认角色 {}：{}", EMBED_DEFAULT_ROLES, FALLBACK_ROLES, e.getMessage());
+            }
+        }
+        return FALLBACK_ROLES;
     }
 
     /**
