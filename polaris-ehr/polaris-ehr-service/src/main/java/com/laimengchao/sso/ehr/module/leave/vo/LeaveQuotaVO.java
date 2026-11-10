@@ -17,8 +17,18 @@ public class LeaveQuotaVO {
     private String leaveType;
     private String leaveTypeName;
     private Integer year;
+    /** 周期起止日（自然年） */
+    private String periodStart;
+    private String periodEnd;
     private BigDecimal totalDays;
     private BigDecimal usedDays;
     private BigDecimal frozenDays;
     private BigDecimal availableDays;
+    /** 上期结转进来 / 结转到下期 / 结转失效日 */
+    private BigDecimal carryoverIn;
+    private BigDecimal carryoverOut;
+    private String carryoverExpireAt;
+    /** AUTO 自动生成 / MANUAL 手工调整 */
+    private String source;
+    private String calcDetail;
 }

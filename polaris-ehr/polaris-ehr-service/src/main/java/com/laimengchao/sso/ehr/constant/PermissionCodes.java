@@ -64,6 +64,14 @@ public final class PermissionCodes {
     /** 加班终审 / 月度汇总确认 / 团队考勤查看 */
     public static final String OVERTIME_APPROVE = "overtime:approve";
 
+    /* 考勤制度 P4-1/P4-2 */
+    /** 查看考勤规则 / 日结果 / 打卡记录 / 补卡单 */
+    public static final String ATTENDANCE_VIEW = "attendance:view";
+    /** 维护考勤规则 / 工作日历，手工补录打卡，审批补卡，生成日结果，触发模拟考勤 */
+    public static final String ATTENDANCE_MANAGE = "attendance:manage";
+    /** 解锁已确认的月度考勤（需记录原因） */
+    public static final String ATTENDANCE_MONTH_UNLOCK = "attendance:month:unlock";
+
     /* 人员数据范围（决定列表/详情能看到哪些人的数据） */
     /** 全部人员 */
     public static final String EMPLOYEE_DATA_ALL = "employee:data:all";

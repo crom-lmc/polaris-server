@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
 import com.laimengchao.sso.ehr.module.attendance.dto.OvertimeRequest;
@@ -23,6 +24,7 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveRequest;
 import com.laimengchao.sso.ehr.module.leave.entity.LeaveQuota;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
+import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.WorkCalendarMapper;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveDaysCalculator;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveQuotaService;
@@ -36,6 +38,7 @@ import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -80,12 +83,16 @@ public class AttendanceService {
     private final AttendanceMonthMapper monthMapper;
     private final EmployeeMapper employeeMapper;
     private final LeaveMapper leaveMapper;
+    private final LeaveQuotaMapper quotaMapper;
     private final WorkCalendarMapper calendarMapper;
     private final LeaveDaysCalculator daysCalculator;
     private final LeaveQuotaService quotaService;
     private final DataScopeService dataScopeService;
     private final ApprovalLauncher approvalLauncher;
     private final ApprovalApi approvalApi;
+    private final AttendanceCalendarService calendarService;
+    private final AttendanceDailyService dailyService;
+    private final BizNoService bizNoService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -108,13 +115,14 @@ public class AttendanceService {
                 || req.getHours().compareTo(new BigDecimal("24")) > 0) {
             throw new BizException(ErrorCode.PARAM_ERROR, "加班时长需在 0-24 小时之间");
         }
-        String type = req.getType() == null ? "NORMAL" : req.getType().toUpperCase();
-        if (!TYPE_NAMES.containsKey(type)) {
-            throw new BizException(ErrorCode.PARAM_ERROR, "加班类型不合法");
-        }
+        // 日类型由工作日历自动判定，不再手选；所有日类型统一 1:1 转调休
+        String dayType = calendarService.resolveDayType(req.getWorkDate());
+        String type = "LEGAL_HOLIDAY".equals(dayType) ? "HOLIDAY"
+                : ("REST".equals(dayType) ? "RESTDAY" : "NORMAL");
         SecurityUser user = currentUser();
         Overtime o = new Overtime();
         o.setId(IdWorker.getId());
+        o.setOvertimeNo(bizNoService.next("ehr_overtime"));
         o.setEmployeeId(emp.getId());
         o.setAccountId(user.getAccountId());
         o.setWorkDate(req.getWorkDate());
@@ -225,14 +233,20 @@ public class AttendanceService {
             return;
         }
         if (Boolean.TRUE.equals(req.getApproved())) {
+            BigDecimal effectiveHours = o.getHours() == null
+                    ? BigDecimal.ZERO : o.getHours().setScale(2, RoundingMode.HALF_UP);
             int updated = overtimeMapper.update(null, new LambdaUpdateWrapper<Overtime>()
                     .eq(Overtime::getId, id)
                     .eq(Overtime::getStatus, 0)
-                    .set(Overtime::getStatus, 1));
+                    .set(Overtime::getStatus, 1)
+                    .set(Overtime::getSettleStatus, 1)
+                    .set(Overtime::getEffectiveHours, effectiveHours)
+                    .set(Overtime::getSettledAt, LocalDateTime.now())
+                    .set(Overtime::getCalcDetail, "1:1 转调休"));
             if (updated == 0) {
                 return;
             }
-            addCompensatory(o);
+            grantCompensatory(o, effectiveHours);
         } else {
             int target = req.getResult() != null && (req.getResult() == 3 || req.getResult() == 4) ? 3 : 2;
             overtimeMapper.update(null, new LambdaUpdateWrapper<Overtime>()
@@ -242,21 +256,48 @@ public class AttendanceService {
         }
     }
 
-    /** 加班转调休：1 小时加班 = 1 小时调休，按 8 小时/天折算入 COMPENSATORY 额度；流水 bizKey 保证只加一次 */
-    private void addCompensatory(Overtime o) {
-        if (o.getWorkDate() == null || o.getHours() == null) {
+    /**
+     * 加班转调休（所有日类型统一 1:1）：effective_hours / 8 天写入当年 COMPENSATORY 额度。
+     * 额度按自然年建行（period_start=1/1、period_end=12/31），流水 bizKey 保证只加一次。
+     */
+    public void grantCompensatory(Overtime o, BigDecimal effectiveHours) {
+        if (o.getWorkDate() == null || effectiveHours == null
+                || effectiveHours.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
         int year = o.getWorkDate().getYear();
-        LeaveQuota q = quotaService.getOrCreate(o.getEmployeeId(), "COMPENSATORY", year);
+        LocalDate periodStart = LocalDate.of(year, 1, 1);
+        LeaveQuota q = quotaMapper.selectOne(new LambdaQueryWrapper<LeaveQuota>()
+                .eq(LeaveQuota::getEmployeeId, o.getEmployeeId())
+                .eq(LeaveQuota::getLeaveType, "COMPENSATORY")
+                .eq(LeaveQuota::getPeriodStart, periodStart)
+                .last("limit 1"));
         if (q == null) {
+            try {
+                quotaMapper.insertNaturalYearQuota(IdWorker.getId(), o.getEmployeeId(), "COMPENSATORY",
+                        year, periodStart, LocalDate.of(year, 12, 31),
+                        "加班结算自动创建");
+            } catch (DuplicateKeyException e) {
+                log.info("COMPENSATORY 额度已被并发创建 employee={} year={}", o.getEmployeeId(), year);
+            }
+            q = quotaMapper.selectOne(new LambdaQueryWrapper<LeaveQuota>()
+                    .eq(LeaveQuota::getEmployeeId, o.getEmployeeId())
+                    .eq(LeaveQuota::getLeaveType, "COMPENSATORY")
+                    .eq(LeaveQuota::getPeriodStart, periodStart)
+                    .last("limit 1"));
+        }
+        if (q == null) {
+            log.error("加班结算找不到/创建不了调休额度 employee={} year={}", o.getEmployeeId(), year);
             return;
         }
         BigDecimal divisor = hoursPerDay == null || hoursPerDay.compareTo(BigDecimal.ZERO) <= 0
                 ? new BigDecimal("8") : hoursPerDay;
-        BigDecimal days = o.getHours().divide(divisor, 4, RoundingMode.HALF_UP);
+        BigDecimal days = effectiveHours.divide(divisor, 2, RoundingMode.HALF_UP);
+        if (days.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
         quotaService.adjust(q.getId(), days, null,
-                "加班转调休 " + o.getWorkDate() + " " + o.getHours() + " 小时",
+                "加班转调休 " + o.getWorkDate() + " " + effectiveHours + " 小时",
                 "OVERTIME:" + o.getId());
     }
 
@@ -277,13 +318,48 @@ public class AttendanceService {
                 .eq(AttendanceMonth::getEmployeeId, emp.getId())
                 .eq(AttendanceMonth::getMonth, ym.toString())
                 .last("limit 1"));
-        if (row != null && Integer.valueOf(1).equals(row.getConfirmed())) {
+        if (row != null) {
+            if (!Integer.valueOf(1).equals(row.getConfirmed())) {
+                monthMapper.update(null, new LambdaUpdateWrapper<AttendanceMonth>()
+                        .eq(AttendanceMonth::getId, row.getId())
+                        .set(AttendanceMonth::getConfirmed, 1));
+                row.setConfirmed(1);
+            }
             return toVO(row, emp.getName());
         }
         AttendanceMonth computed = computeRaw(emp, ym);
         computed.setConfirmed(1);
-        save(computed, row);
+        save(computed, null);
         return toVO(computed, emp.getName());
+    }
+
+    /** 解锁已确认的月度考勤；必须填写原因，解锁后立即按日结果重算汇总。 */
+    public AttendanceMonthVO unlock(String month, Long employeeId, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请填写解锁原因");
+        }
+        YearMonth ym = parseMonth(month);
+        Employee emp = requireAccessible(employeeId);
+        AttendanceMonth row = monthMapper.selectOne(new LambdaQueryWrapper<AttendanceMonth>()
+                .eq(AttendanceMonth::getEmployeeId, emp.getId())
+                .eq(AttendanceMonth::getMonth, ym.toString())
+                .last("limit 1"));
+        if (row == null || !Integer.valueOf(1).equals(row.getConfirmed())) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "该月未确认，无需解锁");
+        }
+        String note = reason.trim();
+        if (note.length() > 255) {
+            note = note.substring(0, 255);
+        }
+        monthMapper.update(null, new LambdaUpdateWrapper<AttendanceMonth>()
+                .eq(AttendanceMonth::getId, row.getId())
+                .set(AttendanceMonth::getConfirmed, 0)
+                .set(AttendanceMonth::getUnlockReason, note)
+                .set(AttendanceMonth::getUnlockedAt, LocalDateTime.now())
+                .set(AttendanceMonth::getUnlockedBy, currentUser().getAccountId()));
+        dailyService.recalcMonth(emp, ym);
+        AttendanceMonth fresh = monthMapper.selectById(row.getId());
+        return toVO(fresh == null ? row : fresh, emp.getName());
     }
 
     private AttendanceMonthVO computeOne(Employee emp, YearMonth ym) {
@@ -291,11 +367,12 @@ public class AttendanceService {
                 .eq(AttendanceMonth::getEmployeeId, emp.getId())
                 .eq(AttendanceMonth::getMonth, ym.toString())
                 .last("limit 1"));
-        if (row != null && Integer.valueOf(1).equals(row.getConfirmed())) {
+        // 日结果生成时已用 recalcMonth 维护月汇总，这里优先展示已落库数据，避免被粗算覆盖
+        if (row != null) {
             return toVO(row, emp.getName());
         }
         AttendanceMonth computed = computeRaw(emp, ym);
-        save(computed, row);
+        save(computed, null);
         computed.setConfirmed(0);
         return toVO(computed, emp.getName());
     }
@@ -333,7 +410,9 @@ public class AttendanceService {
                 ep = lv.getEndPeriod() == null ? "PM" : lv.getEndPeriod();
             }
             String mode = lv.getDayMode() == null ? "NATURAL" : lv.getDayMode();
-            LeaveDaysCalculator.Result r = daysCalculator.calculate(s, sp, e, ep, mode);
+            String st = s.equals(lv.getStartDate()) ? lv.getStartTime() : null;
+            String et = e.equals(lv.getEndDate()) ? lv.getEndTime() : null;
+            LeaveDaysCalculator.Result r = daysCalculator.calculate(s, sp, st, e, ep, et, mode);
             leaveDays = leaveDays.add(r.days());
         }
 
@@ -479,6 +558,10 @@ public class AttendanceService {
         vo.setLeaveDays(m.getLeaveDays());
         vo.setOvertimeHours(m.getOvertimeHours());
         vo.setAbsentDays(m.getAbsentDays());
+        vo.setLateMinutes(m.getLateMinutes());
+        vo.setEarlyMinutes(m.getEarlyMinutes());
+        vo.setAbsentHours(m.getAbsentHours());
+        vo.setWorkHours(m.getWorkHours());
         vo.setConfirmed(m.getConfirmed());
         return vo;
     }

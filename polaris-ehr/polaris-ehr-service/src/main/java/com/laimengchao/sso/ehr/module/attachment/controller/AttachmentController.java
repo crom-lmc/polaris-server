@@ -40,7 +40,8 @@ public class AttachmentController {
     }
 
     @PostMapping
-    @Permit({PermissionCodes.LEAVE_APPLY, PermissionCodes.CONTRACT_MANAGE, PermissionCodes.EMPLOYEE_EDIT})
+    @Permit({PermissionCodes.LEAVE_APPLY, PermissionCodes.CONTRACT_MANAGE,
+            PermissionCodes.EMPLOYEE_EDIT, PermissionCodes.RECRUIT_MANAGE})
     public R<AttachmentVO> upload(@RequestParam("file") MultipartFile file,
                                   @RequestParam(defaultValue = "TEMP") String bizType,
                                   @RequestParam(required = false) Long bizId) {
@@ -49,7 +50,7 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{id}")
-    @Permit({PermissionCodes.CONTRACT_MANAGE, PermissionCodes.EMPLOYEE_EDIT})
+    @Permit({PermissionCodes.CONTRACT_MANAGE, PermissionCodes.EMPLOYEE_EDIT, PermissionCodes.RECRUIT_MANAGE})
     public R<Void> delete(@PathVariable Long id) {
         SecurityUser user = SecurityUtils.currentUser().orElseThrow();
         attachmentService.delete(id, user.getAccountId());
@@ -57,12 +58,14 @@ public class AttachmentController {
     }
 
     @GetMapping("/{id}/download")
-    @Permit({PermissionCodes.LEAVE_VIEW, PermissionCodes.CONTRACT_VIEW, PermissionCodes.EMPLOYEE_VIEW})
+    @Permit({PermissionCodes.LEAVE_VIEW, PermissionCodes.CONTRACT_VIEW,
+            PermissionCodes.EMPLOYEE_VIEW, PermissionCodes.RECRUIT_VIEW})
     public ResponseEntity<Resource> download(@PathVariable Long id) {
         SecurityUser user = SecurityUtils.currentUser().orElseThrow();
         boolean canViewAll = user.isSuperAdmin()
                 || user.getPermissions().contains(PermissionCodes.LEAVE_APPROVE)
-                || user.getPermissions().contains(PermissionCodes.LEAVE_QUOTA_ADJUST);
+                || user.getPermissions().contains(PermissionCodes.LEAVE_QUOTA_ADJUST)
+                || user.getPermissions().contains(PermissionCodes.RECRUIT_VIEW);
         Resource resource = attachmentService.download(id, user.getAccountId(), canViewAll);
         String name = URLEncoder.encode(attachmentService.fileName(id), StandardCharsets.UTF_8)
                 .replace("+", "%20");

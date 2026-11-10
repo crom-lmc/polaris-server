@@ -19,6 +19,12 @@ public class LeaveTypeRule {
     /** 年度默认额度：首次为该员工建额度时使用 */
     private BigDecimal defaultQuotaDays;
     private Integer attachmentRequired;
+    /** 允许的证明文件类型，如 pdf,jpg；空=不限 */
+    private String proofTypes;
+    /** 请假折算小时达到该值才强制证明（0=所有时长都要） */
+    private BigDecimal proofMinHours;
+    /** 证明上传提示（员工手册口径） */
+    private String proofHint;
     private BigDecimal minDays;
     private BigDecimal maxDaysPerRequest;
     private Integer minNoticeDays;

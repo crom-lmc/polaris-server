@@ -21,6 +21,10 @@ public class AttendanceMonthVO {
     private BigDecimal leaveDays;
     private BigDecimal overtimeHours;
     private BigDecimal absentDays;
+    private Integer lateMinutes;
+    private Integer earlyMinutes;
+    private BigDecimal absentHours;
+    private BigDecimal workHours;
     /** 0 未确认 / 1 已确认 */
     private Integer confirmed;
 }

@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -160,6 +162,8 @@ public class NoticeService {
         rule.setEnabled(req.getEnabled() == null ? 1 : normalizeFlag(req.getEnabled()));
         rule.setBuiltIn(0);
         rule.setSort(req.getSort() == null ? 0 : req.getSort());
+        rule.setReceiverAccountIds(safe(req.getReceiverAccountIds()));
+        rule.setReceiverOrgIds(safe(req.getReceiverOrgIds()));
         ruleMapper.insert(rule);
         return toRuleVO(rule);
     }
@@ -193,6 +197,12 @@ public class NoticeService {
         }
         if (req.getSort() != null) {
             rule.setSort(req.getSort());
+        }
+        if (req.getReceiverAccountIds() != null) {
+            rule.setReceiverAccountIds(safe(req.getReceiverAccountIds()));
+        }
+        if (req.getReceiverOrgIds() != null) {
+            rule.setReceiverOrgIds(safe(req.getReceiverOrgIds()));
         }
         ruleMapper.updateById(rule);
         return toRuleVO(rule);
@@ -328,8 +338,36 @@ public class NoticeService {
         vo.setEnabled(r.getEnabled());
         vo.setBuiltIn(r.getBuiltIn());
         vo.setSort(r.getSort());
+        vo.setReceiverAccountIds(r.getReceiverAccountIds());
+        vo.setReceiverOrgIds(r.getReceiverOrgIds());
         vo.setCreatedAt(r.getCreatedAt());
         return vo;
+    }
+
+    /** 取规则上配置的指定接收人（账号 ID 列表 + 组织节点 ID 列表），供业务方自行展开部门。 */
+    public Map<String, List<Long>> ruleReceivers(String code) {
+        NoticeRule rule = ruleMapper.selectOne(new LambdaQueryWrapper<NoticeRule>()
+                .eq(NoticeRule::getCode, code == null ? "" : code.trim())
+                .last("LIMIT 1"));
+        Map<String, List<Long>> out = new HashMap<>();
+        out.put("accountIds", parseIdList(rule == null ? null : rule.getReceiverAccountIds()));
+        out.put("orgIds", parseIdList(rule == null ? null : rule.getReceiverOrgIds()));
+        return out;
+    }
+
+    private static List<Long> parseIdList(String csv) {
+        List<Long> ids = new ArrayList<>();
+        if (csv == null || csv.isBlank()) {
+            return ids;
+        }
+        for (String part : csv.split(",")) {
+            try {
+                ids.add(Long.parseLong(part.trim()));
+            } catch (NumberFormatException ignored) {
+                // 忽略无效项
+            }
+        }
+        return ids;
     }
 
     /** 批量取审批模板，用于给消息补「业务应用 / 业务类型」分组名 */

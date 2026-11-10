@@ -372,6 +372,8 @@ CREATE TABLE IF NOT EXISTS `cfg_notice_rule` (
   `enabled` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1启用 0停用',
   `built_in` tinyint(4) NOT NULL DEFAULT '0' COMMENT '内置规则不可删除',
   `sort` int(11) NOT NULL DEFAULT '0',
+  `receiver_account_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT '指定接收账号ID（逗号分隔），空=由业务方决定',
+  `receiver_org_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT '指定接收部门（业务侧组织节点ID，逗号分隔，含下级）',
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

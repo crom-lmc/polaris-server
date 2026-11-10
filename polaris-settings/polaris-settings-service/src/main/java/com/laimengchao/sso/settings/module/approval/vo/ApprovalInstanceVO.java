@@ -33,6 +33,8 @@ public class ApprovalInstanceVO {
     private String apprNo;
     private String title;
 
+    /** 发起人账号 ID：前端要和登录人的 accountId 比对决定是否显示「撤回」，必须转字符串，否则 19 位精度丢失后永远不相等 */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long applicantId;
     private String applicantName;
     @JsonSerialize(using = ToStringSerializer.class)

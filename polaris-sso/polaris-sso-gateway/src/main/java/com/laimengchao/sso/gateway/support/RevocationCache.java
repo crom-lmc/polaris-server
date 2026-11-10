@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.laimengchao.sso.gateway.config.GatewayProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -43,8 +42,7 @@ public class RevocationCache {
         log.info("吊销名单同步目标：{}（{}）", base, useLb ? "服务发现" : "直连");
     }
 
-    @Scheduled(initialDelayString = "3000",
-            fixedDelayString = "${sso.gateway.revocation-sync-millis:5000}")
+    /** 拉取一次吊销名单（调度入口见 schedule 包的 RevocationSyncJob） */
     public void sync() {
         client.get().uri("/api/auth/internal/revoked")
                 .retrieve()

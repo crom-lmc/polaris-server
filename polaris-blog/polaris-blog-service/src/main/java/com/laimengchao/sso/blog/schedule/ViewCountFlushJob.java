@@ -1,4 +1,4 @@
-package com.laimengchao.sso.blog.module.article.task;
+package com.laimengchao.sso.blog.schedule;
 
 import com.laimengchao.sso.blog.module.article.service.ArticleService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ViewCountFlushTask {
+public class ViewCountFlushJob {
 
     private final ArticleService articleService;
 

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongUnaryOperator;
@@ -43,16 +44,18 @@ public class LeaveQuotaService {
     private final LeaveQuotaMapper quotaMapper;
     private final LeaveQuotaLogMapper logMapper;
     private final LeaveTypeRuleService ruleService;
+    private final AnnualLeaveService annualLeaveService;
 
     public LeaveQuota getById(Long quotaId) {
         return quotaMapper.selectById(quotaId);
     }
 
+    /** 按「员工 + 类型 + 周期起始日」取额度；year 只作为周期换算参数，不再参与查询 */
     public LeaveQuota find(Long employeeId, String leaveType, int year) {
         return quotaMapper.selectOne(new LambdaQueryWrapper<LeaveQuota>()
                 .eq(LeaveQuota::getEmployeeId, employeeId)
                 .eq(LeaveQuota::getLeaveType, leaveType)
-                .eq(LeaveQuota::getYear, year)
+                .eq(LeaveQuota::getPeriodStart, LocalDate.of(year, 1, 1))
                 .last("limit 1"));
     }
 
@@ -62,6 +65,10 @@ public class LeaveQuotaService {
         if (q != null) {
             return q;
         }
+        // 年假额度统一由策略生成（含工龄档位 / 新入职折算 / 上年度结转），避免被默认额度抢先建行
+        if (AnnualLeaveService.LEAVE_TYPE_ANNUAL.equalsIgnoreCase(leaveType)) {
+            return annualLeaveService.generateYear(employeeId, year);
+        }
         LeaveTypeRule rule = ruleService.get(leaveType);
         if (!Integer.valueOf(1).equals(rule.getQuotaRequired())) {
             return null;
@@ -70,9 +77,16 @@ public class LeaveQuotaService {
         n.setEmployeeId(employeeId);
         n.setLeaveType(leaveType);
         n.setYear(year);
+        n.setPeriodStart(LocalDate.of(year, 1, 1));
+        n.setPeriodEnd(LocalDate.of(year, 12, 31));
+        n.setPeriodNo(1);
         n.setTotalDays(nvl(rule.getDefaultQuotaDays()));
         n.setUsedDays(BigDecimal.ZERO);
         n.setFrozenDays(BigDecimal.ZERO);
+        n.setCarryoverIn(BigDecimal.ZERO);
+        n.setCarryoverOut(BigDecimal.ZERO);
+        n.setSource("AUTO");
+        n.setCalcDetail("按请假类型默认额度生成");
         n.setVersion(0);
         try {
             quotaMapper.insert(n);
@@ -96,10 +110,17 @@ public class LeaveQuotaService {
         vo.setEmployeeId(q.getEmployeeId());
         vo.setLeaveType(q.getLeaveType());
         vo.setYear(q.getYear());
+        vo.setPeriodStart(q.getPeriodStart() == null ? null : q.getPeriodStart().toString());
+        vo.setPeriodEnd(q.getPeriodEnd() == null ? null : q.getPeriodEnd().toString());
         vo.setTotalDays(nvl(q.getTotalDays()));
         vo.setUsedDays(nvl(q.getUsedDays()));
         vo.setFrozenDays(nvl(q.getFrozenDays()));
         vo.setAvailableDays(available(q));
+        vo.setCarryoverIn(nvl(q.getCarryoverIn()));
+        vo.setCarryoverOut(nvl(q.getCarryoverOut()));
+        vo.setCarryoverExpireAt(q.getCarryoverExpireAt() == null ? null : q.getCarryoverExpireAt().toString());
+        vo.setSource(q.getSource());
+        vo.setCalcDetail(nvl(q.getCalcDetail()));
         return vo;
     }
 
@@ -268,5 +289,9 @@ public class LeaveQuotaService {
 
     private BigDecimal nvl(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
+    }
+
+    private String nvl(String v) {
+        return v == null ? "" : v;
     }
 }

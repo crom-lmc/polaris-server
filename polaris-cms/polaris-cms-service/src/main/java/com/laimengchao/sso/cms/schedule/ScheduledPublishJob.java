@@ -1,4 +1,4 @@
-package com.laimengchao.sso.cms.config;
+package com.laimengchao.sso.cms.schedule;
 
 import com.laimengchao.sso.cms.module.content.service.ArticleService;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ScheduledPublishTask {
+public class ScheduledPublishJob {
 
     private final ArticleService articleService;
 

@@ -36,6 +36,9 @@ public class LeaveTypeRuleService {
         fallback.setQuotaRequired(0);
         fallback.setDefaultQuotaDays(BigDecimal.ZERO);
         fallback.setAttachmentRequired(0);
+        fallback.setProofTypes("");
+        fallback.setProofMinHours(BigDecimal.ZERO);
+        fallback.setProofHint("");
         fallback.setMinDays(new BigDecimal("0.5"));
         fallback.setMaxDaysPerRequest(new BigDecimal("30.0"));
         fallback.setMinNoticeDays(0);
@@ -57,6 +60,16 @@ public class LeaveTypeRuleService {
         }
         LeaveTypeRule old = ruleMapper.selectById(rule.getLeaveType());
         if (old == null) {
+            // 新增时补 NOT NULL 默认值；更新时保留 null，交给 updateById 跳过未传字段
+            if (rule.getProofTypes() == null) {
+                rule.setProofTypes("");
+            }
+            if (rule.getProofMinHours() == null) {
+                rule.setProofMinHours(BigDecimal.ZERO);
+            }
+            if (rule.getProofHint() == null) {
+                rule.setProofHint("");
+            }
             ruleMapper.insert(rule);
         } else {
             ruleMapper.updateById(rule);

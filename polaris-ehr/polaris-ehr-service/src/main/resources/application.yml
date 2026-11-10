@@ -39,6 +39,11 @@ spring:
     default-property-inclusion: non_null
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
+  servlet:
+    multipart:
+      # 档案/合同附件上限 20MB；预留表单字段余量
+      max-file-size: 20MB
+      max-request-size: 25MB
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -63,6 +68,10 @@ ehr:
   self-base-url: ${EHR_SELF_URL:http://127.0.0.1:9006}
   # EHR 前端地址：离职/减员审批通过的「关闭账号」待办点击后跳人员列表并打开档案
   web-base-url: ${EHR_WEB_URL:http://127.0.0.1:5179}
+  attendance:
+    mock:
+      # 模拟考勤定时任务开关：默认关闭，避免生产环境造数；手动 /mock/run 不受此开关限制
+      enabled: ${EHR_ATTENDANCE_MOCK_ENABLED:false}
   reminder:
     # 试用期到期提醒节点（T-N 天，逗号分隔）
     probation-offsets: ${EHR_REMINDER_PROBATION_OFFSETS:30,7,1}

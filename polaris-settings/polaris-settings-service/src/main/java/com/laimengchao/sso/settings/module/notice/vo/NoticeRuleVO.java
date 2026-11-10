@@ -25,5 +25,9 @@ public class NoticeRuleVO {
     private Integer enabled;
     private Integer builtIn;
     private Integer sort;
+    /** 指定接收账号 ID（逗号分隔），空=由业务方调用时决定 */
+    private String receiverAccountIds;
+    /** 指定接收部门（业务侧组织节点 ID，逗号分隔，含下级） */
+    private String receiverOrgIds;
     private LocalDateTime createdAt;
 }

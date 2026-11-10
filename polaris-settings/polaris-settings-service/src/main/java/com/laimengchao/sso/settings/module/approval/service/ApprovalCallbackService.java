@@ -9,7 +9,6 @@ import com.laimengchao.sso.settings.module.approval.mapper.ApprCallbackMapper;
 import com.laimengchao.sso.settings.module.approval.mapper.ApprInstanceMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -108,8 +107,7 @@ public class ApprovalCallbackService {
         callbackMapper.updateById(cb);
     }
 
-    /** 每 60 秒扫一次待重试的回调，退避间隔 1/2/4/8/16/30/30… 分钟 */
-    @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
+    /** 扫描待重试的回调，退避间隔 1/2/4/8/16/30/30… 分钟（调度入口见 schedule 包的 ApprovalCallbackRetryJob） */
     public void retryFailed() {
         List<ApprCallback> list = callbackMapper.selectList(Wrappers.<ApprCallback>lambdaQuery()
                 .eq(ApprCallback::getStatus, 2)

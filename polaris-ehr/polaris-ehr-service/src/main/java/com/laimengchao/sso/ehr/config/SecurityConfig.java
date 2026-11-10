@@ -41,6 +41,8 @@ public class SecurityConfig {
      */
     private static final String[] PUBLIC_URLS = {
             "/api/ehr/sso/**",
+            // 门户招聘：职位浏览、简历投递、进度查询都必须免登录
+            "/api/ehr/public/**",
             "/internal/**",
             "/actuator/health",
             "/error"

@@ -17,6 +17,7 @@ import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
 import com.laimengchao.sso.ehr.module.recruit.dto.CandidateRequest;
 import com.laimengchao.sso.ehr.module.recruit.dto.OfferRequest;
 import com.laimengchao.sso.ehr.module.recruit.entity.Candidate;
+import com.laimengchao.sso.ehr.module.recruit.entity.JobPost;
 import com.laimengchao.sso.ehr.module.recruit.entity.Offer;
 import com.laimengchao.sso.ehr.module.recruit.mapper.CandidateMapper;
 import com.laimengchao.sso.ehr.module.recruit.mapper.OfferMapper;
@@ -24,6 +25,7 @@ import com.laimengchao.sso.ehr.module.recruit.vo.CandidateVO;
 import com.laimengchao.sso.ehr.module.recruit.vo.OfferVO;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
+import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
 import com.laimengchao.sso.settings.client.dto.ApprovalActionDTO;
 import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
@@ -63,7 +65,12 @@ public class RecruitService {
 
     public static final String STATUS_APPROVING = "APPROVING";
     public static final String STATUS_APPROVED = "APPROVED";
+    public static final String STATUS_CONFIRMED = "CONFIRMED";
+    public static final String STATUS_DECLINED = "DECLINED";
     public static final String STATUS_REJECTED = "REJECTED";
+    /** 在途/有效 Offer：审批中、待确认、已确认都占用候选人，放弃/驳回不再占用 */
+    private static final List<String> ACTIVE_OFFER_STATUSES =
+            List.of(STATUS_APPROVING, STATUS_APPROVED, STATUS_CONFIRMED);
 
     /** 录用审批场景编码，对应 settings 的 cfg_biz_scene.biz_type */
     public static final String BIZ_OFFER = "ehr.recruit.offer";
@@ -79,6 +86,11 @@ public class RecruitService {
     private final OrgNodeMapper orgMapper;
     private final ApprovalLauncher approvalLauncher;
     private final ApprovalApi approvalApi;
+    private final com.laimengchao.sso.ehr.module.recruit.mapper.JobPostMapper jobPostMapper;
+    private final com.laimengchao.sso.ehr.module.attachment.service.AttachmentService attachmentService;
+    private final InterviewService interviewService;
+    private final RecruitCommService recruitCommService;
+    private final BizNoService bizNoService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -106,10 +118,59 @@ public class RecruitService {
             return R.Page.of(List.of(), 0);
         }
         List<Long> ids = p.getRecords().stream().map(Candidate::getId).toList();
-        Map<Long, Offer> offerMap = activeOffers(ids);
+        Map<Long, Offer> offerMap = latestOffers(ids);
         Map<Long, OrgNode> orgMap = orgMap();
+
+        List<Long> empIds = p.getRecords().stream().map(Candidate::getEmployeeId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        Map<Long, Employee> empMap = empIds.isEmpty() ? Map.of()
+                : employeeMapper.selectBatchIds(empIds).stream()
+                .collect(Collectors.toMap(Employee::getId, Function.identity()));
+
+        List<Long> jobIds = p.getRecords().stream().map(Candidate::getJobId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        Map<Long, String> jobTitles = jobIds.isEmpty() ? Map.of()
+                : jobPostMapper.selectBatchIds(jobIds).stream()
+                .collect(Collectors.toMap(JobPost::getId, j -> nvl(j.getTitle())));
+
+        // 同手机号在途记录提示：只统计未淘汰的候选人，不自动合并
+        List<String> mobiles = p.getRecords().stream().map(Candidate::getMobile)
+                .filter(m -> m != null && !m.isBlank()).distinct().toList();
+        Map<String, Long> mobileCounts = mobiles.isEmpty() ? Map.of()
+                : candidateMapper.selectList(new LambdaQueryWrapper<Candidate>()
+                        .in(Candidate::getMobile, mobiles)
+                        .ne(Candidate::getStage, STAGE_REJECTED))
+                .stream().collect(Collectors.groupingBy(c -> nvl(c.getMobile()), Collectors.counting()));
+
+        Map<Long, InterviewService.Summary> interviewSummaries = interviewService.summaries(ids);
+        Map<Long, com.laimengchao.sso.ehr.module.recruit.entity.CandidateComm> commMap =
+                recruitCommService.lastCommMap(ids);
+
         List<CandidateVO> list = p.getRecords().stream()
-                .map(c -> toCandidateVO(c, offerMap.get(c.getId()), orgMap))
+                .map(c -> {
+                    CandidateVO vo = toCandidateVO(c, offerMap.get(c.getId()), orgMap);
+                    vo.setJobTitle(c.getJobId() == null ? null : jobTitles.get(c.getJobId()));
+                    Employee emp = c.getEmployeeId() == null ? null : empMap.get(c.getEmployeeId());
+                    vo.setEmployeeStatus(emp == null || emp.getStatus() == null ? null : String.valueOf(emp.getStatus()));
+                    vo.setEmployeeStatusLabel(emp == null ? null : employeeStatusLabel(emp.getStatus()));
+                    vo.setAccountOpened(emp != null && emp.getAccountId() != null);
+                    long same = mobileCounts.getOrDefault(nvl(c.getMobile()), 1L);
+                    vo.setActiveApplyCount((int) Math.max(0, same - 1));
+                    InterviewService.Summary iv = interviewSummaries.get(c.getId());
+                    if (iv != null) {
+                        vo.setInterviewRoundNo(iv.passedRound);
+                        vo.setInterviewPendingCount(iv.pendingCount);
+                        vo.setInterviewNextAt(iv.nextAt == null ? null : iv.nextAt.toString());
+                    } else {
+                        vo.setInterviewPendingCount(0);
+                    }
+                    com.laimengchao.sso.ehr.module.recruit.entity.CandidateComm comm = commMap.get(c.getId());
+                    if (comm != null) {
+                        vo.setLastCommAt(comm.getOccurredAt() == null ? null : comm.getOccurredAt().toString());
+                        vo.setLastCommContent(comm.getContent());
+                    }
+                    return vo;
+                })
                 .toList();
         return R.Page.of(list, p.getTotal());
     }
@@ -118,6 +179,7 @@ public class RecruitService {
     public CandidateVO createCandidate(CandidateRequest req) {
         SecurityUser user = currentUser();
         Candidate c = new Candidate();
+        c.setCandidateNo(bizNoService.next("ehr_candidate"));
         applyCandidate(c, req, STAGE_RESUME);
         c.setOwnerId(user.getAccountId());
         c.setOwnerName(nvl(user.getUsername()));
@@ -179,7 +241,9 @@ public class RecruitService {
             }
             w.in(Offer::getCandidateId, candidateIds);
         }
-        w.orderByDesc(Offer::getCreatedAt);
+        // 一位候选人只展示最近一张 Offer：同一人「撤回/驳回 → 重新提交」历史遗留的重复行不再重复列出
+        w.inSql(Offer::getId, "select max(id) from ehr_offer group by candidate_id");
+        w.orderByDesc(Offer::getId);
         IPage<Offer> p = offerMapper.selectPage(new Page<>(page, size), w);
         if (p.getRecords().isEmpty()) {
             return R.Page.of(List.of(), 0);
@@ -194,7 +258,9 @@ public class RecruitService {
                 .collect(Collectors.toMap(Employee::getId, Function.identity()));
         Map<Long, OrgNode> orgMap = orgMap();
         List<OfferVO> list = p.getRecords().stream()
-                .map(o -> toOfferVO(o, candidates.get(o.getCandidateId()), employees.get(o.getEmployeeId()), orgMap))
+                // employeeId 为空时不能直接 get：employees 可能是 Map.of()（一个都已建档时），不可变 Map 不接受 null key
+                .map(o -> toOfferVO(o, candidates.get(o.getCandidateId()),
+                        o.getEmployeeId() == null ? null : employees.get(o.getEmployeeId()), orgMap))
                 .toList();
         return R.Page.of(list, p.getTotal());
     }
@@ -212,14 +278,31 @@ public class RecruitService {
         if (hasActiveOffer(c.getId())) {
             throw new BizException(ErrorCode.PARAM_ERROR, "该候选人已有审批中/已通过的 Offer");
         }
+        if (interviewService.passedRound(c.getId()) == null) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请先完成面试并通过后再发起 Offer");
+        }
+        if (interviewService.hasPending(c.getId())) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "还有未完成的面试安排，请先完成或取消");
+        }
         LocalDate onboardDate = parseDate(req.getExpectedOnboardDate());
         OrgNode org = orgMapper.selectById(req.getOrgId());
         if (org == null) {
             throw new BizException(ErrorCode.NOT_FOUND, "录用部门不存在");
         }
 
-        Offer o = new Offer();
-        o.setCandidateId(c.getId());
+        // 同一候选人「撤回/驳回 → 重新发起」复用同一张单据（沿用原单号），不再插新行，一人始终只有一笔 Offer
+        Offer o = offerMapper.selectOne(new LambdaQueryWrapper<Offer>()
+                .eq(Offer::getCandidateId, c.getId())
+                .eq(Offer::getStatus, STATUS_REJECTED)
+                .orderByDesc(Offer::getId)
+                .last("limit 1"));
+        final boolean reuse = o != null;
+        if (!reuse) {
+            o = new Offer();
+            o.setOfferNo(bizNoService.next("ehr_offer"));
+            o.setCandidateId(c.getId());
+        }
+        o.setJobId(req.getJobId() != null ? req.getJobId() : c.getJobId());
         o.setPosition(req.getPosition().trim());
         o.setSalary(req.getSalary());
         o.setExpectedOnboardDate(onboardDate);
@@ -227,15 +310,20 @@ public class RecruitService {
         o.setStatus(STATUS_APPROVING);
         o.setRemark(nvl(req.getRemark()));
 
+        final Offer offer = o;
         String previousStage = c.getStage();
         approvalLauncher.inTx(() -> {
-            offerMapper.insert(o);
+            if (reuse) {
+                offerMapper.updateById(offer);
+            } else {
+                offerMapper.insert(offer);
+            }
             c.setStage(STAGE_OFFER);
             candidateMapper.updateById(c);
         });
 
-        approvalLauncher.launch(() -> buildOfferStart(o, c, user), inst -> { }, () -> compensate(o.getId(), previousStage));
-        return toOfferVO(o, c, null, orgMap());
+        approvalLauncher.launch(() -> buildOfferStart(offer, c, user), inst -> { }, () -> compensate(offer.getId(), previousStage));
+        return toOfferVO(offer, c, null, orgMap());
     }
 
     /** 撤销审批中的 Offer：先撤审批中心的在途单，再回滚本地状态 */
@@ -273,22 +361,71 @@ public class RecruitService {
         revertCandidate(o.getCandidateId(), STAGE_INTERVIEW);
     }
 
-    /** 手动转建档：审批已通过但自动建档失败（如部门被删）时的补偿入口，幂等 */
+    /**
+     * HR 线下与候选人确认后点「确认 Offer」：APPROVED → CONFIRMED。
+     * 确认只代表双方达成一致，真正建员工档案要再点「办理入职」，两步分离便于回退与统计。
+     */
     @Transactional(rollbackFor = Exception.class)
-    public OfferVO convertToEmployee(Long id) {
+    public OfferVO confirmOffer(Long id) {
         Offer o = requireOffer(id);
         if (!STATUS_APPROVED.equals(o.getStatus())) {
-            throw new BizException(ErrorCode.PARAM_ERROR, "只有审批通过的 Offer 才能转建档");
+            throw new BizException(ErrorCode.PARAM_ERROR, "只有审批通过的 Offer 可以确认");
         }
-        if (o.getEmployeeId() != null) {
-            Candidate c = candidateMapper.selectById(o.getCandidateId());
-            Employee emp = employeeMapper.selectById(o.getEmployeeId());
-            return toOfferVO(o, c, emp, orgMap());
-        }
-        Long employeeId = createArchive(o);
-        o.setEmployeeId(employeeId);
+        SecurityUser user = currentUser();
+        o.setStatus(STATUS_CONFIRMED);
+        o.setConfirmedAt(java.time.LocalDateTime.now());
+        o.setConfirmedBy(user.getAccountId());
         offerMapper.updateById(o);
         Candidate c = candidateMapper.selectById(o.getCandidateId());
+        if (c != null) {
+            c.setStage(STAGE_OFFER);
+            c.setLastStageAt(java.time.LocalDateTime.now());
+            candidateMapper.updateById(c);
+        }
+        return toOfferVO(o, c, null, orgMap());
+    }
+
+    /** 候选人放弃 Offer：APPROVED/CONFIRMED → DECLINED，候选人回退到面试中 */
+    @Transactional(rollbackFor = Exception.class)
+    public OfferVO declineOffer(Long id, String reason) {
+        Offer o = requireOffer(id);
+        if (!STATUS_APPROVED.equals(o.getStatus()) && !STATUS_CONFIRMED.equals(o.getStatus())) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "只有已通过/已确认的 Offer 可以放弃");
+        }
+        if (o.getEmployeeId() != null) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "已生成员工档案，请走人员侧流程处理");
+        }
+        o.setStatus(STATUS_DECLINED);
+        o.setRemark(appendRemark(o.getRemark(), "候选人放弃", reason));
+        o.setConfirmedAt(java.time.LocalDateTime.now());
+        o.setConfirmedBy(currentUser().getAccountId());
+        offerMapper.updateById(o);
+        revertCandidate(o.getCandidateId(), STAGE_INTERVIEW);
+        return toOfferVO(o, candidateMapper.selectById(o.getCandidateId()), null, orgMap());
+    }
+
+    /**
+     * 办理入职：CONFIRMED → 生成/复用待入职档案（status=10），回写 employee_id 并复制简历附件。
+     * 幂等：已生成过档案直接返回，重复点击不会重复建档（source_offer_id 唯一兜底）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public OfferVO onboard(Long id) {
+        Offer o = requireOffer(id);
+        if (!STATUS_CONFIRMED.equals(o.getStatus())) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请先确认 Offer 再办理入职");
+        }
+        Candidate c = candidateMapper.selectById(o.getCandidateId());
+        if (c == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "候选人不存在，无法建档");
+        }
+        if (o.getEmployeeId() != null) {
+            return toOfferVO(o, c, employeeMapper.selectById(o.getEmployeeId()), orgMap());
+        }
+        Long employeeId = createArchive(o, c);
+        o.setEmployeeId(employeeId);
+        offerMapper.updateById(o);
+        c.setEmployeeId(employeeId);
+        candidateMapper.updateById(c);
         return toOfferVO(o, c, employeeMapper.selectById(employeeId), orgMap());
     }
 
@@ -323,19 +460,11 @@ public class RecruitService {
         o.setStatus(finalStatus);
 
         if (approved) {
-            if (o.getEmployeeId() == null) {
-                try {
-                    Long employeeId = createArchive(o);
-                    o.setEmployeeId(employeeId);
-                    offerMapper.updateById(o);
-                } catch (Exception e) {
-                    // 建档失败不回滚审批结果，列表里可用「转建档」重试
-                    log.error("录用审批通过后自动建档失败 offer={}", offerId, e);
-                }
-            }
+            // 审批通过只代表公司同意录用：Offer 进入「待确认」，等 HR 线下确认后再办理入职
             Candidate c = candidateMapper.selectById(o.getCandidateId());
             if (c != null) {
                 c.setStage(STAGE_OFFER);
+                c.setLastStageAt(java.time.LocalDateTime.now());
                 candidateMapper.updateById(c);
             }
         } else {
@@ -345,14 +474,31 @@ public class RecruitService {
 
     /* ---------------- 内部 ---------------- */
 
-    private Long createArchive(Offer o) {
-        Candidate c = candidateMapper.selectById(o.getCandidateId());
-        if (c == null) {
-            throw new BizException(ErrorCode.NOT_FOUND, "候选人不存在，无法建档");
+    private Long createArchive(Offer o, Candidate c) {
+        Long employeeId = employeeService.createPendingArchive(
+                com.laimengchao.sso.ehr.module.employee.dto.PendingArchiveCommand.builder()
+                        .name(c.getName())
+                        .mobile(c.getMobile())
+                        .email(c.getEmail())
+                        .gender(c.getGender())
+                        .birthday(c.getBirthday())
+                        .idCard(c.getIdCard())
+                        .education(c.getEducation())
+                        .orgId(o.getOrgId())
+                        .position(o.getPosition())
+                        .hireDate(o.getExpectedOnboardDate())
+                        .remark("招聘录用转入：" + nvl(o.getPosition()))
+                        .source(EmployeeService.SOURCE_RECRUIT)
+                        .sourceOfferId(o.getId())
+                        .build());
+        if (c.getResumeFileId() != null) {
+            try {
+                attachmentService.copyTo(c.getResumeFileId(), "EMPLOYEE", employeeId);
+            } catch (Exception e) {
+                log.warn("复制候选人简历附件失败 candidate={} file={}", c.getId(), c.getResumeFileId(), e);
+            }
         }
-        return employeeService.createPendingArchive(c.getName(), c.getMobile(), c.getEmail(),
-                o.getOrgId(), o.getPosition(), o.getExpectedOnboardDate(),
-                "招聘录用转入：" + nvl(o.getPosition()));
+        return employeeId;
     }
 
     private ApprovalStartDTO buildOfferStart(Offer o, Candidate c, SecurityUser user) {
@@ -412,6 +558,7 @@ public class RecruitService {
     }
 
     private void applyCandidate(Candidate c, CandidateRequest req, String stage) {
+        String previous = c.getStage();
         c.setName(req.getName().trim());
         c.setMobile(nvl(req.getMobile()));
         c.setEmail(nvl(req.getEmail()));
@@ -420,6 +567,29 @@ public class RecruitService {
         c.setOrgId(req.getOrgId());
         c.setStage(stage);
         c.setRemark(nvl(req.getRemark()));
+        c.setJobId(req.getJobId());
+        c.setGender(req.getGender());
+        c.setBirthday(req.getBirthday());
+        c.setEducation(nvl(req.getEducation()));
+        c.setSchool(nvl(req.getSchool()));
+        c.setMajor(nvl(req.getMajor()));
+        c.setWorkYears(req.getWorkYears() == null ? null
+                : req.getWorkYears().setScale(1, java.math.RoundingMode.HALF_UP));
+        c.setCurrentCompany(nvl(req.getCurrentCompany()));
+        c.setExpectedSalary(req.getExpectedSalary());
+        // 列表下发的证件号是掩码，编辑回传时不要用掩码覆盖真实值
+        String incomingIdCard = nvl(req.getIdCard()).trim();
+        if (!(c.getId() != null && incomingIdCard.contains("*"))) {
+            c.setIdCard(incomingIdCard);
+        }
+        c.setResumeFileId(req.getResumeFileId());
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (c.getId() == null) {
+            c.setAppliedAt(now);
+            c.setLastStageAt(now);
+        } else if (!stage.equals(previous)) {
+            c.setLastStageAt(now);
+        }
     }
 
     private String normalizedStage(String stage, String fallback) {
@@ -436,28 +606,28 @@ public class RecruitService {
     private boolean hasActiveOffer(Long candidateId) {
         Long cnt = offerMapper.selectCount(new LambdaQueryWrapper<Offer>()
                 .eq(Offer::getCandidateId, candidateId)
-                .in(Offer::getStatus, STATUS_APPROVING, STATUS_APPROVED));
+                .in(Offer::getStatus, ACTIVE_OFFER_STATUSES));
         return cnt != null && cnt > 0;
     }
 
     private Offer activeOffer(Long candidateId) {
         List<Offer> list = offerMapper.selectList(new LambdaQueryWrapper<Offer>()
                 .eq(Offer::getCandidateId, candidateId)
-                .in(Offer::getStatus, STATUS_APPROVING, STATUS_APPROVED)
+                .in(Offer::getStatus, ACTIVE_OFFER_STATUSES)
                 .orderByDesc(Offer::getCreatedAt)
                 .last("LIMIT 1"));
         return list.isEmpty() ? null : list.get(0);
     }
 
-    private Map<Long, Offer> activeOffers(List<Long> candidateIds) {
+    /** 每位候选人最近一张 Offer（含已驳回/已放弃）：驳回后也要能按 offerId 查审批单看驳回原因 */
+    private Map<Long, Offer> latestOffers(List<Long> candidateIds) {
         if (candidateIds.isEmpty()) {
             return Map.of();
         }
         Map<Long, Offer> map = new HashMap<>();
         for (Offer o : offerMapper.selectList(new LambdaQueryWrapper<Offer>()
                 .in(Offer::getCandidateId, candidateIds)
-                .in(Offer::getStatus, STATUS_APPROVING, STATUS_APPROVED)
-                .orderByDesc(Offer::getCreatedAt))) {
+                .orderByDesc(Offer::getId))) {
             map.putIfAbsent(o.getCandidateId(), o);
         }
         return map;
@@ -493,16 +663,45 @@ public class RecruitService {
         vo.setOwnerId(c.getOwnerId() == null ? null : String.valueOf(c.getOwnerId()));
         vo.setOwnerName(nvl(c.getOwnerName()));
         vo.setRemark(nvl(c.getRemark()));
-        vo.setHasActiveOffer(offer != null);
+        // 只有审批中/待确认/已确认才算「占用候选人」；最近一张已驳回的 Offer 仅用于展示驳回原因入口
+        vo.setHasActiveOffer(offer != null && ACTIVE_OFFER_STATUSES.contains(offer.getStatus()));
         vo.setOfferId(offer == null ? null : String.valueOf(offer.getId()));
         vo.setOfferStatus(offer == null ? null : offer.getStatus());
         vo.setCreatedAt(c.getCreatedAt() == null ? null : c.getCreatedAt().toString());
+        vo.setJobId(c.getJobId() == null ? null : String.valueOf(c.getJobId()));
+        vo.setGender(c.getGender());
+        vo.setBirthday(c.getBirthday() == null ? null : c.getBirthday().toString());
+        vo.setEducation(nvl(c.getEducation()));
+        vo.setSchool(nvl(c.getSchool()));
+        vo.setMajor(nvl(c.getMajor()));
+        vo.setWorkYears(c.getWorkYears() == null ? null : c.getWorkYears().toPlainString());
+        vo.setCurrentCompany(nvl(c.getCurrentCompany()));
+        vo.setExpectedSalary(c.getExpectedSalary() == null ? null : c.getExpectedSalary().toPlainString());
+        vo.setIdCard(com.laimengchao.sso.utils.SensitiveMasker.maskIdCard(nvl(c.getIdCard())));
+        vo.setResumeFileId(c.getResumeFileId() == null ? null : String.valueOf(c.getResumeFileId()));
+        vo.setResumeFileName(c.getResumeFileId() == null ? null : attachmentService.nameOf(c.getResumeFileId()));
+        vo.setEmployeeId(c.getEmployeeId() == null ? null : String.valueOf(c.getEmployeeId()));
+        vo.setAppliedAt(c.getAppliedAt() == null ? null : c.getAppliedAt().toString());
+        vo.setLastStageAt(c.getLastStageAt() == null ? null : c.getLastStageAt().toString());
         return vo;
+    }
+
+    private String employeeStatusLabel(Integer status) {
+        com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus s =
+                com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus.of(status);
+        return s == null ? null : s.getLabel();
+    }
+
+    private String appendRemark(String old, String label, String reason) {
+        String add = label + (reason == null || reason.isBlank() ? "" : "：" + reason.trim());
+        String text = nvl(old).isBlank() ? add : nvl(old) + "；" + add;
+        return text.length() > 255 ? text.substring(0, 255) : text;
     }
 
     private OfferVO toOfferVO(Offer o, Candidate c, Employee emp, Map<Long, OrgNode> orgMap) {
         OfferVO vo = new OfferVO();
         vo.setId(String.valueOf(o.getId()));
+        vo.setOfferNo(nvl(o.getOfferNo()));
         vo.setCandidateId(String.valueOf(o.getCandidateId()));
         vo.setCandidateName(c == null ? "" : nvl(c.getName()));
         vo.setCandidateMobile(c == null ? "" : nvl(c.getMobile()));
@@ -517,6 +716,9 @@ public class RecruitService {
         vo.setEmployeeName(emp == null ? null : nvl(emp.getName()));
         vo.setEmployeeStatus(emp == null || emp.getStatus() == null ? null : String.valueOf(emp.getStatus()));
         vo.setCreatedAt(o.getCreatedAt() == null ? null : o.getCreatedAt().toString());
+        vo.setJobId(o.getJobId() == null ? null : String.valueOf(o.getJobId()));
+        vo.setConfirmedAt(o.getConfirmedAt() == null ? null : o.getConfirmedAt().toString());
+        vo.setConfirmedBy(o.getConfirmedBy() == null ? null : String.valueOf(o.getConfirmedBy()));
         return vo;
     }
 

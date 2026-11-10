@@ -229,6 +229,28 @@ public class AttachmentService {
         return a == null ? "" : a.getFileName();
     }
 
+    /**
+     * 复制附件到新的业务对象（候选人简历 → 员工档案）。落盘文件复制一份新 key，
+     * 避免原候选人附件被清理/保留期到期时连带删除员工侧文件。
+     */
+    public Long copyTo(Long attachmentId, String bizType, Long bizId) {
+        Attachment src = attachmentId == null ? null : attachmentMapper.selectById(attachmentId);
+        if (src == null) {
+            throw new BizException(EhrErrorCode.ATTACHMENT_NOT_FOUND, "附件不存在");
+        }
+        Path source = Paths.get(fileRoot).toAbsolutePath().normalize().resolve(src.getFileKey());
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(source);
+        } catch (IOException e) {
+            log.error("复制附件读取失败 id={}", attachmentId, e);
+            throw new BizException(EhrErrorCode.ATTACHMENT_NOT_FOUND, "附件文件已丢失");
+        }
+        AttachmentVO vo = save(bytes, src.getFileName(), src.getMime(), normalizeType(bizType),
+                src.getUploadedBy(), bizId);
+        return vo.getId();
+    }
+
     public Resource download(Long attachmentId, Long accountId, boolean canViewAll) {
         Attachment a = attachmentMapper.selectById(attachmentId);
         if (a == null) {
@@ -243,6 +265,11 @@ public class AttachmentService {
                 throw new BizException(EhrErrorCode.CONTRACT_NOT_FOUND, "合同不存在");
             }
             requireAccessibleEmployee(c.getEmployeeId());
+        } else if ("CANDIDATE".equals(a.getBizType())) {
+            // 候选人简历只对招聘权限持有者开放
+            if (!canViewAll) {
+                throw new BizException(ErrorCode.FORBIDDEN, "无权下载该附件");
+            }
         } else if (!canViewAll && accountId != null && !accountId.equals(a.getUploadedBy())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权下载该附件");
         }

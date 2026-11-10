@@ -23,8 +23,20 @@ public class AttendanceMonth {
     private BigDecimal leaveDays;
     private BigDecimal overtimeHours;
     private BigDecimal absentDays;
+    /** 迟到分钟数合计 */
+    private Integer lateMinutes;
+    /** 早退分钟数合计 */
+    private Integer earlyMinutes;
+    /** 缺勤小时数（按实际分钟/60，不向上取整） */
+    private BigDecimal absentHours;
+    /** 实际出勤小时数 */
+    private BigDecimal workHours;
     /** 0 未确认 / 1 已确认 */
     private Integer confirmed;
+    /** 最近一次解锁原因（解锁需 attendance:month:unlock） */
+    private String unlockReason;
+    private LocalDateTime unlockedAt;
+    private Long unlockedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

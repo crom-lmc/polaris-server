@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 @TableName("ehr_leave_quota_adjust")
 public class LeaveQuotaAdjust extends BaseEntity {
 
+    /** 额度调整单号：由配置中心单号规则生成 */
+    private String adjustNo;
     private Long quotaId;
     private Long employeeId;
     private String leaveType;

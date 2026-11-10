@@ -63,6 +63,8 @@ public class GatewayProperties {
             // 业务应用（ehr）的换票端：同 cms/blog/portal 口径
             // 漏了这条 → /callback 拿授权码换令牌时被网关判「未登录」，登录页停在「登录失败」
             "/api/ehr/sso/**",
+            // 门户招聘：职位列表/详情、投递、进度查询免登录
+            "/api/ehr/public/**",
             // 业务应用（settings）的换票端：同 ehr 口径（漏了同样会「未登录，请先获取访问令牌」）
             "/api/settings/sso/**",
             // 上传的图片/附件：静态资源，读者端也要能直接加载

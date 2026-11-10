@@ -536,7 +536,7 @@ public class ArticleService {
         versionMapper.insert(v);
     }
 
-    /** 定时发布调度：到点的待发布文章逐篇发布（调度入口 @Scheduled 每 30 秒） */
+    /** 定时发布调度：到点的待发布文章逐篇发布（调度入口见 schedule 包的 ScheduledPublishJob，每 30 秒） */
     @Transactional(rollbackFor = Exception.class)
     public int publishDueScheduled() {
         List<Article> due = articleMapper.listDueScheduled();

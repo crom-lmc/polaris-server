@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /** 请假单视图（列表页字段，够用即可） */
 @Data
@@ -26,6 +27,9 @@ public class LeaveVO {
     private String endDate;
     private String startPeriod;
     private String endPeriod;
+    /** 精确到半小时的开始/结束时间 HH:mm */
+    private String startTime;
+    private String endTime;
     private String dayMode;
     private BigDecimal days;
     private String reason;
@@ -36,6 +40,8 @@ public class LeaveVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long attachmentId;
     private String attachmentName;
+    /** 证明材料列表（详情返回；列表一般不带以省查询） */
+    private List<LeaveAttachmentVO> attachments;
     private Integer status;
     private String statusName;
 

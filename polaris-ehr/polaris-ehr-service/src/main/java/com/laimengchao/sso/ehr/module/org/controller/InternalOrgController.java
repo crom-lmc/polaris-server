@@ -239,6 +239,30 @@ public class InternalOrgController {
     }
 
     /**
+     * 全部「已开户、未离职」员工——配置中心消息规则「指定接收人」候选。
+     * <p>
+     * 与 {@link #employees(Long)} 同口径（账号 ID 下发），只是不限组织；
+     * 员工规模可控，一次全量给前端本地搜索过滤，不做分页。
+     */
+    @GetMapping("/employees/active")
+    public R<List<Map<String, Object>>> activeEmployees() {
+        List<Employee> emps = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                .isNotNull(Employee::getAccountId)
+                .ne(Employee::getStatus, 60)
+                .orderByAsc(Employee::getEmpNo));
+        List<Map<String, Object>> list = new ArrayList<>(emps.size());
+        for (Employee e : emps) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", String.valueOf(e.getAccountId()));
+            m.put("name", e.getName());
+            m.put("empNo", e.getEmpNo());
+            m.put("orgId", e.getOrgId() == null ? null : String.valueOf(e.getOrgId()));
+            list.add(m);
+        }
+        return R.ok(list);
+    }
+
+    /**
      * 某组织<b>及其所有下级组织</b>下的账号 ID——账号管理左侧组织树过滤用。
      * <p>
      * 账号中心不存组织归属（只有 EHR 员工档案有 org_id），所以按组织筛账号必须由这里

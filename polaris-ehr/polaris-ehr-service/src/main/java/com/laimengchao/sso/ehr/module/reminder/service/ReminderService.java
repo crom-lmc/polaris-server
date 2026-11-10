@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * 试用期到期提醒。
  * <p>
- * 每天 09:00 由 {@link com.laimengchao.sso.ehr.module.reminder.job.ReminderJob} 触发，
+ * 每天 09:00 由 {@link com.laimengchao.sso.ehr.schedule.ReminderJob} 触发，
  * 扫描「试用期 + 预计转正日 = 今天 + N 天」的在职员工（N 默认 30/7/1，可配），
  * 给本人、直属主管与 HR 各写一条提醒。唯一键保证同一个节点只提醒一次，
  * 转正/离职后状态不再命中，自然停止。

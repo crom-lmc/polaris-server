@@ -21,6 +21,8 @@ logs/
 uploads/
 uploads-*/
 polaris-uploads/
+# 运行期附件存储（data/attachments/<业务分类>/，EHR 简历等，随服务运行生成）
+data/
 
 # 线上配置不入库（只保留 local）
 

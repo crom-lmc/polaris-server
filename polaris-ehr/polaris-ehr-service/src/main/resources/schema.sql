@@ -188,8 +188,17 @@ CREATE TABLE IF NOT EXISTS `ehr_employee` (
   `probation_months` tinyint(4) DEFAULT NULL COMMENT '试用期时长（月）：1-12；免试用期为 NULL',
   `exempt_probation` tinyint(4) DEFAULT NULL COMMENT '是否免试用期：1 免试用期，入职审批通过后直接转正式（40）',
   `expected_regularize_date` date DEFAULT NULL COMMENT '预计转正时间 = 入职日期 + 试用期月数；免试用期/缺失为 NULL',
+  `source` varchar(16) NOT NULL DEFAULT 'MANUAL' COMMENT '来源 MANUAL/RECRUIT/PORTAL/IMPORT',
+  `source_offer_id` bigint(20) DEFAULT NULL COMMENT '来源 Offer ID（招聘转入时写入）',
+  `seniority_start_date` date DEFAULT NULL COMMENT '司龄起算日（默认入职日，HR 按核定结果维护）',
+  `seniority_years` decimal(4,1) NOT NULL DEFAULT '0.0' COMMENT '当前司龄（整年，每日任务刷新）',
+  `first_work_date` date DEFAULT NULL COMMENT '首次参加工作时间（HR 核定，累计工龄用于法定年假档位）',
+  `seniority_confirmed_at` datetime DEFAULT NULL COMMENT '最近一次司龄确认时间',
+  `seniority_confirmed_by` bigint(20) DEFAULT NULL COMMENT '最近一次司龄确认人',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_emp_no` (`emp_no`),
+  UNIQUE KEY `uk_employee_source_offer` (`source_offer_id`),
+  KEY `idx_emp_source` (`source`),
   KEY `idx_emp_org` (`org_id`),
   KEY `idx_emp_account` (`account_id`),
   KEY `idx_emp_deleted` (`deleted`),
@@ -253,8 +262,10 @@ CREATE TABLE IF NOT EXISTS `ehr_leave` (
   `end_date` date NOT NULL COMMENT '结束日期',
   `start_period` char(2) NOT NULL DEFAULT 'AM' COMMENT '开始半天 AM/PM',
   `end_period` char(2) NOT NULL DEFAULT 'PM' COMMENT '结束半天 AM/PM',
+  `start_time` char(5) DEFAULT NULL COMMENT '开始时间 HH:mm（精确到半小时）',
+  `end_time` char(5) DEFAULT NULL COMMENT '结束时间 HH:mm（精确到半小时）',
   `day_mode` varchar(16) NOT NULL DEFAULT 'NATURAL' COMMENT 'NATURAL/WORKDAY',
-  `days` decimal(5,1) NOT NULL COMMENT '请假天数',
+  `days` decimal(6,2) NOT NULL COMMENT '请假天数（8 小时/天，半小时折算 0.06 天）',
   `reason` varchar(500) NOT NULL COMMENT '请假事由',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批 1已通过 2已驳回 3已撤销 4已销假',
   `return_date` date DEFAULT NULL COMMENT '实际返岗日期（销假后写入）',
@@ -274,6 +285,9 @@ CREATE TABLE IF NOT EXISTS `ehr_leave` (
   KEY `idx_leave_account` (`account_id`),
   KEY `idx_leave_employee` (`employee_id`),
   KEY `idx_leave_deleted` (`deleted`)
+,
+  `leave_no` varchar(32) DEFAULT NULL COMMENT '请假单号（配置中心规则生成）',
+  UNIQUE KEY `uk_leave_no` (`leave_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请假申请';
 CREATE TABLE IF NOT EXISTS `ehr_org_node` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
@@ -404,16 +418,24 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota` (
   `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
   `leave_type` varchar(32) NOT NULL COMMENT 'ANNUAL/COMPENSATORY/SICK...',
   `year` int(11) NOT NULL COMMENT '年度',
+  `period_start` date NOT NULL COMMENT '额度周期起始日（自然年为当年1月1日）',
+  `period_end` date NOT NULL COMMENT '额度周期截止日（自然年为当年12月31日）',
+  `period_no` int(11) NOT NULL DEFAULT '1' COMMENT '周期序号，续期递增',
   `total_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '总额度',
   `used_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '已使用',
   `frozen_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '审批中冻结',
+  `carryover_in` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '上期结转进来',
+  `carryover_out` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '结转到下期',
+  `carryover_expire_at` date DEFAULT NULL COMMENT '结转额度失效日',
+  `source` varchar(16) NOT NULL DEFAULT 'MANUAL' COMMENT '来源 AUTO自然年生成/MANUAL手工/CARRYOVER结转',
+  `calc_detail` varchar(500) DEFAULT '' COMMENT '生成依据快照（工龄/档位/折算）',
   `version` int(11) NOT NULL DEFAULT '0' COMMENT '乐观锁',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_quota_emp_type_year` (`employee_id`,`leave_type`,`year`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工假期额度';
+  UNIQUE KEY `uk_quota_emp_type_period` (`employee_id`,`leave_type`,`period_start`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工假期额度（按周期，自然年）';
 
 CREATE TABLE IF NOT EXISTS `ehr_leave_quota_log` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
@@ -429,6 +451,7 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota_log` (
   `remark` varchar(255) DEFAULT '',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_quota_log_bizkey` (`biz_key`),
   KEY `idx_quota_log_quota` (`quota_id`),
@@ -441,6 +464,9 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_type_rule` (
   `quota_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否占用假期额度',
   `default_quota_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '年度默认额度（首次自动建额度用）',
   `attachment_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否必须上传证明',
+  `proof_types` varchar(128) NOT NULL DEFAULT '' COMMENT '允许的证明文件类型，如 pdf,jpg,png；空=不限',
+  `proof_min_hours` decimal(4,1) NOT NULL DEFAULT '0.0' COMMENT '达到多少小时才强制证明（0=所有时长都要）',
+  `proof_hint` varchar(255) NOT NULL DEFAULT '' COMMENT '证明上传提示（员工手册口径）',
   `min_days` decimal(4,1) NOT NULL DEFAULT '0.5',
   `max_days_per_request` decimal(5,1) NOT NULL DEFAULT '30.0',
   `min_notice_days` int(11) NOT NULL DEFAULT '0' COMMENT '需提前几天申请',
@@ -458,6 +484,13 @@ CREATE TABLE IF NOT EXISTS `ehr_work_calendar` (
   PRIMARY KEY (`work_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作日历（未配置的日期按周末规则判断）';
 
+CREATE TABLE IF NOT EXISTS `ehr_work_calendar_year` (
+  `cal_year` int(4) NOT NULL COMMENT '日历年份',
+  `applied_at` datetime DEFAULT NULL COMMENT '一键更新执行时间',
+  `applied_by` varchar(64) DEFAULT '' COMMENT '执行人账号名',
+  PRIMARY KEY (`cal_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工作日历年度更新记录';
+
 CREATE TABLE IF NOT EXISTS `ehr_attachment` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `biz_type` varchar(32) NOT NULL COMMENT '业务类型：TEMP临时/LEAVE请假/EMPLOYEE档案/CONTRACT合同',
@@ -469,6 +502,7 @@ CREATE TABLE IF NOT EXISTS `ehr_attachment` (
   `uploaded_by` bigint(20) DEFAULT NULL COMMENT '上传人统一账号ID',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_attach_biz` (`biz_type`,`biz_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务附件';
@@ -503,11 +537,18 @@ CREATE TABLE IF NOT EXISTS `ehr_overtime` (
   `type` varchar(16) NOT NULL DEFAULT 'NORMAL' COMMENT '加班类型：NORMAL工作日/HOLIDAY节假日/RESTDAY休息日',
   `reason` varchar(255) DEFAULT '' COMMENT '加班事由',
   `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '状态：0待审批/1已通过/2已驳回/3已撤销',
+  `settle_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '调休结算：0未结算/1已结算',
+  `effective_hours` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '审批通过后计入调休的有效小时数',
+  `settled_at` datetime DEFAULT NULL COMMENT '结算为调休额度的时间',
+  `calc_detail` varchar(500) DEFAULT '' COMMENT '核算快照：规则/日类型/比例/扣减',
   `approve_note` varchar(255) DEFAULT '' COMMENT '审批意见',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
   PRIMARY KEY (`id`),
   KEY `idx_overtime_emp_date` (`employee_id`,`work_date`),
   KEY `idx_overtime_status` (`status`)
+,
+  `overtime_no` varchar(32) DEFAULT NULL COMMENT '加班单号（配置中心规则生成）',
+  UNIQUE KEY `uk_overtime_no` (`overtime_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='加班申请（审批通过后按小时折算调休额度）';
 
 CREATE TABLE IF NOT EXISTS `ehr_attendance_month` (
@@ -519,7 +560,14 @@ CREATE TABLE IF NOT EXISTS `ehr_attendance_month` (
   `leave_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '请假天数',
   `overtime_hours` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '加班小时数',
   `absent_days` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '缺勤天数',
+  `late_minutes` int(11) NOT NULL DEFAULT '0' COMMENT '迟到分钟数合计',
+  `early_minutes` int(11) NOT NULL DEFAULT '0' COMMENT '早退分钟数合计',
+  `absent_hours` decimal(6,2) NOT NULL DEFAULT '0.00' COMMENT '缺勤小时数（按实际分钟/60，不向上取整）',
+  `work_hours` decimal(7,2) NOT NULL DEFAULT '0.00' COMMENT '实际出勤小时数',
   `confirmed` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'HR 是否已确认：0未确认/1已确认',
+  `unlock_reason` varchar(255) DEFAULT '' COMMENT '最近一次解锁原因',
+  `unlocked_at` datetime DEFAULT NULL COMMENT '最近一次解锁时间',
+  `unlocked_by` bigint(20) DEFAULT NULL COMMENT '最近一次解锁操作人统一账号ID',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '生成时间',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -544,6 +592,9 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_quota_adjust` (
   PRIMARY KEY (`id`),
   KEY `idx_quota_adjust_emp` (`employee_id`),
   KEY `idx_quota_adjust_status` (`status`)
+,
+  `adjust_no` varchar(32) DEFAULT NULL COMMENT '额度调整单号（配置中心规则生成）',
+  UNIQUE KEY `uk_adjust_no` (`adjust_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='假期额度调整申请';
 
 CREATE TABLE IF NOT EXISTS `ehr_audit_log` (
@@ -585,6 +636,36 @@ CREATE TABLE IF NOT EXISTS `ehr_job_lock` (
   PRIMARY KEY (`job_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='定时任务锁';
 
+CREATE TABLE IF NOT EXISTS `ehr_job_post` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `job_no` varchar(32) NOT NULL COMMENT '职位编号（对外展示，如 JOB-2026-001）',
+  `title` varchar(128) NOT NULL COMMENT '职位名称',
+  `org_id` bigint(20) DEFAULT NULL COMMENT '用人部门（组织节点ID）',
+  `job_type` varchar(16) NOT NULL DEFAULT 'FULL_TIME' COMMENT 'FULL_TIME全职/INTERN实习/PART_TIME兼职',
+  `work_city` varchar(64) DEFAULT '' COMMENT '工作城市',
+  `headcount` int(11) NOT NULL DEFAULT '1' COMMENT '招聘人数',
+  `salary_min` decimal(12,2) DEFAULT NULL COMMENT '薪资下限（元/月）',
+  `salary_max` decimal(12,2) DEFAULT NULL COMMENT '薪资上限（元/月）',
+  `education_req` varchar(32) DEFAULT '' COMMENT '学历要求',
+  `experience_req` varchar(32) DEFAULT '' COMMENT '经验要求',
+  `description` text COMMENT '职位描述（纯文本）',
+  `requirement` text COMMENT '任职要求（纯文本）',
+  `tags` varchar(255) DEFAULT '' COMMENT '标签，英文逗号分隔',
+  `status` varchar(16) NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT草稿/PUBLISHED已发布/CLOSED已关闭',
+  `publish_at` datetime DEFAULT NULL COMMENT '发布时间',
+  `close_at` date DEFAULT NULL COMMENT '截止日期（空=长期）',
+  `sort_no` int(11) NOT NULL DEFAULT '0' COMMENT '排序，越大越靠前',
+  `owner_id` bigint(20) DEFAULT NULL COMMENT '招聘负责人统一账号ID',
+  `created_by` bigint(20) DEFAULT NULL COMMENT '创建人统一账号ID',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_job_no` (`job_no`),
+  KEY `idx_job_status` (`status`,`close_at`),
+  KEY `idx_job_org` (`org_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='对外招聘职位';
+
 CREATE TABLE IF NOT EXISTS `ehr_candidate` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `name` varchar(64) NOT NULL COMMENT '候选人姓名',
@@ -597,24 +678,52 @@ CREATE TABLE IF NOT EXISTS `ehr_candidate` (
   `owner_id` bigint(20) DEFAULT NULL COMMENT '招聘负责人统一账号ID',
   `owner_name` varchar(64) DEFAULT '' COMMENT '招聘负责人姓名快照',
   `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `job_id` bigint(20) DEFAULT NULL COMMENT '关联招聘职位ID（门户投递）',
+  `gender` tinyint(4) DEFAULT NULL COMMENT '0未知/1男/2女',
+  `birthday` date DEFAULT NULL COMMENT '出生日期',
+  `education` varchar(32) DEFAULT '' COMMENT '最高学历',
+  `school` varchar(128) DEFAULT '' COMMENT '毕业院校',
+  `major` varchar(128) DEFAULT '' COMMENT '专业',
+  `work_years` decimal(4,1) DEFAULT NULL COMMENT '工作年限',
+  `current_company` varchar(128) DEFAULT '' COMMENT '当前/最近公司',
+  `expected_salary` decimal(12,2) DEFAULT NULL COMMENT '期望月薪',
+  `id_card` varchar(32) DEFAULT '' COMMENT '证件号（仅 HR 录入，不对外）',
+  `resume_file_id` bigint(20) DEFAULT NULL COMMENT '主简历附件ID（ehr_attachment，biz_type=CANDIDATE）',
+  `employee_id` bigint(20) DEFAULT NULL COMMENT '建档后回写员工ID',
+  `track_code` varchar(24) DEFAULT '' COMMENT '门户投递查询码',
+  `apply_key` varchar(128) DEFAULT NULL COMMENT '投递幂等键 jobId:mobileHash',
+  `applied_at` datetime DEFAULT NULL COMMENT '投递时间',
+  `last_stage_at` datetime DEFAULT NULL COMMENT '最近阶段变更时间',
+  `consent_at` datetime DEFAULT NULL COMMENT '隐私声明同意时间',
+  `consent_version` varchar(16) DEFAULT '' COMMENT '隐私声明版本',
+  `retain_until` date DEFAULT NULL COMMENT '简历保留截止日（默认投递日+180天）',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_candidate_apply_key` (`apply_key`),
   KEY `idx_candidate_stage` (`stage`),
   KEY `idx_candidate_owner` (`owner_id`),
-  KEY `idx_candidate_org` (`org_id`)
+  KEY `idx_candidate_org` (`org_id`),
+  KEY `idx_candidate_job` (`job_id`),
+  KEY `idx_candidate_employee` (`employee_id`)
+,
+  `candidate_no` varchar(32) DEFAULT NULL COMMENT '候选人编号（配置中心规则生成）',
+  UNIQUE KEY `uk_candidate_no` (`candidate_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招聘候选人';
 
 CREATE TABLE IF NOT EXISTS `ehr_offer` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `candidate_id` bigint(20) NOT NULL COMMENT '候选人ID',
+  `job_id` bigint(20) DEFAULT NULL COMMENT '关联招聘职位ID',
   `position` varchar(64) NOT NULL COMMENT '录用职位',
   `salary` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT '月薪（元）',
   `expected_onboard_date` date DEFAULT NULL COMMENT '预计入职日期',
   `org_id` bigint(20) NOT NULL COMMENT '录用部门（组织节点ID）',
-  `status` varchar(16) NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT草稿/APPROVING审批中/APPROVED已通过/REJECTED已驳回或已撤销',
-  `employee_id` bigint(20) DEFAULT NULL COMMENT '审批通过后生成的待入职档案ID',
+  `status` varchar(16) NOT NULL DEFAULT 'DRAFT' COMMENT '状态：DRAFT草稿/APPROVING审批中/APPROVED审批通过待确认/CONFIRMED已确认/DECLINED候选人放弃/REJECTED已驳回或已撤销',
+  `confirmed_at` datetime DEFAULT NULL COMMENT 'HR 线下确认/放弃时间',
+  `confirmed_by` bigint(20) DEFAULT NULL COMMENT '确认操作人统一账号ID',
+  `employee_id` bigint(20) DEFAULT NULL COMMENT '办理入职后生成的待入职档案ID',
   `remark` varchar(255) DEFAULT '' COMMENT '备注/撤销原因',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -623,6 +732,9 @@ CREATE TABLE IF NOT EXISTS `ehr_offer` (
   KEY `idx_offer_candidate` (`candidate_id`),
   KEY `idx_offer_status` (`status`),
   KEY `idx_offer_employee` (`employee_id`)
+,
+  `offer_no` varchar(32) DEFAULT NULL COMMENT 'Offer 单号（配置中心规则生成）',
+  UNIQUE KEY `uk_offer_no` (`offer_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='录用Offer（审批通过后自动生成待入职档案）';
 
 CREATE TABLE IF NOT EXISTS `ehr_import_task` (
@@ -645,4 +757,259 @@ CREATE TABLE IF NOT EXISTS `ehr_import_task` (
   KEY `idx_import_task_creator` (`created_by`),
   KEY `idx_import_task_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批量导入任务（上传预览→确认入库两段式）';
+
+CREATE TABLE IF NOT EXISTS `ehr_leave_attachment` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `leave_id` bigint(20) NOT NULL COMMENT '请假单ID',
+  `attachment_id` bigint(20) NOT NULL COMMENT '附件ID（ehr_attachment，biz_type=LEAVE）',
+  `file_name` varchar(255) NOT NULL DEFAULT '' COMMENT '文件名快照',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_leave_attachment` (`leave_id`,`attachment_id`),
+  KEY `idx_leave_attach_leave` (`leave_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请假证明材料（一单多附件）';
+
+CREATE TABLE IF NOT EXISTS `ehr_annual_leave_policy` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `name` varchar(64) NOT NULL COMMENT '策略名称',
+  `enabled` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1启用 0停用',
+  `tier1_years` int(11) NOT NULL DEFAULT '1' COMMENT '第一档起始累计工龄（年）',
+  `tier1_days` decimal(4,1) NOT NULL DEFAULT '5.0' COMMENT '第一档年假天数',
+  `tier2_years` int(11) NOT NULL DEFAULT '10' COMMENT '第二档起始累计工龄',
+  `tier2_days` decimal(4,1) NOT NULL DEFAULT '10.0' COMMENT '第二档年假天数',
+  `tier3_years` int(11) NOT NULL DEFAULT '20' COMMENT '第三档起始累计工龄',
+  `tier3_days` decimal(4,1) NOT NULL DEFAULT '15.0' COMMENT '第三档年假天数',
+  `carryover_enabled` tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否允许结转',
+  `carryover_max_days` decimal(4,1) NOT NULL DEFAULT '5.0' COMMENT '最多结转天数',
+  `carryover_expire_month` int(11) NOT NULL DEFAULT '3' COMMENT '结转额度失效月份（次年）',
+  `effective_from` date DEFAULT NULL COMMENT '生效起始日',
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_annual_policy_enabled` (`enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='法定年假策略（累计工龄档位/结转）';
+
+CREATE TABLE IF NOT EXISTS `ehr_employee_seniority_record` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `effective_date` date NOT NULL COMMENT '核定生效日',
+  `seniority_start_date` date NOT NULL COMMENT '司龄起算日（本单位）',
+  `first_work_date` date NOT NULL COMMENT '首次参加工作日期（含前司）',
+  `prior_years` decimal(4,1) NOT NULL DEFAULT '0.0' COMMENT '前司累计年限（社保核定）',
+  `total_years` decimal(4,1) NOT NULL DEFAULT '0.0' COMMENT '累计工龄（用于年假档位）',
+  `source` varchar(16) NOT NULL DEFAULT 'MANUAL' COMMENT 'SOCIAL_SECURITY社保核定/MANUAL手工/FIRST_HIRE入职默认',
+  `proof_file_id` bigint(20) DEFAULT NULL COMMENT '社保/离职证明附件ID',
+  `remark` varchar(255) DEFAULT '',
+  `confirmed_by` bigint(20) DEFAULT NULL COMMENT '核定人账号ID',
+  `confirmed_at` datetime DEFAULT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_seniority_emp` (`employee_id`,`effective_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工司龄核定记录（含前司工龄）';
+
+CREATE TABLE IF NOT EXISTS `ehr_employee_seniority_segment` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `record_id` bigint(20) DEFAULT NULL COMMENT '所属司龄核定记录ID',
+  `company` varchar(128) DEFAULT '' COMMENT '单位名称（选填）',
+  `start_date` date NOT NULL COMMENT '该段工作开始日期',
+  `end_date` date NOT NULL COMMENT '该段工作结束日期',
+  `proof_file_id` bigint(20) NOT NULL COMMENT '该段工作证明附件ID（社保/离职证明）',
+  `proof_file_name` varchar(255) DEFAULT '' COMMENT '证明附件原始文件名',
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_seniority_seg_emp` (`employee_id`,`start_date`),
+  KEY `idx_seniority_seg_record` (`record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工司龄工作段（多段不连续经历，逐段附件证明）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_rule` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `code` varchar(32) NOT NULL COMMENT '规则编码',
+  `name` varchar(64) NOT NULL COMMENT '规则名称',
+  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1启用 0停用',
+  `work_start` time NOT NULL COMMENT '上班时间',
+  `work_end` time NOT NULL COMMENT '下班时间',
+  `rest_start` time DEFAULT NULL COMMENT '午休开始',
+  `rest_end` time DEFAULT NULL COMMENT '午休结束',
+  `work_hours` decimal(4,2) NOT NULL DEFAULT '8.00' COMMENT '标准工作时长（小时）',
+  `late_grace` int(11) NOT NULL DEFAULT '0' COMMENT '迟到宽容分钟',
+  `early_grace` int(11) NOT NULL DEFAULT '0' COMMENT '早退宽容分钟',
+  `absent_min_minutes` int(11) NOT NULL DEFAULT '0' COMMENT '缺勤起算最小分钟（0=按实际）',
+  `flexible` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否弹性工时',
+  `cross_day` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否跨天班次',
+  `require_punch` tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否需要打卡',
+  `color` varchar(16) NOT NULL DEFAULT '#1677ff' COMMENT '看板颜色',
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_att_rule_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考勤规则';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_rule_scope` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
+  `scope_type` varchar(16) NOT NULL COMMENT 'ALL/ORG/EMPLOYEE',
+  `scope_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '组织ID或员工ID，ALL 为 0',
+  `priority` int(11) NOT NULL DEFAULT '0' COMMENT '优先级，越大越优先',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_rule_scope` (`rule_id`,`scope_type`,`scope_id`),
+  KEY `idx_rule_scope_target` (`scope_type`,`scope_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考勤规则适用范围（员工>部门>全员）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_rule_segment` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `rule_id` bigint(20) NOT NULL COMMENT '规则ID',
+  `seq` int(11) NOT NULL DEFAULT '1' COMMENT '顺序',
+  `name` varchar(32) NOT NULL DEFAULT '' COMMENT '时间段名称',
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `work_minutes` int(11) NOT NULL DEFAULT '0' COMMENT '该段计工作时长（分钟）',
+  `need_punch` tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否需要打卡',
+  `cross_day` tinyint(4) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_rule_segment_rule` (`rule_id`,`seq`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考勤规则时间段（一天可多段）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_punch` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL COMMENT '员工ID',
+  `punch_time` datetime NOT NULL COMMENT '打卡时间',
+  `punch_type` varchar(8) DEFAULT NULL COMMENT 'IN/OUT，空=自动判定',
+  `source` varchar(16) NOT NULL DEFAULT 'DEVICE' COMMENT 'DEVICE/MOCK/MANUAL/CORRECTION',
+  `device_no` varchar(64) DEFAULT '' COMMENT '设备号',
+  `location` varchar(128) DEFAULT '' COMMENT '打卡地点',
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_punch_emp_time` (`employee_id`,`punch_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='打卡流水';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_daily` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL,
+  `work_date` date NOT NULL,
+  `rule_id` bigint(20) DEFAULT NULL COMMENT '当日命中的规则（快照后规则改动不影响历史）',
+  `rule_snapshot` text COMMENT '规则快照JSON',
+  `shift_start` time DEFAULT NULL,
+  `shift_end` time DEFAULT NULL,
+  `first_in` datetime DEFAULT NULL COMMENT '当日首次上班打卡',
+  `last_out` datetime DEFAULT NULL COMMENT '当日末次下班打卡',
+  `late_minutes` int(11) NOT NULL DEFAULT '0',
+  `early_minutes` int(11) NOT NULL DEFAULT '0',
+  `absent_minutes` int(11) NOT NULL DEFAULT '0',
+  `absent_hours` decimal(5,2) NOT NULL DEFAULT '0.00' COMMENT '实际分钟/60',
+  `work_minutes` int(11) NOT NULL DEFAULT '0',
+  `overtime_minutes` int(11) NOT NULL DEFAULT '0',
+  `day_type` varchar(16) NOT NULL DEFAULT 'WORKDAY' COMMENT 'WORKDAY/REST/LEGAL_HOLIDAY',
+  `status` varchar(24) NOT NULL DEFAULT 'NORMAL' COMMENT 'NORMAL/LATE/EARLY/LATE_EARLY/ABSENT/MISSING_PUNCH/LEAVE/REST/HOLIDAY',
+  `leave_id` bigint(20) DEFAULT NULL,
+  `leave_type` varchar(16) DEFAULT NULL,
+  `correction_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0无/1补卡审批中/2已补卡',
+  `remark` varchar(255) DEFAULT '',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_daily_emp_date` (`employee_id`,`work_date`),
+  KEY `idx_daily_date` (`work_date`),
+  KEY `idx_daily_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考勤日结果';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_correction` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `employee_id` bigint(20) NOT NULL,
+  `work_date` date NOT NULL,
+  `type` varchar(16) NOT NULL DEFAULT 'MISSING_PUNCH' COMMENT 'MISSING_PUNCH补卡/OVERTIME_PUNCH加班补卡',
+  `punch_type` varchar(8) NOT NULL COMMENT 'IN/OUT',
+  `punch_time` datetime NOT NULL COMMENT '补卡时间',
+  `overtime_id` bigint(20) DEFAULT NULL COMMENT '关联加班单',
+  `hours` decimal(5,2) DEFAULT NULL COMMENT '补录加班小时',
+  `reason` varchar(255) NOT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0待审批/1已通过/2已驳回/3已撤销',
+  `approval_instance_id` bigint(20) DEFAULT NULL,
+  `applicant_account_id` bigint(20) DEFAULT NULL,
+  `applicant_name` varchar(64) DEFAULT '',
+  `approve_note` varchar(255) DEFAULT '',
+  `approved_at` datetime DEFAULT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_correction_emp_date` (`employee_id`,`work_date`),
+  KEY `idx_correction_status` (`status`)
+,
+  `correction_no` varchar(32) DEFAULT NULL COMMENT '补卡单号（配置中心规则生成）',
+  UNIQUE KEY `uk_correction_no` (`correction_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='补卡申请（缺卡默认待补，不直接记旷工）';
+
+CREATE TABLE IF NOT EXISTS `ehr_attendance_mock_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `mock_date` date NOT NULL COMMENT '生成的目标日期',
+  `punch_count` int(11) NOT NULL DEFAULT '0',
+  `absent_count` int(11) NOT NULL DEFAULT '0',
+  `overtime_count` int(11) NOT NULL DEFAULT '0',
+  `detail` varchar(1000) DEFAULT '',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_mock_date` (`mock_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模拟考勤生成日志';
+
+CREATE TABLE IF NOT EXISTS `ehr_interview` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `candidate_id` bigint(20) NOT NULL COMMENT '候选人ID',
+  `job_id` bigint(20) DEFAULT NULL COMMENT '招聘职位ID',
+  `interview_no` varchar(32) NOT NULL DEFAULT '' COMMENT '面试单号：IV-yyyyMMdd-6位流水',
+  `round_no` int(11) NOT NULL DEFAULT '1' COMMENT '第几轮面试，从 1 开始',
+  `interviewer_id` bigint(20) NOT NULL COMMENT '面试官员工档案ID',
+  `interviewer_account_id` bigint(20) DEFAULT NULL COMMENT '面试官统一账号ID（为空表示未开户，不发待办）',
+  `interviewer_name` varchar(64) NOT NULL DEFAULT '' COMMENT '面试官姓名快照',
+  `scheduled_at` datetime NOT NULL COMMENT '约定面试时间',
+  `method` varchar(16) NOT NULL DEFAULT 'ONSITE' COMMENT 'ONSITE现场/VIDEO视频/PHONE电话',
+  `location` varchar(255) DEFAULT '' COMMENT '面试地点或会议链接',
+  `status` varchar(16) NOT NULL DEFAULT 'SCHEDULED' COMMENT 'SCHEDULED待面试/DONE已反馈/CANCELED已取消',
+  `score` int(11) DEFAULT NULL COMMENT '评分 1-5',
+  `feedback` varchar(1000) DEFAULT '' COMMENT '面试反馈',
+  `feedback_at` datetime DEFAULT NULL COMMENT '反馈提交时间',
+  `round_result` varchar(16) DEFAULT NULL COMMENT 'HR 对该轮判定：PASS通过/FAIL未通过，同轮所有行同步',
+  `decided_at` datetime DEFAULT NULL COMMENT '判定时间',
+  `decided_by` bigint(20) DEFAULT NULL COMMENT '判定人统一账号ID',
+  `remark` varchar(255) DEFAULT '' COMMENT '备注/取消原因',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_interview_no` (`interview_no`),
+  KEY `idx_interview_candidate` (`candidate_id`,`round_no`),
+  KEY `idx_interview_interviewer` (`interviewer_account_id`,`status`),
+  KEY `idx_interview_schedule` (`scheduled_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招聘面试轮次与面试官反馈';
+
+CREATE TABLE IF NOT EXISTS `ehr_candidate_comm` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `candidate_id` bigint(20) NOT NULL COMMENT '候选人ID',
+  `type` varchar(16) NOT NULL DEFAULT 'PHONE' COMMENT 'OFFER_TALK薪资沟通/PHONE电话/OTHER其他',
+  `content` varchar(500) NOT NULL COMMENT '沟通内容',
+  `expected_salary` decimal(12,2) DEFAULT NULL COMMENT '沟通中确认的期望月薪',
+  `occurred_at` datetime NOT NULL COMMENT '沟通时间',
+  `operator_id` bigint(20) DEFAULT NULL COMMENT '操作人统一账号ID',
+  `operator_name` varchar(64) DEFAULT '' COMMENT '操作人姓名',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_comm_candidate` (`candidate_id`,`occurred_at`)
+,
+  `comm_no` varchar(32) DEFAULT NULL COMMENT '沟通记录单号（配置中心规则生成）',
+  UNIQUE KEY `uk_comm_no` (`comm_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HR 与候选人沟通留痕';
+
 

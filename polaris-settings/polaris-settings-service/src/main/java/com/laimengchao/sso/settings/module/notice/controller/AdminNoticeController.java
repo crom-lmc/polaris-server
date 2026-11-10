@@ -1,12 +1,15 @@
 package com.laimengchao.sso.settings.module.notice.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.settings.module.approval.service.InternalHttpClient;
 import com.laimengchao.sso.settings.module.notice.entity.NoticeRule;
 import com.laimengchao.sso.settings.module.notice.service.NoticeService;
 import com.laimengchao.sso.settings.module.notice.vo.NoticeRuleVO;
 import com.laimengchao.sso.settings.security.Permit;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,9 +31,29 @@ import java.util.List;
 public class AdminNoticeController {
 
     private final NoticeService noticeService;
+    private final InternalHttpClient internalHttpClient;
 
-    public AdminNoticeController(NoticeService noticeService) {
+    /** 组织/员工数据在 EHR，这里只做代理（与审批配置同一键） */
+    @Value("${approval.ehr-base-url:http://127.0.0.1:9006}")
+    private String ehrBaseUrl;
+
+    public AdminNoticeController(NoticeService noticeService, InternalHttpClient internalHttpClient) {
         this.noticeService = noticeService;
+        this.internalHttpClient = internalHttpClient;
+    }
+
+    /** 组织树（扁平，转自 EHR）——规则「指定接收部门」多选用 */
+    @GetMapping("/receivers/orgs")
+    @Permit(PermissionCodes.NOTICE_VIEW)
+    public R<JsonNode> receiverOrgs() {
+        return R.ok(internalHttpClient.getData(ehrBaseUrl + "/internal/orgs/tree"));
+    }
+
+    /** 已开户在职员工（转自 EHR）——规则「指定接收人」多选用 */
+    @GetMapping("/receivers/employees")
+    @Permit(PermissionCodes.NOTICE_VIEW)
+    public R<JsonNode> receiverEmployees() {
+        return R.ok(internalHttpClient.getData(ehrBaseUrl + "/internal/orgs/employees/active"));
     }
 
     @GetMapping("/rules")
@@ -72,6 +95,10 @@ public class AdminNoticeController {
         private Integer email;
         private Integer enabled;
         private Integer sort;
+        /** 指定接收账号 ID（逗号分隔），空=由业务方调用时决定 */
+        private String receiverAccountIds;
+        /** 指定接收部门（业务侧组织节点 ID，逗号分隔，含下级） */
+        private String receiverOrgIds;
 
         NoticeRule toEntity() {
             NoticeRule rule = new NoticeRule();
@@ -85,6 +112,8 @@ public class AdminNoticeController {
             rule.setEmail(email);
             rule.setEnabled(enabled);
             rule.setSort(sort);
+            rule.setReceiverAccountIds(receiverAccountIds);
+            rule.setReceiverOrgIds(receiverOrgIds);
             return rule;
         }
     }

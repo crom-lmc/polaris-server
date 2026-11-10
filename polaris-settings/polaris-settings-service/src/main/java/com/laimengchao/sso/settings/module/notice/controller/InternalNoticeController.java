@@ -4,10 +4,15 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.settings.module.notice.dto.NoticeBizHandledRequest;
 import com.laimengchao.sso.settings.module.notice.dto.NoticeSendRequest;
 import com.laimengchao.sso.settings.module.notice.service.NoticeService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 跨服务发送待办/消息（X-Internal-Token 准入，不经网关）。
@@ -45,5 +50,14 @@ public class InternalNoticeController {
     @PostMapping("/biz-handled")
     public R<Integer> bizHandled(@RequestBody NoticeBizHandledRequest req) {
         return R.ok(noticeService.markBizHandled(req.getBizType(), req.getBizId()));
+    }
+
+    /**
+     * 取规则上配置的指定接收人：{accountIds: [...], orgIds: [...]}。
+     * 两者都为空表示未配置，由业务方调用时自行决定接收人；orgIds 由业务方按自身组织树展开（含下级）。
+     */
+    @GetMapping("/rule-receivers")
+    public R<Map<String, List<Long>>> ruleReceivers(@RequestParam String code) {
+        return R.ok(noticeService.ruleReceivers(code));
     }
 }

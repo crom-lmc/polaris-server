@@ -15,6 +15,12 @@ import java.time.LocalDateTime;
 @TableName("ehr_leave")
 public class LeaveRequest extends BaseEntity {
 
+    /** 请假单号：由配置中心单号规则生成 */
+    private String leaveNo;
+    /** 开始时间 HH:mm（精确到半小时） */
+    private String startTime;
+    /** 结束时间 HH:mm（精确到半小时） */
+    private String endTime;
     private Long employeeId;
     private Long accountId;
     private String applicantName;

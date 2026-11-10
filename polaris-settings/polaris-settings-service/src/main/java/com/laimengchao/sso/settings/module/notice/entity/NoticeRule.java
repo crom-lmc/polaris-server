@@ -37,4 +37,11 @@ public class NoticeRule extends BaseEntity {
     /** 1 内置（种子数据，禁删）/ 0 自定义 */
     private Integer builtIn;
     private Integer sort;
+    /**
+     * 指定接收账号 ID（逗号分隔）。与 receiverOrgIds 可混合配置；
+     * 两者都为空表示不指定，由业务方调用时自行决定接收人。
+     */
+    private String receiverAccountIds;
+    /** 指定接收部门（业务侧组织节点 ID，逗号分隔，含下级），与 receiverAccountIds 可混合 */
+    private String receiverOrgIds;
 }

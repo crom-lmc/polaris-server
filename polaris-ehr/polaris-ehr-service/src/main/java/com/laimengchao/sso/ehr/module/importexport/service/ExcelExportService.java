@@ -123,7 +123,8 @@ public class ExcelExportService {
     public byte[] attendance(String month) {
         List<AttendanceMonthVO> rows = attendanceService.monthly(month, null);
         String[] headers = {"月份", "员工ID", "员工姓名", "应出勤天数", "实际出勤天数",
-                "请假天数", "加班小时", "缺勤天数", "确认状态"};
+                "迟到分钟", "早退分钟", "缺勤小时", "缺勤天数", "请假天数", "加班小时",
+                "实际出勤小时", "确认状态"};
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sheet = ExcelWriter.headerSheet(wb, "月度考勤", headers);
             for (int i = 0; i < rows.size(); i++) {
@@ -134,10 +135,14 @@ public class ExcelExportService {
                 ExcelWriter.set(row, 2, vo.getEmployeeName());
                 ExcelWriter.set(row, 3, vo.getShouldDays());
                 ExcelWriter.set(row, 4, vo.getActualDays());
-                ExcelWriter.set(row, 5, vo.getLeaveDays());
-                ExcelWriter.set(row, 6, vo.getOvertimeHours());
-                ExcelWriter.set(row, 7, vo.getAbsentDays());
-                ExcelWriter.set(row, 8, Integer.valueOf(1).equals(vo.getConfirmed()) ? "已确认" : "未确认");
+                ExcelWriter.set(row, 5, vo.getLateMinutes() == null ? "" : String.valueOf(vo.getLateMinutes()));
+                ExcelWriter.set(row, 6, vo.getEarlyMinutes() == null ? "" : String.valueOf(vo.getEarlyMinutes()));
+                ExcelWriter.set(row, 7, vo.getAbsentHours());
+                ExcelWriter.set(row, 8, vo.getAbsentDays());
+                ExcelWriter.set(row, 9, vo.getLeaveDays());
+                ExcelWriter.set(row, 10, vo.getOvertimeHours());
+                ExcelWriter.set(row, 11, vo.getWorkHours());
+                ExcelWriter.set(row, 12, Integer.valueOf(1).equals(vo.getConfirmed()) ? "已确认" : "未确认");
             }
             auditLogService.record(AuditLogService.ACTION_EXPORT, AuditLogService.TARGET_ATTENDANCE, null,
                     "month=" + (month == null ? LocalDate.now().toString().substring(0, 7) : month)

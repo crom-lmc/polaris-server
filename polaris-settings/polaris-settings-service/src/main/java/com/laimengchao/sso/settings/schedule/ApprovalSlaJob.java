@@ -1,4 +1,4 @@
-package com.laimengchao.sso.settings.module.approval.job;
+package com.laimengchao.sso.settings.schedule;
 
 import com.laimengchao.sso.settings.module.approval.service.ApprovalOpsService;
 import lombok.RequiredArgsConstructor;

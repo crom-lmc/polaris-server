@@ -24,6 +24,7 @@ import com.laimengchao.sso.settings.client.dto.NoticeBizHandledDTO;
 import com.laimengchao.sso.settings.client.support.SettingsClient;
 import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeRequest;
+import com.laimengchao.sso.ehr.module.employee.dto.PendingArchiveCommand;
 import com.laimengchao.sso.ehr.module.employee.dto.ReinstateRequest;
 import com.laimengchao.sso.ehr.module.employee.dto.ResignRequest;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
@@ -101,6 +102,13 @@ public class EmployeeService {
     private final ApprovalLauncher approvalLauncher;
     /** 转正申请：申请单落库、发起审批、终审回调都归它 */
     private final com.laimengchao.sso.ehr.module.approval.service.RegularizeApplyService regularizeApplyService;
+    /** 来源 Offer 校验：入职提交必须来自已确认 Offer，避免绕过招聘侧确认 */
+    private final com.laimengchao.sso.ehr.module.recruit.mapper.OfferMapper offerMapper;
+
+    /** 员工来源 */
+    public static final String SOURCE_MANUAL = "MANUAL";
+    public static final String SOURCE_RECRUIT = "RECRUIT";
+    public static final String SOURCE_IMPORT = "IMPORT";
 
     /**
      * 本服务对内地址，用来拼终审回调地址。
@@ -465,29 +473,49 @@ public class EmployeeService {
     @Transactional(rollbackFor = Exception.class)
     public Long createPendingArchive(String name, String mobile, String email, Long orgId,
                                      String position, LocalDate hireDate, String remark) {
+        return createPendingArchive(PendingArchiveCommand.builder()
+                .name(name).mobile(mobile).email(email).orgId(orgId)
+                .position(position).hireDate(hireDate).remark(remark)
+                .source(SOURCE_MANUAL)
+                .build());
+    }
+
+    /** 招聘/门户转入建档：带出候选人字段，source_offer_id 唯一兜底重复建档 */
+    @Transactional(rollbackFor = Exception.class)
+    public Long createPendingArchive(PendingArchiveCommand cmd) {
         Employee emp = new Employee();
-        emp.setName(requireText(name, "姓名必填"));
-        emp.setGender(0);
-        emp.setMobile(nvl(mobile));
-        emp.setEmail(resolveEmail(name, email));
-        emp.setIdCard("");
+        emp.setName(requireText(cmd.getName(), "姓名必填"));
+        emp.setGender(cmd.getGender() == null ? 0 : cmd.getGender());
+        emp.setMobile(nvl(cmd.getMobile()));
+        emp.setEmail(resolveEmail(cmd.getName(), cmd.getEmail()));
+        emp.setIdCard(cmd.getIdCard() == null ? "" : cmd.getIdCard().trim());
+        emp.setBirthday(cmd.getBirthday());
+        if (emp.getBirthday() == null && !emp.getIdCard().isBlank()) {
+            emp.setBirthday(ValidateUtil.birthdayFromIdCard(emp.getIdCard()));
+        }
         emp.setNation("");
         emp.setMaritalStatus("");
         emp.setPoliticalStatus("");
-        emp.setEducation("");
+        emp.setEducation(nvl(cmd.getEducation()));
         emp.setEmergencyContact("");
         emp.setEmergencyPhone("");
         emp.setCurrentAddress("");
-        emp.setOrgId(orgId);
-        emp.setPosition(nvl(position));
-        emp.setHireDate(hireDate);
+        emp.setOrgId(cmd.getOrgId());
+        emp.setPosition(nvl(cmd.getPosition()));
+        emp.setHireDate(cmd.getHireDate());
+        // P4-4：入职日先作为司龄起算日与首次参加工作日的默认值，后续由 HR 核定覆盖
+        emp.setSeniorityStartDate(cmd.getHireDate());
+        emp.setFirstWorkDate(cmd.getHireDate());
+        emp.setSeniorityYears(java.math.BigDecimal.ZERO);
         emp.setExemptProbation(false);
         emp.setProbationMonths(null);
         recalcExpectedRegularizeDate(emp);
         emp.setStatus(EmployeeStatus.PENDING.getCode());
         emp.setOnboardStep(null);
         emp.setRegularizeStatus(0);
-        emp.setRemark(nvl(remark));
+        emp.setRemark(nvl(cmd.getRemark()));
+        emp.setSource(cmd.getSource() == null || cmd.getSource().isBlank() ? SOURCE_MANUAL : cmd.getSource());
+        emp.setSourceOfferId(cmd.getSourceOfferId());
         boolean inserted = false;
         for (int attempt = 0; attempt < 5 && !inserted; attempt++) {
             emp.setEmpNo(nextEmpNo());
@@ -495,7 +523,15 @@ public class EmployeeService {
                 employeeMapper.insert(emp);
                 inserted = true;
             } catch (DuplicateKeyException e) {
-                // 并发抢号，循环里重取
+                // 并发抢工号 / 同一 Offer 并发办理入职：先按来源 Offer 反查，命中直接复用
+                if (cmd.getSourceOfferId() != null) {
+                    Employee existing = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
+                            .eq(Employee::getSourceOfferId, cmd.getSourceOfferId())
+                            .last("LIMIT 1"));
+                    if (existing != null) {
+                        return existing.getId();
+                    }
+                }
             }
         }
         if (!inserted) {
@@ -556,6 +592,13 @@ public class EmployeeService {
         }
         if (req.getHireDate() != null) {
             emp.setHireDate(parseDate(req.getHireDate()));
+        }
+        if (req.getSeniorityStartDate() != null) {
+            emp.setSeniorityStartDate(parseDate(req.getSeniorityStartDate()));
+            emp.setSeniorityYears(yearsSince(emp.getSeniorityStartDate()));
+        }
+        if (req.getFirstWorkDate() != null) {
+            emp.setFirstWorkDate(parseDate(req.getFirstWorkDate()));
         }
         if (req.getRemark() != null) {
             emp.setRemark(req.getRemark().trim());
@@ -807,6 +850,20 @@ public class EmployeeService {
     private static final String CALLBACK_PATH = "/internal/ehr/approval-callback";
 
     /**
+     * 招聘转入的档案必须来自「已确认」的 Offer；存量草稿在这里被拦住，
+     * 避免 HR 从人员列表绕过招聘侧的「确认 Offer」直接提交入职。
+     */
+    private void assertConfirmedOffer(Employee emp) {
+        if (emp.getSourceOfferId() == null) {
+            return;
+        }
+        com.laimengchao.sso.ehr.module.recruit.entity.Offer offer = offerMapper.selectById(emp.getSourceOfferId());
+        if (offer == null || !"CONFIRMED".equals(offer.getStatus())) {
+            throw new BizException(EhrErrorCode.EMP_STATUS_INVALID, "来源 Offer 尚未确认，请先在招聘页确认 Offer");
+        }
+    }
+
+    /**
      * 待入职草稿提交：<b>三段式</b>——① 先本地置「入职审批中」并提交 ② 向审批中心发起实例
      * ③ 仅当实例仍在进行中才回写实例号。发起确认失败时把状态退回「待入职」，允许重新提交。
      * <p>
@@ -817,6 +874,7 @@ public class EmployeeService {
         if (!EmployeeStatus.PENDING.equals(EmployeeStatus.of(emp.getStatus()))) {
             throw new BizException(EhrErrorCode.EMP_STATUS_INVALID, "只有「待入职」草稿可以提交入职");
         }
+        assertConfirmedOffer(emp);
         assertOnboardComplete(emp);
         // ① 本地状态变更先提交：settings 的同步回调发生时，这行一定可见
         emp.setStatus(EmployeeStatus.ONBOARDING.getCode());
@@ -936,7 +994,12 @@ public class EmployeeService {
         requireLogin();
         String kw = keyword == null ? "" : keyword.trim();
         if (kw.isEmpty()) {
-            return List.of();
+            // 空关键字返回前 10 位在职员工：约面试等场景打开下拉即可直接选人
+            return employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                            .ne(Employee::getStatus, EmployeeStatus.LEFT.getCode())
+                            .orderByAsc(Employee::getEmpNo)
+                            .last("LIMIT 10"))
+                    .stream().map(this::toLookupVO).toList();
         }
         if (kw.length() > 40) {
             kw = kw.substring(0, 40);
@@ -963,14 +1026,20 @@ public class EmployeeService {
         }
         List<EmployeeLookupVO> result = new ArrayList<>();
         for (Employee e : hits) {
-            EmployeeLookupVO vo = new EmployeeLookupVO();
-            vo.setEmployeeId(e.getId());
-            vo.setName(e.getName());
-            vo.setPosition(e.getPosition());
-            vo.setEmail(e.getEmail());
-            result.add(vo);
+            result.add(toLookupVO(e));
         }
         return result;
+    }
+
+    /** 员工快捷查询结果项：只给找人需要的非隐私字段 */
+    private EmployeeLookupVO toLookupVO(Employee e) {
+        EmployeeLookupVO vo = new EmployeeLookupVO();
+        vo.setEmployeeId(e.getId());
+        vo.setName(e.getName());
+        vo.setPosition(e.getPosition());
+        vo.setEmail(e.getEmail());
+        vo.setDepartment(orgPathOf(e.getOrgId()));
+        return vo;
     }
 
     /** 员工快捷查询详情：姓名 / 工号 / 账号 / 性别 / 职位 / 部门 / 邮件，同样不含隐私字段 */
@@ -1315,6 +1384,11 @@ public class EmployeeService {
         if (blank(emp.getEducation())) missing.add("最高学历");
         if (blank(emp.getPosition())) missing.add("职位");
         if (emp.getHireDate() == null) missing.add("入职日期");
+        // 司龄核定必须在入职审批前完成：建档时只回填默认值，需 HR 实际核定一次（产出核定记录）
+        if (emp.getSeniorityConfirmedAt() == null) {
+            throw new BizException(EhrErrorCode.EMP_ONBOARD_INCOMPLETE,
+                    "提交入职前请先完成司龄核定（核定司龄起算日与首次参加工作日期）");
+        }
         if (blank(emp.getNativeDetail())) missing.add("籍贯-详细地址");
         if (blank(emp.getEmergencyContact())) missing.add("紧急联系人");
         if (blank(emp.getEmergencyPhone())) missing.add("紧急联系电话");
@@ -1558,6 +1632,10 @@ public class EmployeeService {
         vo.setOrgId(e.getOrgId());
         vo.setPosition(e.getPosition());
         vo.setHireDate(e.getHireDate());
+        vo.setSeniorityStartDate(e.getSeniorityStartDate());
+        vo.setFirstWorkDate(e.getFirstWorkDate());
+        vo.setSeniorityYears(e.getSeniorityYears() == null ? null : e.getSeniorityYears().toPlainString());
+        vo.setSeniorityConfirmedAt(e.getSeniorityConfirmedAt());
         vo.setProbationMonths(e.getProbationMonths());
         vo.setExemptProbation(e.getExemptProbation());
         vo.setExpectedRegularizeDate(e.getExpectedRegularizeDate());
@@ -1674,6 +1752,19 @@ public class EmployeeService {
 
     private String nvl(String s) {
         return s == null ? "" : s.trim();
+    }
+
+    /** 司龄（年）：按 365.25 天/年折算，向下保留 1 位 */
+    private java.math.BigDecimal yearsSince(LocalDate start) {
+        if (start == null) {
+            return java.math.BigDecimal.ZERO;
+        }
+        long days = java.time.temporal.ChronoUnit.DAYS.between(start, LocalDate.now());
+        if (days <= 0) {
+            return java.math.BigDecimal.ZERO;
+        }
+        return java.math.BigDecimal.valueOf(days)
+                .divide(java.math.BigDecimal.valueOf(365.25), 1, java.math.RoundingMode.DOWN);
     }
 
     /**

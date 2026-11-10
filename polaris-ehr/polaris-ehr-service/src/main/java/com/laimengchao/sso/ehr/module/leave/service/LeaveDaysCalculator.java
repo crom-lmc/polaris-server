@@ -7,15 +7,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * 请假天数计算：支持半天与工作日模式，P0-1 的额度冻结 / 销假重算共用。
+ * 请假天数计算：支持精确到半小时的起止时间与工作日模式，额度冻结 / 销假重算共用。
+ * <p>
+ * 工作时长口径与默认考勤规则一致：09:00-12:00、13:00-18:00，全天 8 小时（480 分钟），
+ * 请假时长不足整天时按实际落在工作时段内的分钟数折算：天数 = 分钟数 / 480，保留 2 位小数。
  * <p>
  * 工作日判定：优先读 ehr_work_calendar；未配置的日期按「周六周日休息」兜底，
  * 已配置的节假日（is_workday=0）和调休上班日（is_workday=1）优先于周末规则。
@@ -29,16 +36,116 @@ public class LeaveDaysCalculator {
     public static final String MODE_NATURAL = "NATURAL";
     public static final String MODE_WORKDAY = "WORKDAY";
 
+    public static final LocalTime WORK_START = LocalTime.of(9, 0);
+    public static final LocalTime LUNCH_START = LocalTime.of(12, 0);
+    public static final LocalTime LUNCH_END = LocalTime.of(13, 0);
+    public static final LocalTime WORK_END = LocalTime.of(18, 0);
+    private static final long WORK_MINUTES_PER_DAY = 480;
+
     private final WorkCalendarMapper calendarMapper;
 
     public record Result(BigDecimal days, String warning) {
     }
 
     /**
-     * @param startPeriod 开始半天：AM（上午，计 1 天） / PM（下午，计 0.5 天）
-     * @param endPeriod   结束半天：PM（计 1 天） / AM（计 0.5 天）
+     * 兼容旧调用（只有上午/下午）：等价于未传精确时间。
      */
     public Result calculate(LocalDate start, String startPeriod, LocalDate end, String endPeriod, String dayMode) {
+        return calculate(start, startPeriod, null, end, endPeriod, null, dayMode);
+    }
+
+    /**
+     * @param startPeriod 开始半天：AM（上午） / PM（下午）；startTime 有值时以时间为准
+     * @param startTime   开始时间 HH:mm，必须按半小时（00 / 30 分）选择
+     * @param endPeriod   结束半天：AM / PM；endTime 有值时以时间为准
+     * @param endTime     结束时间 HH:mm，必须按半小时（00 / 30 分）选择
+     */
+    public Result calculate(LocalDate start, String startPeriod, String startTime,
+                            LocalDate end, String endPeriod, String endTime, String dayMode) {
+        if (start == null || end == null) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假日期必填");
+        }
+        if (end.isBefore(start)) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "结束日期不能早于开始日期");
+        }
+        if (start.getYear() != end.getYear()) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "暂不支持跨年请假，请拆成两张单据");
+        }
+        LocalTime st = parseTime(startTime);
+        LocalTime et = parseTime(endTime);
+        if (st != null && et != null) {
+            return calculateByTime(start, st, end, et, dayMode);
+        }
+        return calculateByPeriod(start, startPeriod, end, endPeriod, dayMode);
+    }
+
+    /** 精确到半小时的算法：按每天工作时段累计分钟数，再折算成天 */
+    private Result calculateByTime(LocalDate start, LocalTime st, LocalDate end, LocalTime et, String dayMode) {
+        LocalDateTime startAt = LocalDateTime.of(start, st);
+        LocalDateTime endAt = LocalDateTime.of(end, et);
+        if (!endAt.isAfter(startAt)) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "结束时间不能早于开始时间");
+        }
+        if (Duration.between(startAt, endAt).toMinutes() < 30) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假时长不能少于 30 分钟");
+        }
+        boolean workday = MODE_WORKDAY.equalsIgnoreCase(dayMode == null ? MODE_NATURAL : dayMode);
+        WorkCalendar cal = workday ? loadCalendar(start, end) : null;
+        long minutes = 0;
+        for (LocalDate cur = start; !cur.isAfter(end); cur = cur.plusDays(1)) {
+            if (cal != null && !cal.isWorkday(cur)) {
+                continue;
+            }
+            minutes += workMinutes(cur, start, st, end, et);
+        }
+        BigDecimal days = BigDecimal.valueOf(minutes)
+                .divide(BigDecimal.valueOf(WORK_MINUTES_PER_DAY), 2, RoundingMode.HALF_UP);
+        return new Result(days, cal == null ? null : cal.warning);
+    }
+
+    /** 某一天与 [startAt, endAt] 相交的工作分钟数；午休不计入 */
+    private long workMinutes(LocalDate date, LocalDate start, LocalTime st, LocalDate end, LocalTime et) {
+        long total = 0;
+        total += overlapMinutes(date, WORK_START, LUNCH_START, start, st, end, et);
+        total += overlapMinutes(date, LUNCH_END, WORK_END, start, st, end, et);
+        return total;
+    }
+
+    private long overlapMinutes(LocalDate date, LocalTime windowFrom, LocalTime windowTo,
+                                LocalDate start, LocalTime st, LocalDate end, LocalTime et) {
+        LocalDateTime from = LocalDateTime.of(date, windowFrom);
+        LocalDateTime to = LocalDateTime.of(date, windowTo);
+        if (date.equals(start)) {
+            LocalDateTime s = LocalDateTime.of(start, st);
+            if (s.isAfter(from)) {
+                from = s;
+            }
+        }
+        if (date.equals(end)) {
+            LocalDateTime e = LocalDateTime.of(end, et);
+            if (e.isBefore(to)) {
+                to = e;
+            }
+        }
+        return to.isAfter(from) ? Duration.between(from, to).toMinutes() : 0;
+    }
+
+    private LocalTime parseTime(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            LocalTime t = LocalTime.parse(raw.trim().length() == 4 ? "0" + raw.trim() : raw.trim());
+            if (t.getMinute() != 0 && t.getMinute() != 30) {
+                throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假时间需按半小时选择（00 分或 30 分）");
+            }
+            return t;
+        } catch (java.time.format.DateTimeParseException ex) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假时间格式不正确，应为 HH:mm");
+        }
+    }
+
+    private Result calculateByPeriod(LocalDate start, String startPeriod, LocalDate end, String endPeriod, String dayMode) {
         if (start == null || end == null) {
             throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假日期必填");
         }

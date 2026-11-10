@@ -84,4 +84,18 @@ public class Employee extends BaseEntity {
     private Long accountId;
     private String accountUsername;
     private String remark;
+    /** 来源 MANUAL / RECRUIT / PORTAL / IMPORT */
+    private String source;
+    /** 来源 Offer ID（招聘转入时写入，唯一） */
+    private Long sourceOfferId;
+    /** 司龄起算日（默认入职日，HR 核定后维护） */
+    private LocalDate seniorityStartDate;
+    /** 当前司龄（整年，每日任务刷新） */
+    private java.math.BigDecimal seniorityYears;
+    /** 首次参加工作时间（HR 核定，累计工龄用于法定年假档位） */
+    private LocalDate firstWorkDate;
+    /** 最近一次司龄确认时间 */
+    private java.time.LocalDateTime seniorityConfirmedAt;
+    /** 最近一次司龄确认人 */
+    private Long seniorityConfirmedBy;
 }

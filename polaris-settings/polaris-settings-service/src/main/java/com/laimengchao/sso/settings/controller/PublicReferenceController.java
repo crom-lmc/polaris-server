@@ -32,13 +32,19 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PublicReferenceController {
 
-    /** 允许跨应用读取的纯枚举字典（民族/婚姻/政治面貌/性别/内部通知类型） */
+    /** 允许跨应用读取的纯枚举字典（民族/婚姻/政治面貌/性别/内部通知类型/招聘经验/职位标签/面试方式/沟通方式） */
     private static final Set<String> DICT_ALLOWED = Set.of(
             "general.nation",
             "ehr.marital_status",
             "ehr.political_status",
             "ehr.gender",
-            "ehr.announcement_category"
+            "ehr.announcement_category",
+            "ehr.job_experience",
+            "ehr.job_tag",
+            "ehr.job_city",
+            "ehr.interview_method",
+            "ehr.candidate_comm_type",
+            "ehr.recruit_source"
     );
 
     /** 允许跨应用读取的业务主数据（银行/学历/职位/请假类型/离职原因/家庭成员关系） */

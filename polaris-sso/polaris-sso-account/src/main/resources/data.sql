@@ -1176,6 +1176,9 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000017,'attendance','考勤管理',1,0,7,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000015,'overtime:view','查看加班/调休/月度考勤（含本人提交）',2,375182598000000017,14,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000016,'overtime:approve','加班终审与月度考勤确认',2,375182598000000017,15,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000025,'attendance:view','查看考勤规则/日结果/打卡/补卡',2,375182598000000017,16,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000026,'attendance:manage','维护考勤规则/日历/补卡审批/生成日结果',2,375182598000000017,17,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000027,'attendance:month:unlock','解锁已确认的月度考勤',2,375182598000000017,18,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182597246029824,'employee:resign','减员申请/复职（HR）',2,375175900481851392,6,'','2026-11-01 15:21:42','2026-11-01 15:21:42',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000020,'recruit','招聘管理',1,0,4,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000021,'recruit:view','查看招聘候选人看板与 Offer',2,375182598000000020,1,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
@@ -1984,3 +1987,15 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 -- P2-3：强制下线仅超管
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519940,375182598000000024);
+
+-- P4：考勤查看/维护（HR 专员、员工关系；部门负责人只读）
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
+(2116193763556519942,375182598000000025),
+(2116193763556519945,375182598000000025),
+(2116193763556519946,375182598000000025),
+(2116193763556519942,375182598000000026),
+(2116193763556519945,375182598000000026);
+-- P4-5：解锁已确认月度考勤（HR 专员、员工关系）
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
+(2116193763556519942,375182598000000027),
+(2116193763556519945,375182598000000027);

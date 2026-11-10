@@ -61,4 +61,13 @@ public class AttendanceController {
     public R<AttendanceMonthVO> confirm(@RequestParam String month, @RequestParam Long employeeId) {
         return R.ok(attendanceService.confirm(month, employeeId));
     }
+
+    /** 解锁已确认的月度考勤，必须填写原因 */
+    @PostMapping("/monthly/unlock")
+    @Permit(PermissionCodes.ATTENDANCE_MONTH_UNLOCK)
+    public R<AttendanceMonthVO> unlock(@RequestParam String month,
+                                       @RequestParam Long employeeId,
+                                       @RequestParam String reason) {
+        return R.ok(attendanceService.unlock(month, employeeId, reason));
+    }
 }

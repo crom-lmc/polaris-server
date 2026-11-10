@@ -46,6 +46,11 @@ public class EmployeeRequest {
     private String position;
     /** yyyy-MM-dd */
     private String hireDate;
+
+    /** 司龄起算日（默认入职日） */
+    private String seniorityStartDate;
+    /** 首次参加工作日期（含前司，社保核定；法定年假档位依据） */
+    private String firstWorkDate;
     /**
      * 试用期时长（月）：1-12。免试用期（exemptProbation=true）时无需传。
      * 提交入职前后端会校验必填且合法。

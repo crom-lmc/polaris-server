@@ -18,4 +18,6 @@ public class EmployeeLookupVO {
     private String name;
     private String position;
     private String email;
+    /** 所属部门全路径（约面试选面试官时展示） */
+    private String department;
 }

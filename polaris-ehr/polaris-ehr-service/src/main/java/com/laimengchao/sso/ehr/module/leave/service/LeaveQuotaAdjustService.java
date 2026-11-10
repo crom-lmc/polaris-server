@@ -3,6 +3,7 @@ package com.laimengchao.sso.ehr.module.leave.service;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
 import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
@@ -38,6 +39,7 @@ public class LeaveQuotaAdjustService {
     private final LeaveQuotaService quotaService;
     private final EmployeeMapper employeeMapper;
     private final ApprovalLauncher approvalLauncher;
+    private final BizNoService bizNoService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -60,6 +62,7 @@ public class LeaveQuotaAdjustService {
         }
         Employee emp = employeeMapper.selectById(quota.getEmployeeId());
         LeaveQuotaAdjust adjust = new LeaveQuotaAdjust();
+        adjust.setAdjustNo(bizNoService.next("ehr_leave_quota_adjust"));
         adjust.setQuotaId(quota.getId());
         adjust.setEmployeeId(quota.getEmployeeId());
         adjust.setLeaveType(quota.getLeaveType());

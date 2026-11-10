@@ -50,6 +50,14 @@ public class EmployeeVO {
     private String orgPathName;
     private String position;
     private LocalDate hireDate;
+    /** 司龄起算日 */
+    private LocalDate seniorityStartDate;
+    /** 首次参加工作日期（含前司） */
+    private LocalDate firstWorkDate;
+    /** 当前司龄（整年，1 位小数） */
+    private String seniorityYears;
+    /** 最近一次司龄核定时间；为空表示尚未核定，提交入职前必须完成 */
+    private java.time.LocalDateTime seniorityConfirmedAt;
     /** 试用期时长（月）：1-12；免试用期为 null */
     private Integer probationMonths;
     /** 是否免试用期：true 时入职审批通过后直接转正式 */

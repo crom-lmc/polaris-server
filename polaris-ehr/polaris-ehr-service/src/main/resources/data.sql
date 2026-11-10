@@ -930,3 +930,16 @@ INSERT IGNORE INTO `ehr_leave_type_rule` (`leave_type`,`enabled`,`quota_required
 ('MARRIAGE',1,0,0.00,1,1.0,15.0,3,0,0,5),
 ('MATERNITY',1,0,0.00,1,1.0,180.0,7,0,1,6),
 ('OTHER',1,0,0.00,0,0.5,30.0,0,0,0,7);
+
+-- P4：默认考勤规则（09:00-18:00，午休 12:00-13:00，全员适用）
+INSERT IGNORE INTO `ehr_attendance_rule` (`id`,`code`,`name`,`status`,`work_start`,`work_end`,`rest_start`,`rest_end`,`work_hours`,`late_grace`,`early_grace`,`absent_min_minutes`,`flexible`,`cross_day`,`require_punch`,`color`,`remark`) VALUES
+(375199900000000001,'DEFAULT','标准工时（09:00-18:00）',1,'09:00:00','18:00:00','12:00:00','13:00:00',8.00,0,0,0,0,0,1,'#1677ff','默认兜底规则：周一至周五，8 小时工作制');
+INSERT IGNORE INTO `ehr_attendance_rule_scope` (`id`,`rule_id`,`scope_type`,`scope_id`,`priority`) VALUES
+(375199900000000004,375199900000000001,'ALL',0,0);
+INSERT IGNORE INTO `ehr_attendance_rule_segment` (`id`,`rule_id`,`seq`,`name`,`start_time`,`end_time`,`work_minutes`,`need_punch`,`cross_day`) VALUES
+(375199900000000002,375199900000000001,1,'上午','09:00:00','12:00:00',180,1,0),
+(375199900000000003,375199900000000001,2,'下午','13:00:00','18:00:00',300,1,0);
+
+-- P4：默认法定年假策略（累计工龄 1/10/20 年对应 5/10/15 天，允许结转 5 天）
+INSERT IGNORE INTO `ehr_annual_leave_policy` (`id`,`name`,`enabled`,`tier1_years`,`tier1_days`,`tier2_years`,`tier2_days`,`tier3_years`,`tier3_days`,`carryover_enabled`,`carryover_max_days`,`carryover_expire_month`,`effective_from`,`remark`) VALUES
+(375199900000000010,'法定年假',1,1,5.0,10,10.0,20,15.0,1,5.0,3,'2026-01-01','按累计工龄（含前司，社保核定）自然年生成');

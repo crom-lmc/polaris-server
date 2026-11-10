@@ -448,6 +448,10 @@ public class AccountServiceImpl implements AccountService {
     /** 期望登录名 → 邮箱前缀 → 手机号 → 随机串，逐个消解冲突（最多试 50 次） */
     private String generateUniqueUsername(String wanted, String email, String phone) {
         String base = trimToNull(wanted);
+        // 前端可能把邮箱直接作为期望登录名传入，取 @ 前的前缀，避免拼成 xxxdomaincom
+        if (base != null && base.indexOf('@') > 0) {
+            base = base.substring(0, base.indexOf('@'));
+        }
         if (base == null && email != null) {
             base = email.substring(0, email.indexOf('@') > 0 ? email.indexOf('@') : email.length());
         }

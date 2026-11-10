@@ -14,6 +14,9 @@ public class OfferRequest {
     @NotNull(message = "候选人必填")
     private Long candidateId;
 
+    /** 关联招聘职位（可空，默认取候选人身上的 jobId） */
+    private Long jobId;
+
     @NotBlank(message = "录用职位必填")
     private String position;
 
