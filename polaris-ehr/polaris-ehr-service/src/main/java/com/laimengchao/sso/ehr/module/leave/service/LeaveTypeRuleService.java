@@ -44,6 +44,7 @@ public class LeaveTypeRuleService {
         fallback.setMinNoticeDays(0);
         fallback.setAllowPastDays(0);
         fallback.setNeedDelegate(0);
+        fallback.setOneTimeOnly(0);
         fallback.setSortNo(0);
         return fallback;
     }

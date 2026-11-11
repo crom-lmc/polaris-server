@@ -273,9 +273,18 @@ public class LeaveQuotaService {
         if (q == null) {
             return;
         }
+        // 已审批通过的单据额度已从 frozen 扣入 used，退回时先减 used；仍处于冻结态时才释放 frozen
+        BigDecimal carryDelta = nvl(q.getCarryoverUsed()).min(returnDays);
         change(q, ACTION_RELEASE, returnDays, leave.getId(),
                 "LEAVE:" + leave.getId() + ":EARLY_RETURN", operatorId, "销假退回额度",
-                id -> quotaMapper.releaseWithCarryover(id, returnDays, releaseCarryDelta(q, returnDays)),
+                id -> {
+                    long n = quotaMapper.refundUsed(id, returnDays, carryDelta);
+                    if (n == 0) {
+                        n = quotaMapper.releaseWithCarryover(id, returnDays,
+                                releaseCarryDelta(q, returnDays));
+                    }
+                    return n;
+                },
                 "退回 " + returnDays + " 天");
     }
 

@@ -26,6 +26,7 @@ import com.laimengchao.sso.ehr.module.leave.mapper.LeaveAttachmentMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveAttachmentVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
+import com.laimengchao.sso.ehr.module.leave.vo.LeavePolicyVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.entity.OrgType;
@@ -87,7 +88,8 @@ public class LeaveService {
             "SICK", "病假",
             "PERSONAL", "事假",
             "MARRIAGE", "婚假",
-            "MATERNITY", "产假/陪产假",
+            "MATERNITY", "产假",
+            "PATERNITY", "陪产假",
             "COMPENSATORY", "调休",
             "OTHER", "其他");
 
@@ -110,6 +112,7 @@ public class LeaveService {
     private final ApprovalLauncher approvalLauncher;
     private final LeaveTypeRuleService ruleService;
     private final LeaveDaysCalculator daysCalculator;
+    private final LeaveCityPolicyService cityPolicyService;
     private final LeaveQuotaService quotaService;
     private final AttachmentService attachmentService;
     private final LeaveAttachmentMapper attachmentMapper;
@@ -131,6 +134,38 @@ public class LeaveService {
         return typeNames().getOrDefault(type, type);
     }
 
+    /** 当前员工所在城市的婚假 / 产假 / 陪产假政策（前端据此锁定天数与计算方式） */
+    public LeavePolicyVO cityPolicy() {
+        Employee emp = currentEmployee();
+        String city = cityPolicyService.cityOf(emp);
+        LeavePolicyVO vo = new LeavePolicyVO();
+        vo.setCity(city);
+        cityPolicyService.policies(city).forEach((type, policy) ->
+                vo.getPolicies().put(type, new LeavePolicyVO.Policy(policy.days(), policy.dayMode())));
+        return vo;
+    }
+
+    /** 按开始日期试算结束日期：城市政策类假期天数固定，由开始日期自动带出结束日期 */
+    public LeavePolicyVO plan(String typeRaw, String startDateRaw) {
+        Employee emp = currentEmployee();
+        String type = typeRaw == null ? "" : typeRaw.trim().toUpperCase();
+        LeaveCityPolicyService.CityPolicy policy = cityPolicyService.supports(type)
+                ? cityPolicyService.policy(emp, type) : null;
+        if (policy == null) {
+            String city = cityPolicyService.cityOf(emp);
+            throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                    (city == null || city.isBlank() ? "当前员工未配置所属城市" : "城市「" + city + "」")
+                            + "未配置" + typeName(type) + "天数，请联系 HR 在埋点配置中维护");
+        }
+        LeavePolicyVO vo = new LeavePolicyVO();
+        vo.setCity(policy.city());
+        vo.setType(policy.type());
+        vo.setDays(policy.days());
+        vo.setDayMode(policy.dayMode());
+        vo.setEndDate(daysCalculator.endDateFor(parseDate(startDateRaw), policy.days(), policy.dayMode()));
+        return vo;
+    }
+
     public R.Page<LeaveVO> page(String scope, Integer status, int page, int size) {
         SecurityUser user = currentUser();
         LambdaQueryWrapper<LeaveRequest> w = new LambdaQueryWrapper<>();
@@ -144,9 +179,6 @@ public class LeaveService {
         }
         if (status != null) {
             w.eq(LeaveRequest::getStatus, status);
-        } else {
-            // 已撤销只留档，不在列表展示
-            w.ne(LeaveRequest::getStatus, 3);
         }
         w.orderByDesc(LeaveRequest::getCreatedAt);
         IPage<LeaveRequest> ip = leaveMapper.selectPage(new Page<>(page, size), w);
@@ -167,12 +199,7 @@ public class LeaveService {
      */
     public LeaveVO apply(LeaveApplyRequest req) {
         SecurityUser user = currentUser();
-        Employee emp = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
-                .eq(Employee::getAccountId, user.getAccountId()).last("limit 1"));
-        if (emp == null) {
-            throw new BizException(ErrorCode.NOT_FOUND,
-                    "当前账号未关联员工档案，无法提交请假；请联系 HR 在人员管理里建档");
-        }
+        Employee emp = currentEmployee();
         // 只有已正式入职（试用期 / 在职）且尚未进入离职流程的人能请假
         EmployeeStatus status = EmployeeStatus.of(emp.getStatus());
         if (status == null || !status.isWorking()) {
@@ -188,16 +215,52 @@ public class LeaveService {
         if (!Integer.valueOf(1).equals(rule.getEnabled())) {
             throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID, "该请假类型已停用");
         }
+        // 城市政策类假期（婚假 / 产假 / 陪产假）：天数与计算方式由所属二级单位城市决定
+        LeaveCityPolicyService.CityPolicy cityPolicy = null;
+        if (cityPolicyService.supports(type)) {
+            cityPolicy = cityPolicyService.policy(emp, type);
+            if (cityPolicy == null) {
+                String city = cityPolicyService.cityOf(emp);
+                throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                        (city == null || city.isBlank() ? "当前员工未配置所属城市" : "城市「" + city + "」")
+                                + "未配置" + typeName(type) + "天数，请联系 HR 在埋点配置中维护");
+            }
+            // 产假仅女性、陪产假仅男性
+            if (LeaveCityPolicyService.TYPE_MATERNITY.equals(type)
+                    && !Integer.valueOf(2).equals(emp.getGender())) {
+                throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                        emp.getGender() == null ? "员工档案性别未知，请先完善身份证信息" : "产假仅限女性员工申请");
+            }
+            if (LeaveCityPolicyService.TYPE_PATERNITY.equals(type)
+                    && !Integer.valueOf(1).equals(emp.getGender())) {
+                throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                        emp.getGender() == null ? "员工档案性别未知，请先完善身份证信息" : "陪产假仅限男性员工申请");
+            }
+        }
         LocalDate start = parseDate(req.getStartDate());
         LocalDate end = parseDate(req.getEndDate());
         String startPeriod = periodOr(req.getStartPeriod(), LeaveDaysCalculator.PERIOD_AM);
         String endPeriod = periodOr(req.getEndPeriod(), LeaveDaysCalculator.PERIOD_PM);
         String startTime = trimToNull(req.getStartTime());
         String endTime = trimToNull(req.getEndTime());
-        String dayMode = dayModeOr(req.getDayMode());
-        LeaveDaysCalculator.Result calc = daysCalculator.calculate(
-                start, startPeriod, startTime, end, endPeriod, endTime, dayMode);
-        BigDecimal days = calc.days();
+        // 天数默认按工作日历（跳过周末 / 节假日）；历史单据未存 dayMode 时仍按自然日兜底
+        String dayMode = trimToNull(req.getDayMode()) == null
+                ? LeaveDaysCalculator.MODE_WORKDAY : dayModeOr(req.getDayMode());
+        BigDecimal days;
+        if (cityPolicy != null) {
+            // 城市政策类假期：天数与计算方式以政策为准，结束日期由开始日期自动带出
+            dayMode = cityPolicy.dayMode();
+            days = cityPolicy.days();
+            startPeriod = LeaveDaysCalculator.PERIOD_AM;
+            endPeriod = LeaveDaysCalculator.PERIOD_PM;
+            startTime = null;
+            endTime = null;
+            end = daysCalculator.endDateFor(start, days, dayMode);
+        } else {
+            LeaveDaysCalculator.Result calc = daysCalculator.calculate(
+                    start, startPeriod, startTime, end, endPeriod, endTime, dayMode);
+            days = calc.days();
+        }
         if (days.compareTo(nvl(rule.getMinDays())) < 0) {
             throw new BizException(EhrErrorCode.LEAVE_LEAVE_DAYS_INVALID,
                     "该请假类型最少请 " + rule.getMinDays() + " 天（当前 " + days + " 天）");
@@ -231,6 +294,17 @@ public class LeaveService {
         }
         // 同一员工同一时间段不可重叠（按精确到半小时的起止时间判断）
         checkOverlap(user.getAccountId(), start, startPeriod, startTime, end, endPeriod, endTime);
+        // 婚假、产假/陪产假等一次性假期：已有在途 / 已通过 / 已销假单据时不可再次申请
+        if (Integer.valueOf(1).equals(rule.getOneTimeOnly())) {
+            Long applied = leaveMapper.selectCount(new LambdaQueryWrapper<LeaveRequest>()
+                    .eq(LeaveRequest::getAccountId, user.getAccountId())
+                    .eq(LeaveRequest::getLeaveType, type)
+                    .in(LeaveRequest::getStatus, 0, 1, 4));
+            if (applied != null && applied > 0) {
+                throw new BizException(EhrErrorCode.LEAVE_RULE_INVALID,
+                        typeName(type) + "只能一次性休完，不可分段申请");
+            }
+        }
 
         LeaveRequest leave = new LeaveRequest();
         leave.setLeaveNo(bizNoService.next("ehr_leave"));
@@ -648,6 +722,7 @@ public class LeaveService {
      * 提前返岗销假：按实际返岗日期重算天数，退回多请的额度，状态置 4。
      * 只允许对「已通过」的单据操作一次；本人或 HR 可操作。
      */
+    @Transactional(rollbackFor = Exception.class)
     public LeaveVO earlyReturn(Long id, EarlyReturnRequest req) {
         SecurityUser user = currentUser();
         LeaveRequest leave = require(id);
@@ -659,7 +734,9 @@ public class LeaveService {
         }
         if (leave.getStatus() == null || leave.getStatus() != 1) {
             throw new BizException(EhrErrorCode.LEAVE_EARLY_RETURN_INVALID,
-                    "只有已通过的请假单可以销假，且不可重复销假");
+                    Integer.valueOf(4).equals(leave.getStatus())
+                            ? "该请假单已销假，不可重复销假"
+                            : "只有已通过的请假单可以销假，且不可重复销假");
         }
         LocalDate returnDate = parseDate(req.getReturnDate());
         if (returnDate.isBefore(leave.getStartDate()) || returnDate.isAfter(leave.getEndDate())) {
@@ -793,6 +870,17 @@ public class LeaveService {
     private SecurityUser currentUser() {
         return SecurityUtils.currentUser().orElseThrow(() ->
                 new BizException(ErrorCode.UNAUTHORIZED));
+    }
+
+    /** 当前登录人对应的员工档案 */
+    private Employee currentEmployee() {
+        Employee emp = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
+                .eq(Employee::getAccountId, currentUser().getAccountId()).last("limit 1"));
+        if (emp == null) {
+            throw new BizException(ErrorCode.NOT_FOUND,
+                    "当前账号未关联员工档案，无法提交请假；请联系 HR 在人员管理里建档");
+        }
+        return emp;
     }
 
     private LeaveRequest require(Long id) {

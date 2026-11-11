@@ -24,6 +24,8 @@ public class OrgNodeRequest {
     private String email;
     /** 办公地点 */
     private String address;
+    /** 所在城市（字典 ehr.job_city）：二级单位配置，下级部门自动继承 */
+    private String city;
     /** 编制人数 */
     private Integer headcount;
     /** 成本中心 / 费用归属 */

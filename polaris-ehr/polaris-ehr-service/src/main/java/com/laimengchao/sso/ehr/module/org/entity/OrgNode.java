@@ -27,6 +27,8 @@ public class OrgNode extends BaseEntity {
     private String email;
     /** 办公地点 / 楼层工位 */
     private String address;
+    /** 所在城市（字典 ehr.job_city）：二级单位配置，下级部门按直属二级单位继承 */
+    private String city;
     /** 编制人数：与「直属在职人数」对照看超编/缺编 */
     private Integer headcount;
     /** 成本中心 / 费用归属编码 */

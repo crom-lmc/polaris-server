@@ -8,6 +8,7 @@ import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
+import com.laimengchao.sso.ehr.integration.EmbedPointReader;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
 import com.laimengchao.sso.ehr.module.approval.dto.HandoverConfirmRequest;
 import com.laimengchao.sso.ehr.module.approval.dto.ResignApplyRequest;
@@ -107,15 +108,16 @@ public class ResignApplyService {
     private final CodeRuleApi codeRuleApi;
     /** 配置中心待办/消息接口：审批通过后发「关闭账号」待办 */
     private final NoticeApi noticeApi;
+    private final EmbedPointReader embedPointReader;
+
+    /** 配置中心埋点：HR 部门组织节点（含子部门），离职通过后群发待办给该部门全员 */
+    private static final String EMBED_HR_ORG_NAME = "ehr.notice.hr-org-name";
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
     /** EHR 前端地址：待办点击后跳人员列表并打开该员工档案 */
     @Value("${ehr.web-base-url:http://127.0.0.1:5179}")
     private String webBaseUrl;
-    /** HR 部门名称（按名称模糊匹配，含子部门），离职通过后群发待办给该部门全员 */
-    @Value("${ehr.notice.hr-org-name:人力资源}")
-    private String hrOrgName;
 
     /* ---------------- 提交 ---------------- */
 
@@ -520,19 +522,15 @@ public class ResignApplyService {
         }
     }
 
-    /** HR 部门（名称模糊匹配）+ 所有子部门内、仍有账号且未离职的人员账号ID */
+    /** HR 部门（埋点配置的组织节点）+ 所有子部门内、仍有账号且未离职的人员账号ID */
     private List<Long> hrAccountIds() {
-        List<OrgNode> all = orgMapper.selectList(null);
-        OrgNode hrOrg = all.stream()
-                .filter(o -> o.getName() != null && o.getName().contains(hrOrgName))
-                .findFirst()
-                .orElse(null);
-        if (hrOrg == null) {
-            log.warn("未找到 HR 部门「{}」，关闭账号待办不群发", hrOrgName);
+        List<Long> rootIds = embedPointReader.longs(EMBED_HR_ORG_NAME, "orgIds", List.of());
+        if (rootIds.isEmpty()) {
+            log.warn("埋点 {} 未配置 HR 组织节点，关闭账号待办不群发", EMBED_HR_ORG_NAME);
             return List.of();
         }
-        Set<Long> orgIds = new HashSet<>();
-        orgIds.add(hrOrg.getId());
+        List<OrgNode> all = orgMapper.selectList(null);
+        Set<Long> orgIds = new HashSet<>(rootIds);
         boolean grown = true;
         while (grown) {
             grown = false;

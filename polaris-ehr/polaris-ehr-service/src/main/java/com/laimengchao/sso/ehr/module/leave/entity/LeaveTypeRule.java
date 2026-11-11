@@ -30,6 +30,8 @@ public class LeaveTypeRule {
     private Integer minNoticeDays;
     private Integer allowPastDays;
     private Integer needDelegate;
+    /** 是否只能一次性休完（婚假、产假/陪产假等，天数口径见员工手册） */
+    private Integer oneTimeOnly;
     private Integer sortNo;
     private LocalDateTime updatedAt;
 }

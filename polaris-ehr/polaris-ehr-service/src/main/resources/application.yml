@@ -68,25 +68,15 @@ ehr:
   self-base-url: ${EHR_SELF_URL:http://127.0.0.1:9006}
   # EHR 前端地址：离职/减员审批通过的「关闭账号」待办点击后跳人员列表并打开档案
   web-base-url: ${EHR_WEB_URL:http://127.0.0.1:5179}
-  attendance:
-    mock:
-      # 模拟考勤定时任务开关：默认关闭，避免生产环境造数；手动 /mock/run 不受此开关限制
-      enabled: ${EHR_ATTENDANCE_MOCK_ENABLED:false}
-  reminder:
-    # 试用期到期提醒节点（T-N 天，逗号分隔）
-    probation-offsets: ${EHR_REMINDER_PROBATION_OFFSETS:30,7,1}
-    # 合同到期提醒节点（T-N 天，逗号分隔）；同一合同+接收人+节点只提醒一次
-    contract-offsets: ${EHR_REMINDER_CONTRACT_OFFSETS:30,7,1}
-    # 试用期/合同到期提醒的额外接收人（部门、人员、是否含直属主管）已迁到配置中心埋点
-    # ehr.probation.reminder.receivers，不再在这里配置
-  notice:
-    # HR 部门名称（模糊匹配，含子部门）：员工离职审批通过后，向该部门全员群发「关闭账号」待办
-    hr-org-name: ${EHR_HR_ORG_NAME:人力资源}
-  account:
-    # 新账号默认开通的应用编码（顺序即「我的应用」展示顺序）
-    default-apps: sso-center,portal,ehr
-    # 新账号默认授予的角色已迁到配置中心埋点 ehr.account.default-roles
-    # （EMPTY/缺失时代码内置兜底 EMPLOYEE_SELF，审批类角色仍由管理员按需授予）
+  # 业务开关 / 规则参数已全部迁到配置中心埋点（配置中心 → 埋点管理）：
+  #   ehr.attendance.mock.enabled         模拟考勤定时任务开关（{"enabled":false}）
+  #   ehr.reminder.probation-offsets      试用期到期提醒节点（{"offsets":[30,7,1]}）
+  #   ehr.reminder.contract-offsets       合同到期提醒节点（{"offsets":[30,7,1]}）
+  #   ehr.probation.reminder.receivers    试用期/合同提醒额外接收人
+  #   ehr.notice.hr-org-name              HR 部门名称（{"orgName":"人力资源"}）
+  #   ehr.account.default-apps            新账号默认开通的应用（{"apps":["sso-center","portal","ehr"]}）
+  #   ehr.account.default-roles           新账号默认授权角色（{"roleCodes":["EMPLOYEE_SELF"]}）
+  # 读不到时使用代码内置默认值，配置中心故障不影响业务
 
 # 配置中心跨服客户端（settings-client 的 Feign 接口，凭 X-Internal-Token 准入，
 # 60s 本地缓存 + 故障兜底；键名与 settings-client 模块约定一致）

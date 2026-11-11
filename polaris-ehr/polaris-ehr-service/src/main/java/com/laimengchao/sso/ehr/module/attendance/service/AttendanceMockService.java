@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.BizNoService;
+import com.laimengchao.sso.ehr.integration.EmbedPointReader;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendanceDaily;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendanceMockLog;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendancePunch;
@@ -21,7 +22,6 @@ import com.laimengchao.sso.ehr.module.leave.entity.WorkCalendar;
 import com.laimengchao.sso.ehr.module.leave.mapper.WorkCalendarMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,21 +62,22 @@ public class AttendanceMockService {
     private final AttendanceDailyService dailyService;
     private final AttendanceService attendanceService;
     private final BizNoService bizNoService;
+    private final EmbedPointReader embedPointReader;
 
-    @Value("${ehr.attendance.mock.enabled:false}")
-    private boolean enabled;
+    /** 配置中心埋点：模拟考勤开关 */
+    private static final String EMBED_MOCK_ENABLED = "ehr.attendance.mock.enabled";
 
     /**
-     * 生成指定日期的模拟考勤；受 ehr.attendance.mock.enabled 开关控制，
+     * 生成指定日期的模拟考勤；受配置中心埋点 ehr.attendance.mock.enabled 开关控制，
      * 关闭时抛出明确提示，避免生产环境误生成数据。
      *
      * @return 生成的打卡条数
      */
     @Transactional(rollbackFor = Exception.class)
     public int run(LocalDate date) {
-        if (!enabled) {
+        if (!embedPointReader.flag(EMBED_MOCK_ENABLED, "enabled", false)) {
             throw new BizException(ErrorCode.FORBIDDEN,
-                    "模拟考勤已关闭（ehr.attendance.mock.enabled=false），生产环境请勿开启");
+                    "模拟考勤已关闭（配置中心埋点 ehr.attendance.mock.enabled=false），生产环境请勿开启");
         }
         LocalDate mockDate = date == null ? LocalDate.now().minusDays(1) : date;
         if (!isWorkday(mockDate)) {

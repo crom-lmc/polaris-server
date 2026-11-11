@@ -9,6 +9,7 @@ import com.laimengchao.sso.ehr.module.attendance.mapper.WorkCalendarYearMapper;
 import com.laimengchao.sso.ehr.module.attendance.vo.WorkCalendarVO;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
+import com.laimengchao.sso.ehr.integration.EmbedPointReader;
 import com.laimengchao.sso.ehr.module.leave.entity.WorkCalendar;
 import com.laimengchao.sso.ehr.module.leave.mapper.WorkCalendarMapper;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
@@ -59,10 +60,11 @@ public class AttendanceCalendarService {
     private final OrgNodeMapper orgNodeMapper;
     private final EmployeeMapper employeeMapper;
     private final NoticeApi noticeApi;
+    private final EmbedPointReader embedPointReader;
 
-    /** HR 组织名称（未配置接收人时的兜底接收部门） */
-    @Value("${ehr.notice.hr-org-name:人力资源}")
-    private String hrOrgName;
+    /** 配置中心埋点：HR 部门组织节点（离职/日历待办兜底接收部门） */
+    private static final String EMBED_HR_ORG_NAME = "ehr.notice.hr-org-name";
+
     /** EHR 前端地址，用于待办跳转链接 */
     @Value("${ehr.web-base-url:http://localhost:5179}")
     private String webBaseUrl;
@@ -399,15 +401,15 @@ public class AttendanceCalendarService {
         if (!accountIds.isEmpty()) {
             return new ArrayList<>(accountIds);
         }
-        // 规则未配置接收人：兜底 HR 部门
-        List<OrgNode> roots = orgNodeMapper.selectList(new LambdaQueryWrapper<OrgNode>()
-                .like(OrgNode::getName, hrOrgName).eq(OrgNode::getType, "DEPARTMENT"));
-        if (roots.isEmpty()) {
+        // 规则未配置接收人：兜底 HR 部门（埋点配置的组织节点，含全部下级）
+        List<Long> rootIds = embedPointReader.longs(EMBED_HR_ORG_NAME, "orgIds", List.of());
+        if (rootIds.isEmpty()) {
+            log.warn("埋点 {} 未配置 HR 组织节点，日历维护待办兜底接收人为空", EMBED_HR_ORG_NAME);
             return new ArrayList<>();
         }
         Set<Long> orgIds = new HashSet<>();
-        for (OrgNode root : roots) {
-            collectSubtreeOrgIds(root.getId(), orgIds);
+        for (Long rootId : rootIds) {
+            collectSubtreeOrgIds(rootId, orgIds);
         }
         for (Employee emp : employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
                 .in(Employee::getOrgId, orgIds)

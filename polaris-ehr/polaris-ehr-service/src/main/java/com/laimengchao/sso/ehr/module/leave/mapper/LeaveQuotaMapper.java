@@ -55,6 +55,13 @@ public interface LeaveQuotaMapper extends BaseMapper<LeaveQuota> {
     int releaseWithCarryover(@Param("id") Long id, @Param("days") BigDecimal days,
                              @Param("carryDelta") BigDecimal carryDelta);
 
+    /** 销假退回已扣减额度：已用天数减少，结转占用同步释放（审批通过后额度已从 frozen 转入 used） */
+    @Update("UPDATE ehr_leave_quota SET used_days = used_days - #{days}, "
+            + "carryover_used = carryover_used - #{carryDelta}, version = version + 1 "
+            + "WHERE id = #{id} AND deleted = 0 AND used_days >= #{days} AND carryover_used >= #{carryDelta}")
+    int refundUsed(@Param("id") Long id, @Param("days") BigDecimal days,
+                   @Param("carryDelta") BigDecimal carryDelta);
+
     /** 签署放弃结转：总额度减去放弃天数，结转占用同步增加（视同消耗），不低于已用+冻结 */
     @Update("UPDATE ehr_leave_quota SET total_days = total_days - #{days}, carryover_used = carryover_used + #{days}, "
             + "version = version + 1 WHERE id = #{id} AND deleted = 0 "

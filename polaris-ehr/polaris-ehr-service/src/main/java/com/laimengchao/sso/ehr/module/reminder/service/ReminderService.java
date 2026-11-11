@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.module.approval.service.ApproverResolver;
+import com.laimengchao.sso.ehr.integration.EmbedPointReader;
 import com.laimengchao.sso.ehr.module.contract.entity.Contract;
 import com.laimengchao.sso.ehr.module.contract.mapper.ContractMapper;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
@@ -27,7 +28,6 @@ import com.laimengchao.sso.settings.client.support.SettingsClient;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -73,18 +73,17 @@ public class ReminderService {
     private final ApproverResolver approverResolver;
     private final OrgNodeMapper orgNodeMapper;
     private final SettingsClient settingsClient;
+    private final EmbedPointReader embedPointReader;
     private final ObjectMapper objectMapper;
 
     /** 配置中心埋点：试用期/合同到期提醒的额外接收人 */
     private static final String EMBED_REMINDER_RECEIVERS = "ehr.probation.reminder.receivers";
-
-    /** 提醒节点：T-N 天，默认 30/7/1 */
-    @Value("${ehr.reminder.probation-offsets:30,7,1}")
-    private String probationOffsets;
-
-    /** 合同到期提醒节点：T-N 天，默认 30/7/1 */
-    @Value("${ehr.reminder.contract-offsets:30,7,1}")
-    private String contractOffsets;
+    /** 配置中心埋点：试用期到期提醒节点（T-N 天） */
+    private static final String EMBED_PROBATION_OFFSETS = "ehr.reminder.probation-offsets";
+    /** 配置中心埋点：合同到期提醒节点（T-N 天） */
+    private static final String EMBED_CONTRACT_OFFSETS = "ehr.reminder.contract-offsets";
+    /** 默认提醒节点：T-30 / T-7 / T-1 */
+    private static final List<Integer> DEFAULT_OFFSETS = List.of(30, 7, 1);
 
     /** 每日生成提醒；返回本次新增条数（0 表示没抢到锁或没有命中） */
     public int generateDaily() {
@@ -94,7 +93,7 @@ public class ReminderService {
             log.info("试用期提醒任务已被其它实例抢占，本次跳过");
             return 0;
         }
-        List<Integer> offsets = parseOffsets();
+        List<Integer> offsets = embedPointReader.numbers(EMBED_PROBATION_OFFSETS, "offsets", DEFAULT_OFFSETS);
         ReceiverConfig receivers = receiverConfig();
         int created = 0;
         for (Integer offset : offsets) {
@@ -133,7 +132,7 @@ public class ReminderService {
             log.info("合同到期提醒任务已被其它实例抢占，本次跳过");
             return 0;
         }
-        List<Integer> offsets = parseOffsets(contractOffsets);
+        List<Integer> offsets = embedPointReader.numbers(EMBED_CONTRACT_OFFSETS, "offsets", DEFAULT_OFFSETS);
         ReceiverConfig receivers = receiverConfig();
         int created = 0;
         for (Integer offset : offsets) {
@@ -370,25 +369,6 @@ public class ReminderService {
         for (Reminder row : rows) {
             row.setEmployeeName(names.get(row.getEmployeeId()));
         }
-    }
-
-    private List<Integer> parseOffsets() {
-        return parseOffsets(probationOffsets);
-    }
-
-    private List<Integer> parseOffsets(String config) {
-        List<Integer> out = new ArrayList<>();
-        if (config == null || config.isBlank()) {
-            return List.of(30, 7, 1);
-        }
-        for (String part : config.split(",")) {
-            try {
-                out.add(Integer.parseInt(part.trim()));
-            } catch (NumberFormatException ignored) {
-                // 配置里混入脏值：跳过，不影响其它节点
-            }
-        }
-        return out.isEmpty() ? List.of(30, 7, 1) : out;
     }
 
     /**

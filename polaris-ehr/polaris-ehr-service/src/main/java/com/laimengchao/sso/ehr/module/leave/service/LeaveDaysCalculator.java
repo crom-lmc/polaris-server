@@ -216,6 +216,32 @@ public class LeaveDaysCalculator {
         return new Result(d, cal.warning);
     }
 
+    /**
+     * 按「固定天数」反推结束日期：自然日 = 开始日 + 天数 - 1；工作日按工作日历向后累计。
+     * 城市政策类假期（婚假/产假/陪产假）用它自动带出结束日期。
+     */
+    public LocalDate endDateFor(LocalDate start, BigDecimal days, String dayMode) {
+        if (start == null || days == null || days.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BizException(EhrErrorCode.LEAVE_DATE_INVALID, "请假天数必须大于 0");
+        }
+        int total = days.setScale(0, RoundingMode.CEILING).intValue();
+        if (!MODE_WORKDAY.equalsIgnoreCase(dayMode)) {
+            return start.plusDays(total - 1L);
+        }
+        WorkCalendar cal = loadCalendar(start, start.plusDays(total * 4L + 30L));
+        LocalDate cur = start;
+        int counted = 0;
+        while (true) {
+            if (cal.isWorkday(cur)) {
+                counted++;
+                if (counted >= total) {
+                    return cur;
+                }
+            }
+            cur = cur.plusDays(1);
+        }
+    }
+
     private String normalizePeriod(String raw, String fallback) {
         if (raw == null || raw.isBlank()) {
             return fallback;

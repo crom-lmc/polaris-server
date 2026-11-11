@@ -301,6 +301,7 @@ CREATE TABLE IF NOT EXISTS `ehr_org_node` (
   `phone` varchar(32) DEFAULT '' COMMENT '联系电话',
   `email` varchar(128) DEFAULT NULL COMMENT '部门公用邮箱',
   `address` varchar(255) DEFAULT NULL COMMENT '办公地点',
+  `city` varchar(64) DEFAULT NULL COMMENT '所在城市（字典 ehr.job_city）；二级单位配置，下级部门按直属二级单位继承',
   `headcount` int(11) DEFAULT NULL COMMENT '编制人数',
   `cost_center` varchar(64) DEFAULT NULL COMMENT '成本中心',
   `establish_date` date DEFAULT NULL COMMENT '成立日期',
@@ -467,7 +468,9 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_carryover_waiver` (
   `quota_id` bigint(20) NOT NULL COMMENT '当年年假额度ID',
   `waive_days` decimal(6,2) NOT NULL COMMENT '放弃的结转剩余天数',
   `remark` varchar(255) DEFAULT '' COMMENT '备注',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_waiver_emp_year` (`employee_id`,`year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='结转年假自动放弃签署记录';
@@ -486,6 +489,7 @@ CREATE TABLE IF NOT EXISTS `ehr_leave_type_rule` (
   `min_notice_days` int(11) NOT NULL DEFAULT '0' COMMENT '需提前几天申请',
   `allow_past_days` int(11) NOT NULL DEFAULT '0' COMMENT '允许补请的天数',
   `need_delegate` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否必须指定转办人',
+  `one_time_only` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否只能一次性休完（婚假、产假/陪产假等）',
   `sort_no` int(11) NOT NULL DEFAULT '0',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`leave_type`)

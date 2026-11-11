@@ -250,6 +250,9 @@ public class OrgService {
         node.setShortName(nvl(req.getShortName()));
         node.setEmail(nvl(req.getEmail()));
         node.setAddress(nvl(req.getAddress()));
+        // 城市只允许二级单位（depth=2）设置；下级部门自动从上级继承，禁止落自定义 city
+        node.setDepth(parent == null ? 1 : parent.getDepth() + 1);
+        node.setCity(Integer.valueOf(2).equals(node.getDepth()) ? nvl(req.getCity()) : null);
         node.setHeadcount(req.getHeadcount());
         node.setCostCenter(nvl(req.getCostCenter()));
         node.setEstablishDate(parseDate(req.getEstablishDate()));
@@ -315,6 +318,13 @@ public class OrgService {
         }
         if (req.getAddress() != null) {
             node.setAddress(nvl(req.getAddress()));
+        }
+        // 城市只允许二级单位（depth=2）修改；下级部门自动从上级继承，忽略传入值
+        if (req.getCity() != null && Integer.valueOf(2).equals(node.getDepth())) {
+            node.setCity(nvl(req.getCity()));
+        } else if (req.getCity() != null && !Integer.valueOf(2).equals(node.getDepth())) {
+            // 子节点强制清空可能残留的 city，统一走继承
+            node.setCity(null);
         }
         if (req.getHeadcount() != null) {
             node.setHeadcount(req.getHeadcount());
@@ -1037,6 +1047,35 @@ public class OrgService {
         return v instanceof Number n ? n.longValue() : 0L;
     }
 
+    /**
+     * 组织节点的「有效城市」：
+     * - depth=2（二级单位）直接用自己存的 city（可编辑）；
+     * - 其他层级沿 path 向上找最近的 depth=2 节点取 city，找不到返回 null。
+     * 叶子部门的 city 字段数据库置空，展示和请假继承都统一靠这个方法。
+     */
+    private String resolveCityForVO(OrgNode n) {
+        if (Integer.valueOf(2).equals(n.getDepth()) && n.getCity() != null && !n.getCity().isBlank()) {
+            return n.getCity();
+        }
+        if (n.getPath() == null || n.getPath().isBlank()) {
+            return n.getCity(); // 兜底：历史数据可能 depth!=2 但有 city，直接返回
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String part : n.getPath().split("/")) {
+            try {
+                ids.add(Long.parseLong(part.trim()));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        List<OrgNode> ancestors = orgMapper.selectBatchIds(ids);
+        return ancestors.stream()
+                .filter(a -> Integer.valueOf(2).equals(a.getDepth()))
+                .map(OrgNode::getCity)
+                .filter(c -> c != null && !c.isBlank())
+                .findFirst()
+                .orElse(n.getCity());
+    }
+
     private OrgNodeVO toVO(OrgNode n, OrgCounts counts) {
         OrgNodeVO vo = new OrgNodeVO();
         vo.setId(n.getId());
@@ -1049,6 +1088,8 @@ public class OrgService {
         vo.setShortName(n.getShortName());
         vo.setEmail(n.getEmail());
         vo.setAddress(n.getAddress());
+        // 城市按继承链解析：depth=2 用自己的值，其他层级走 path 向上找最近的 depth=2 节点
+        vo.setCity(resolveCityForVO(n));
         vo.setHeadcount(n.getHeadcount());
         vo.setCostCenter(n.getCostCenter());
         vo.setEstablishDate(n.getEstablishDate());

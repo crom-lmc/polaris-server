@@ -30,7 +30,7 @@ public class LeaveApplyRequest {
     /** 结束时间 HH:mm，按半小时选择，必须晚于开始时间且至少 30 分钟 */
     private String endTime;
 
-    /** NATURAL 自然日（默认） / WORKDAY 工作日 */
+    /** NATURAL 自然日 / WORKDAY 工作日（默认） */
     private String dayMode;
 
     /** 证明材料附件ID：病假/婚假/产假等规则要求必传（旧字段，保留兼容） */

@@ -6,6 +6,7 @@ import com.laimengchao.sso.ehr.module.leave.dto.EarlyReturnRequest;
 import com.laimengchao.sso.ehr.module.leave.dto.LeaveApplyRequest;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveService;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
+import com.laimengchao.sso.ehr.module.leave.vo.LeavePolicyVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
 import com.laimengchao.sso.ehr.security.Permit;
 import jakarta.validation.Valid;
@@ -93,6 +94,21 @@ public class AdminLeaveController {
     @Permit(PermissionCodes.LEAVE_APPLY)
     public R<LeaveDelegateOptionsVO> delegateOptions() {
         return R.ok(leaveService.delegateOptions());
+    }
+
+    /** 当前员工所在城市的婚假 / 产假 / 陪产假天数与计算方式 */
+    @GetMapping("/city-policy")
+    @Permit(PermissionCodes.LEAVE_APPLY)
+    public R<LeavePolicyVO> cityPolicy() {
+        return R.ok(leaveService.cityPolicy());
+    }
+
+    /** 按开始日期试算结束日期（城市政策类假期天数固定） */
+    @GetMapping("/plan")
+    @Permit(PermissionCodes.LEAVE_APPLY)
+    public R<LeavePolicyVO> plan(@RequestParam String leaveType,
+                                 @RequestParam String startDate) {
+        return R.ok(leaveService.plan(leaveType, startDate));
     }
 
     public record TypeOption(String value, String label) {
