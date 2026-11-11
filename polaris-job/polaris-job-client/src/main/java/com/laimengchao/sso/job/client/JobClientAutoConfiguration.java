@@ -36,7 +36,7 @@ public class JobClientAutoConfiguration {
     @ConditionalOnMissingBean
     public JobExecutorController jobExecutorController(
             JobDispatcher jobDispatcher,
-            @Value("${job.executor.token:${SSO_INTERNAL_TOKEN:}}") String token) {
+            @Value("${job.executor.token:${job.client.internal-token:${SSO_INTERNAL_TOKEN:}}}") String token) {
         return new JobExecutorController(jobDispatcher, token);
     }
 

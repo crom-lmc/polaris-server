@@ -62,7 +62,7 @@ job:
   executor:
     enabled: false
     # 中心 → 应用执行端点的 X-Job-Token，与应用侧 job.executor.token 保持一致
-    token: ${SSO_INTERNAL_TOKEN:}
+    token: ${job.internal-token:${SSO_INTERNAL_TOKEN:}}
   scheduler:
     enabled: ${JOB_SCHEDULER_ENABLED:true}
     # 1 秒一轮：5 秒级任务不会被拉到 10 秒
