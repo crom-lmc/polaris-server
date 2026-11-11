@@ -1,27 +1,30 @@
 package com.laimengchao.sso.settings.schedule;
 
+import com.laimengchao.sso.job.client.dto.JobResult;
+import com.laimengchao.sso.job.client.handler.JobContext;
+import com.laimengchao.sso.job.client.handler.JobHandler;
 import com.laimengchao.sso.settings.module.approval.service.ApprovalCallbackService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
  * 终审回调重试：每 60 秒扫一次待重试记录，退避间隔 1/2/4/8/16/30/30… 分钟。
+ * 触发由调度中心配置（FIXED_DELAY 60s）。
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
-public class ApprovalCallbackRetryJob {
+public class ApprovalCallbackRetryJob implements JobHandler {
 
     private final ApprovalCallbackService callbackService;
 
-    @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
-    public void retry() {
-        try {
-            callbackService.retryFailed();
-        } catch (Exception e) {
-            log.error("审批回调重试任务失败：{}", e.getMessage(), e);
-        }
+    @Override
+    public String name() {
+        return "approvalCallbackRetry";
+    }
+
+    @Override
+    public JobResult execute(JobContext ctx) {
+        callbackService.retryFailed();
+        return JobResult.ok();
     }
 }

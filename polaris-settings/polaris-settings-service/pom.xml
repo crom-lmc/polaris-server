@@ -24,6 +24,11 @@
             <groupId>com.laimengchao.sso</groupId>
             <artifactId>polaris-common</artifactId>
         </dependency>
+        <!-- 调度中心客户端：上报 JobHandler 清单并接收中心触发 -->
+        <dependency>
+            <groupId>com.laimengchao.sso</groupId>
+            <artifactId>polaris-job-client</artifactId>
+        </dependency>
 
         <!-- 统一账号平台跨服客户端（AccountApi：应用下拉选项） -->
         <dependency>

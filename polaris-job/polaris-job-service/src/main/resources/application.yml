@@ -1,0 +1,96 @@
+server:
+  # 对内服务端口，只允许网关访问，不要暴露公网
+  port: ${JOB_PORT:9008}
+
+spring:
+  application:
+    name: job
+  config:
+    # optional: 前缀不能省——没有 Nacos 时回退到本文件，服务照常启动
+    import: "optional:nacos:job.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    # createDatabaseIfNotExist：全新环境无需手工建库，启动即建表
+    url: ${JOB_DB_URL:jdbc:mysql://127.0.0.1:3306/polaris_job?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true}
+    username: ${JOB_DB_USER:root}
+    password: ${JOB_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    # 全新库可自动建表；schema.sql 幂等（CREATE TABLE IF NOT EXISTS）
+    init:
+      mode: ${JOB_SQL_INIT_MODE:always}
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.job.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+    db-config:
+      # 雪花主键（BaseEntity 的 ASSIGN_ID），不要自增：ID 序列化成字符串给前端
+      id-type: assign_id
+
+job:
+  # 跨服务内部接口：/internal/jobs/** 凭 X-Internal-Token（与 sso-account 共用同一个令牌）
+  internal-token: ${SSO_INTERNAL_TOKEN:}
+  # 中心自身不是执行器：关闭 job-client 的执行端点与上报，避免自己注册成执行器
+  executor:
+    enabled: false
+    # 中心 → 应用执行端点的 X-Job-Token，与应用侧 job.executor.token 保持一致
+    token: ${SSO_INTERNAL_TOKEN:}
+  scheduler:
+    enabled: ${JOB_SCHEDULER_ENABLED:true}
+    # 1 秒一轮：5 秒级任务不会被拉到 10 秒
+    scan-interval-ms: 1000
+    # 选主租约与续约间隔
+    lease-seconds: 45
+    renew-seconds: 15
+  # 应用基址；未配置的应用回退到 job_registry 里心跳在线的实例
+  apps:
+    ehr: ${EHR_URL:http://127.0.0.1:9006}
+    settings: ${SETTINGS_URL:http://127.0.0.1:9007}
+    cms: ${CMS_URL:http://127.0.0.1:9004}
+    blog: ${BLOG_URL:http://127.0.0.1:9003}
+    gateway: ${GATEWAY_URL:http://127.0.0.1:9080}
+  # SSO OAuth2 后端代理用（appSecret 只允许从环境变量注入，禁止写进源码）
+  # 换票地址走 polaris-sso-client 的 sso.client.auth-base-url（默认 http://127.0.0.1:9001）
+  sso:
+    app-code: job
+    app-secret: ${JOB_APP_SECRET:}
+
+# 报警通知复用 settings 消息中心：NoticeApi（/internal/notice/send-batch，站内消息 + 可选邮件）
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+
+logging:
+  level:
+    root: info
+    com.laimengchao.sso.job: debug
+    org.springframework.security: warn

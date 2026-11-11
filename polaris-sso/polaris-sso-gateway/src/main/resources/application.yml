@@ -67,6 +67,11 @@ spring:
           uri: ${SETTINGS_ROUTE:http://127.0.0.1:9007}
           predicates:
             - Path=/api/settings/**
+        # 业务应用：调度中心（P6，定时任务管理台）
+        - id: job
+          uri: ${JOB_ROUTE:http://127.0.0.1:9008}
+          predicates:
+            - Path=/api/jobs/**
       globalcors:
         cors-configurations:
           '[/**]':
@@ -84,6 +89,16 @@ sso:
     auth-base-url: ${SSO_AUTH_URL:http://127.0.0.1:9001}
     # 登出后最长多少毫秒内失效；越小越及时，越大对 auth 压力越小
     revocation-sync-millis: 5000
+
+# 调度中心：本应用上报 JobHandler 清单并接收中心触发（不再使用本地 @Scheduled）
+job:
+  client:
+    center-url: ${JOB_CENTER_URL:http://127.0.0.1:9008}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+  executor:
+    app-code: gateway
+    # 中心派发时带的 X-Job-Token，需与中心 job.executor.token 一致
+    token: ${SSO_INTERNAL_TOKEN:}
 
 logging:
   level:

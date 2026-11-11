@@ -30,6 +30,8 @@ spring:
       # 默认不自动建表（生产安全）；本地调试由 Nacos 的 sso-ms-local 覆盖为 always
       mode: ${SSO_SQL_INIT_MODE:never}
       schema-locations: classpath:schema.sql
+      # Windows 下防止 schema.sql 的中文 COMMENT 被平台默认 CP936 解码后写进 MySQL
+      encoding: utf-8
   # 数据库连接信息全部由配置中心下发（Nacos: sso-account.yaml / sso-ms-local|sso-ms-prod），
   # jar 内不留账号口令默认值；无 Nacos 时必须用环境变量 SSO_DB_URL / SSO_DB_USER /
   # SSO_DB_PASSWORD 提供，缺一个就启动失败——宁可起不来，也不要静默连到错误的库。

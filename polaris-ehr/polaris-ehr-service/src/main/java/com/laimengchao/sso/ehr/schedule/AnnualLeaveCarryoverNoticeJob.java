@@ -9,12 +9,14 @@ import com.laimengchao.sso.ehr.module.leave.entity.LeaveQuota;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveCarryoverWaiverMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaMapper;
 import com.laimengchao.sso.ehr.module.leave.service.AnnualLeaveService;
+import com.laimengchao.sso.job.client.dto.JobResult;
+import com.laimengchao.sso.job.client.handler.JobContext;
+import com.laimengchao.sso.job.client.handler.JobHandler;
 import com.laimengchao.sso.settings.client.api.NoticeApi;
 import com.laimengchao.sso.settings.client.dto.NoticeSendDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -25,11 +27,12 @@ import java.util.List;
  * 12 月结转年假到期待办：当年额度里「上年结转」仍有剩余的员工，每天 09:30 发待办提醒，
  * 直到员工签署自动放弃（ehr_leave_carryover_waiver）或结转休完；12-31 后自然停止。
  * 待办点击跳转「我的假期」页，页面上可直接签署放弃。
+ * 触发由调度中心配置（cron 0 30 9 * 12 ?）。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AnnualLeaveCarryoverNoticeJob {
+public class AnnualLeaveCarryoverNoticeJob implements JobHandler {
 
     private final LeaveQuotaMapper quotaMapper;
     private final LeaveCarryoverWaiverMapper waiverMapper;
@@ -40,8 +43,13 @@ public class AnnualLeaveCarryoverNoticeJob {
     @Value("${ehr.web-base-url:http://127.0.0.1:5179}")
     private String webBaseUrl;
 
-    @Scheduled(cron = "0 30 9 * 12 ?", zone = "Asia/Shanghai")
-    public void remindCarryoverExpiring() {
+    @Override
+    public String name() {
+        return "annualLeaveCarryoverNotice";
+    }
+
+    @Override
+    public JobResult execute(JobContext ctx) {
         int year = LocalDate.now().getYear();
         List<Employee> employees = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
                 .in(Employee::getStatus, EmployeeStatus.PROBATION.getCode(), EmployeeStatus.ACTIVE.getCode(),
@@ -88,6 +96,7 @@ public class AnnualLeaveCarryoverNoticeJob {
             }
         }
         log.info("结转年假到期待办发送完成 year={} 发送 {} 人", year, sent);
+        return JobResult.ok("year=" + year + " 发送 " + sent + " 人");
     }
 
     private BigDecimal nvl(BigDecimal v) {

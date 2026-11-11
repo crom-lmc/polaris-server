@@ -1,0 +1,186 @@
+# Polarís 生产部署（单机 2C4G，Docker + host 网络）
+# 依赖服务器上已有的 MySQL / Redis / Nginx；这里只跑 9 个 Java 服务。
+# 使用前：cp .env.example .env 并按实际情况填写。
+name: polaris
+
+x-base: &base
+  image: eclipse-temurin:17-jre-jammy
+  # host 网络：直接复用宿主机 127.0.0.1 上的 MySQL / Redis，
+  # 同时所有服务通过 SERVER_ADDRESS 只监听回环地址，不暴露公网。
+  network_mode: host
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    TZ: Asia/Shanghai
+    SERVER_ADDRESS: 127.0.0.1
+    # 最低内存档：48/128 堆 + 112 元空间 + 24 代码缓存，串行 GC，单服务实测常驻约 230MB
+    JAVA_TOOL_OPTIONS: >-
+      -Xms48m -Xmx128m -XX:MaxMetaspaceSize=112m -XX:ReservedCodeCacheSize=24m
+      -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError
+      -Xss512k -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai
+  volumes:
+    - ./jars:/jars:ro
+    - ./logs:/app/logs
+    - ./keys:/app/keys:ro
+    - ./uploads:/app/uploads
+  ulimits:
+    nofile: 65535
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  sso-auth:
+    <<: *base
+    container_name: polaris-sso-auth
+    command: ["java", "-jar", "/jars/sso-auth.jar"]
+    mem_limit: 400m
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9001' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  sso-account:
+    <<: *base
+    container_name: polaris-sso-account
+    command: ["java", "-jar", "/jars/sso-account.jar"]
+    mem_limit: 400m
+    depends_on:
+      sso-auth:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9002' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  sso-gateway:
+    <<: *base
+    container_name: polaris-sso-gateway
+    command: ["java", "-jar", "/jars/sso-gateway.jar"]
+    mem_limit: 400m
+    depends_on:
+      sso-auth:
+        condition: service_started
+      sso-account:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9080' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  settings:
+    <<: *base
+    container_name: polaris-settings
+    command: ["java", "-jar", "/jars/settings.jar"]
+    # 通知中心：发邮件 + Feign 调 account，堆留一点余量
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_ADDRESS: 127.0.0.1
+      JAVA_TOOL_OPTIONS: >-
+        -Xms64m -Xmx160m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=24m
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError
+        -Xss512k -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai
+    mem_limit: 448m
+    depends_on:
+      sso-account:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9007' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  ehr:
+    <<: *base
+    container_name: polaris-ehr
+    command: ["java", "-jar", "/jars/ehr.jar"]
+    mem_limit: 400m
+    depends_on:
+      settings:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9006' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  cms:
+    <<: *base
+    container_name: polaris-cms
+    command: ["java", "-jar", "/jars/cms.jar"]
+    mem_limit: 400m
+    depends_on:
+      settings:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9004' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  portal:
+    <<: *base
+    container_name: polaris-portal
+    command: ["java", "-jar", "/jars/portal.jar"]
+    mem_limit: 400m
+    depends_on:
+      cms:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9005' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  blog:
+    <<: *base
+    container_name: polaris-blog
+    command: ["java", "-jar", "/jars/blog.jar"]
+    mem_limit: 400m
+    depends_on:
+      settings:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9003' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+  job:
+    <<: *base
+    container_name: polaris-job
+    command: ["java", "-jar", "/jars/job.jar"]
+    # 调度中心：定时扫描 + 派发 + 报警，堆最大
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_ADDRESS: 127.0.0.1
+      JAVA_TOOL_OPTIONS: >-
+        -Xms64m -Xmx160m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=24m
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError
+        -Xss512k -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai
+    mem_limit: 448m
+    depends_on:
+      settings:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9008' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
+

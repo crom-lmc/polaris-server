@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laimengchao.sso</groupId>
+        <artifactId>polaris-server</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>polaris-job</artifactId>
+    <packaging>pom</packaging>
+    <name>polaris-job</name>
+    <description>
+        调度中心聚合模块：job-service(9008，任务/执行器/日志/报警的中心服务)
+        + job-client（应用侧 JobHandler 契约 + 统一执行端点 + 注册心跳）。
+        仅做模块聚合；构建/依赖管理仍以根 pom（polaris-server）为准。
+    </description>
+
+    <modules>
+        <module>polaris-job-client</module>
+        <module>polaris-job-service</module>
+    </modules>
+</project>

@@ -1,0 +1,19 @@
+# MySQL 5.7 低配调优片段：追加到 /etc/mysql/conf.d/polaris.cnf 后重启 mysqld
+# 目标：常驻内存 400~500MB，给 9 个 Java 服务留足空间
+
+[mysqld]
+innodb_buffer_pool_size = 256M
+innodb_log_file_size    = 64M
+innodb_flush_method     = O_DIRECT
+max_connections         = 60
+table_open_cache        = 400
+thread_cache_size       = 16
+# 省 100~200MB，生产排障可临时打开
+performance_schema      = OFF
+skip_name_resolve       = ON
+character-set-server    = utf8mb4
+collation-server        = utf8mb4_general_ci
+slow_query_log          = ON
+long_query_time         = 2
+# 控制 binlog 占用，2C4G 单机不需要长期保留
+binlog_expire_logs_seconds = 604800

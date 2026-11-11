@@ -1,30 +1,30 @@
 package com.laimengchao.sso.blog.schedule;
 
 import com.laimengchao.sso.blog.module.article.service.ArticleService;
+import com.laimengchao.sso.job.client.dto.JobResult;
+import com.laimengchao.sso.job.client.handler.JobContext;
+import com.laimengchao.sso.job.client.handler.JobHandler;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * 阅读数落库任务：每 5 分钟把 Redis 中累计的阅读数批量写入数据库，避免高频写库。
+ * 阅读数落库任务：把 Redis 中累计的阅读数批量写入数据库，避免高频写库。
+ * 触发由调度中心配置（FIXED_DELAY 300s）。
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
-public class ViewCountFlushJob {
+public class ViewCountFlushJob implements JobHandler {
 
     private final ArticleService articleService;
 
-    /**
-     * 固定间隔 5 分钟执行（上次结束后 5 分钟再次执行）。
-     */
-    @Scheduled(fixedDelay = 5 * 60 * 1000L, initialDelay = 60 * 1000L)
-    public void flush() {
-        try {
-            articleService.flushViewCounts();
-        } catch (Exception e) {
-            log.error("阅读数落库任务执行失败", e);
-        }
+    @Override
+    public String name() {
+        return "viewCountFlush";
+    }
+
+    @Override
+    public JobResult execute(JobContext ctx) {
+        articleService.flushViewCounts();
+        return JobResult.ok();
     }
 }

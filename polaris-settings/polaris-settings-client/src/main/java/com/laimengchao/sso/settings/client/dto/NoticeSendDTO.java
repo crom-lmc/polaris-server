@@ -23,6 +23,8 @@ public class NoticeSendDTO {
     private List<Long> accountIds;
     /** 覆盖站内方式：1 待办 2 消息；不填用规则配置 */
     private Integer channel;
+    /** 覆盖邮件开关：true 强制发邮件、false 强制不发，不填按规则配置 */
+    private Boolean email;
     /** 模板变量 */
     private Map<String, String> vars = new HashMap<>();
     private String title;

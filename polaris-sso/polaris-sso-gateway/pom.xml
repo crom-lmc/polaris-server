@@ -40,6 +40,18 @@
             <groupId>com.laimengchao.sso</groupId>
             <artifactId>polaris-common</artifactId>
         </dependency>
+        <!-- 调度中心客户端：上报 JobHandler 清单并接收中心触发（WebFlux 可用） -->
+        <dependency>
+            <groupId>com.laimengchao.sso</groupId>
+            <artifactId>polaris-job-client</artifactId>
+            <exclusions>
+                <!-- 严禁把 MVC 带进网关：一旦出现 starter-web，Spring Boot 会切回 SERVLET 容器 -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>

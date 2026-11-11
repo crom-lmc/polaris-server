@@ -36,6 +36,14 @@ spring:
           uri: http://127.0.0.1:9006
           predicates:
             - Path=/api/ehr/**
+        - id: settings
+          uri: http://127.0.0.1:9007
+          predicates:
+            - Path=/api/settings/**
+        - id: job
+          uri: http://127.0.0.1:9008
+          predicates:
+            - Path=/api/jobs/**
 
 sso:
   gateway:

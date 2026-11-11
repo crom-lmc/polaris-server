@@ -7,9 +7,11 @@ import com.laimengchao.sso.ehr.module.employee.entity.EmployeeSeniorityRecord;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeSeniorityRecordMapper;
 import com.laimengchao.sso.ehr.module.employee.service.SeniorityService;
+import com.laimengchao.sso.job.client.dto.JobResult;
+import com.laimengchao.sso.job.client.handler.JobContext;
+import com.laimengchao.sso.job.client.handler.JobHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -22,17 +24,23 @@ import java.util.List;
  * <p>
  * 在岗人员（试用期/在职/离职中/待关闭账号）每天按「司龄起算日 → 今天」重算本单位司龄，
  * 并用「前司年限 + 本单位司龄」刷新最近一条核定记录的累计工龄；已离职员工冻结不再增长。
+ * 触发由调度中心配置（cron 0 0 2 * * ?）。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SeniorityRefreshJob {
+public class SeniorityRefreshJob implements JobHandler {
 
     private final EmployeeMapper employeeMapper;
     private final EmployeeSeniorityRecordMapper recordMapper;
 
-    @Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Shanghai")
-    public void refreshDaily() {
+    @Override
+    public String name() {
+        return "seniorityRefresh";
+    }
+
+    @Override
+    public JobResult execute(JobContext ctx) {
         List<Employee> employees = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
                 .in(Employee::getStatus, EmployeeStatus.PROBATION.getCode(), EmployeeStatus.ACTIVE.getCode(),
                         EmployeeStatus.OFFBOARDING.getCode(), EmployeeStatus.PENDING_ACCOUNT_CLOSE.getCode()));
@@ -70,5 +78,6 @@ public class SeniorityRefreshJob {
             }
         }
         log.info("每日司龄/工龄刷新完成，共 {} 人，更新 {} 处", employees.size(), changed);
+        return JobResult.ok("共 " + employees.size() + " 人，更新 " + changed + " 处");
     }
 }

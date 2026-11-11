@@ -3,7 +3,6 @@ package com.laimengchao.sso.gateway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import com.laimengchao.sso.gateway.config.GatewayProperties;
 
 /**
@@ -14,7 +13,6 @@ import com.laimengchao.sso.gateway.config.GatewayProperties;
  */
 @SpringBootApplication(scanBasePackages = "com.laimengchao.sso.gateway")
 @EnableConfigurationProperties(GatewayProperties.class)
-@EnableScheduling
 public class SsoGatewayApplication {
 
     public static void main(String[] args) {

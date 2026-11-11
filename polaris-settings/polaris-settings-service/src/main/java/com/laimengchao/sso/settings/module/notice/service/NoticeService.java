@@ -100,7 +100,10 @@ public class NoticeService {
         msg.setLink(safe(req.getLink()));
         messageMapper.insert(msg);
 
-        if (rule != null && Integer.valueOf(1).equals(rule.getEmail())) {
+        boolean sendMail = req.getEmail() != null
+                ? Boolean.TRUE.equals(req.getEmail())
+                : rule != null && Integer.valueOf(1).equals(rule.getEmail());
+        if (sendMail) {
             mailSender.send(req.getAccountId(), title, content);
         }
         return true;

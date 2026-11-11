@@ -102,6 +102,16 @@ sso:
     app-code: blog
     app-secret: ${BLOG_APP_SECRET:}
 
+# 调度中心：本应用上报 JobHandler 清单并接收中心触发（不再使用本地 @Scheduled）
+job:
+  client:
+    center-url: ${JOB_CENTER_URL:http://127.0.0.1:9008}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+  executor:
+    app-code: blog
+    # 中心派发时带的 X-Job-Token，需与中心 job.executor.token 一致
+    token: ${SSO_INTERNAL_TOKEN:}
+
 logging:
   level:
     root: info

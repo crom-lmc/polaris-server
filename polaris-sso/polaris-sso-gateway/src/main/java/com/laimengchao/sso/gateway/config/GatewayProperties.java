@@ -67,8 +67,13 @@ public class GatewayProperties {
             "/api/ehr/public/**",
             // 业务应用（settings）的换票端：同 ehr 口径（漏了同样会「未登录，请先获取访问令牌」）
             "/api/settings/sso/**",
+            // 业务应用（调度中心）的换票端：前端从 /callback 回来时还没有令牌，必须免鉴权
+            "/api/jobs/auth/exchange",
             // 上传的图片/附件：静态资源，读者端也要能直接加载
             "/uploads/**",
+            // 调度中心派发入口：中心直连网关 9080 调 /internal/jobs/run，
+            // 本身由 X-Job-Token 校验，不能要求用户令牌
+            "/internal/**",
             "/actuator/health"
     ));
 

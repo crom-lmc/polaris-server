@@ -40,6 +40,8 @@
         <module>polaris-ehr</module>
         <!-- 配置中心：settings-service(9007) + settings-client（跨服客户端） -->
         <module>polaris-settings</module>
+        <!-- 调度中心：job-service(9008) + job-client（Handler 契约 + 执行器运行时） -->
+        <module>polaris-job</module>
     </modules>
 
     <dependencyManagement>
@@ -118,6 +120,12 @@
             <dependency>
                 <groupId>com.laimengchao.sso</groupId>
                 <artifactId>polaris-ehr-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- 调度中心客户端：JobHandler 契约 + 执行器上报 -->
+            <dependency>
+                <groupId>com.laimengchao.sso</groupId>
+                <artifactId>polaris-job-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
