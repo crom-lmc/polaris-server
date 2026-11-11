@@ -55,6 +55,7 @@ if [ "$DO_WEB" = 1 ]; then
   say "4/5 构建前端"
   export VITE_SSO_ORIGIN="https://polaris-sso.$DOMAIN"
   export VITE_WEB_ORIGIN="https://portal-blog-web.$DOMAIN"
+  export VITE_PORTAL_ORIGIN="https://polaris-portal.$DOMAIN"
 
   build_site() { # $1=工程目录 $2=站点目录
     local app="$SRC/polaris-web/$1" out="$ROOT/www/$2"
@@ -66,6 +67,7 @@ if [ "$DO_WEB" = 1 ]; then
   build_site polaris-sso-web      sso
   build_site polaris-settings-web settings
   build_site polaris-ehr-web      ehr
+  build_site polaris-cms-web      cms
   build_site polaris-portal-web   portal
   build_site polaris-job-web      job
 

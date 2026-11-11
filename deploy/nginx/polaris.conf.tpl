@@ -13,6 +13,7 @@ server {
     server_name
         polaris-sso.${DOMAIN}
         polaris-ehr.${DOMAIN}
+        polaris-cms.${DOMAIN}
         polaris-settings.${DOMAIN}
         polaris-job.${DOMAIN}
         polaris-portal.${DOMAIN}
@@ -25,7 +26,7 @@ server {
     return 301 https://$host$request_uri;
 }
 
-# ============ 静态站点（7 个）============
+# ============ 静态站点（8 个）============
 
 server {
     listen 443 ssl;
@@ -58,6 +59,31 @@ server {
     gzip_types text/css application/javascript application/json image/svg+xml;
 
     root /opt/polaris/www/ehr;
+    index index.html;
+
+    include /etc/nginx/snippets/polaris-api.inc;
+
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:9080;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name polaris-cms.${DOMAIN};
+    ssl_certificate     /etc/nginx/certs/polaris-cms.${DOMAIN}/polaris-cms.${DOMAIN}_nginx/polaris-cms.${DOMAIN}_bundle.crt;
+    ssl_certificate_key /etc/nginx/certs/polaris-cms.${DOMAIN}/polaris-cms.${DOMAIN}_nginx/polaris-cms.${DOMAIN}.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 20m;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    root /opt/polaris/www/cms;
     index index.html;
 
     include /etc/nginx/snippets/polaris-api.inc;

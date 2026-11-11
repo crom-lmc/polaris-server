@@ -31,8 +31,7 @@ FLUSH PRIVILEGES;
 --    sso-center 是登录页本身，只需要 base_url
 UPDATE sso_application SET base_url = 'https://polaris-sso.laimengchao.site' WHERE code = 'sso-center';
 UPDATE sso_application SET base_url = 'https://polaris-ehr.laimengchao.site',      redirect_uri = 'https://polaris-ehr.laimengchao.site/callback'      WHERE code = 'ehr';
--- cms 没有独立前端域名（仅后端被门户调用），redirect_uri 留空：SSO 点 CMS 时退化为直接打开 base_url
-UPDATE sso_application SET base_url = 'https://polaris-portal.laimengchao.site',   redirect_uri = ''                                                  WHERE code = 'cms';
+UPDATE sso_application SET base_url = 'https://polaris-cms.laimengchao.site',      redirect_uri = 'https://polaris-cms.laimengchao.site/callback'      WHERE code = 'cms';
 UPDATE sso_application SET base_url = 'https://portal-blog-admin.laimengchao.site', redirect_uri = 'https://portal-blog-admin.laimengchao.site/#/sso/callback' WHERE code = 'blog';
 UPDATE sso_application SET base_url = 'https://polaris-portal.laimengchao.site',   redirect_uri = 'https://polaris-portal.laimengchao.site/callback'   WHERE code = 'portal';
 UPDATE sso_application SET base_url = 'https://polaris-settings.laimengchao.site', redirect_uri = 'https://polaris-settings.laimengchao.site/callback' WHERE code = 'settings';
