@@ -38,7 +38,10 @@ import urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_ROOT = os.path.join(HERE, "config")
 SECRET_TOOL = os.path.join(os.path.dirname(HERE), "tools", "SecretTool.java")
-DATA_IDS = ["sso-gateway.yaml", "sso-auth.yaml", "sso-account.yaml", "blog-admin.yaml", "cms.yaml"]
+DATA_IDS = [
+    "sso-gateway.yaml", "sso-auth.yaml", "sso-account.yaml",
+    "blog-admin.yaml", "cms.yaml", "ehr.yaml", "settings.yaml", "portal.yaml", "job.yaml",
+]
 ENVS = {"local": "sso-ms-local", "prod": "sso-ms-prod"}
 SEALED_PREFIX = "ENC("
 

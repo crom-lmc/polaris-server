@@ -1,0 +1,9 @@
+# local: same keys as prod.
+settings:
+  client:
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+sso:
+  portal:
+    app-secret: ENC(8fPZquV/dFCt/D5QcuXwY5/TY2EvnMawLwGlQw3qcke1MPHTjJWl2STh6EvRS6r2vRQ+zoTF/uPtK5xg)
+  client:
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)

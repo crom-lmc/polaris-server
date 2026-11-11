@@ -1,4 +1,4 @@
-﻿# 内部变更记录，不入库
+# 文档
 update.md
 delete.md
 todo.md
@@ -27,7 +27,10 @@ data/
 # 线上配置不入库（只保留 local）
 
 
-# IDE
-.idea/
+# IDE（仅共享 Spring Boot 启动配置，其他本机 IDEA 文件仍忽略）
+.idea/*
+!.idea/runConfigurations/
+.idea/runConfigurations/*
+!.idea/runConfigurations/*.xml
 *.iml
 .vscode/

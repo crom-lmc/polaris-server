@@ -1,0 +1,18 @@
+# local: same keys as prod; credentials are encrypted local root/root.
+spring:
+  datasource:
+    username: ENC(o88raVG1LR+/29dbzLBrmEtCO6UdK14UiRG4+nxjcfU=)
+    password: ENC(3SGkE5aiHkQA+vV6S+Vmqc/Vsm8cFgo5FpQ88Ls7YFI=)
+ehr:
+  internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+settings:
+  client:
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+job:
+  client:
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)
+sso:
+  ehr:
+    app-secret: ENC(PuweGVUXXnOHXOnrN2l2CrTiQeCTze4Jzw0PJyqFytsbJ/pgE4fu6PIcp5pYMbxIfQdFkuY21cZNoJEm)
+  client:
+    internal-token: ENC(hcM+Ls49h/7uFXkVr6xB7WWiXhlPD+7jUa0k2P1a+p7iXzQGwQXxpccT1yro7JXN2p2yKOnNErFl+d9qmO9sT+X9BPZKCZfb/wyBOA==)

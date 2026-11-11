@@ -1,0 +1,28 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SettingsApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="polaris-settings-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.laimengchao.sso.settings.SettingsApplication" />
+    <option name="VM_PARAMETERS" value="-Xms64m -Xmx256m -XX:MaxMetaspaceSize=256m" />
+    <EXTENSION ID="net.ashald.envfile">
+      <option name="IS_ENABLED" value="true" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" PATH="F:/code/polaris-server/polaris-nacos/.env" />
+      </ENTRIES>
+    </EXTENSION>
+    <envs>
+      <env name="SSO_NACOS_ENABLED" value="true" />
+      <env name="SSO_NACOS_DISCOVERY" value="false" />
+      <env name="SSO_NACOS_ADDR" value="127.0.0.1:18848" />
+      <env name="SSO_NACOS_NAMESPACE" value="sso-ms-local" />
+      <env name="SSO_NACOS_GROUP" value="SSO" />
+      <env name="SSO_CONF_KEY_FILE" value="F:/code/polaris-server/polaris-nacos/.secrets/conf-key.txt" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
