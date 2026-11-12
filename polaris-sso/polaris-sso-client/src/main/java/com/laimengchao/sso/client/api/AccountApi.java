@@ -6,6 +6,7 @@ import com.laimengchao.sso.client.dto.AccountStatusRequest;
 import com.laimengchao.sso.client.dto.AccountUser;
 import com.laimengchao.sso.client.dto.AppInfo;
 import com.laimengchao.sso.client.dto.AppVerifyRequest;
+import com.laimengchao.sso.client.dto.Contact;
 import com.laimengchao.sso.client.dto.EmailCodeRequest;
 import com.laimengchao.sso.client.dto.EmailVerifyRequest;
 import com.laimengchao.sso.client.dto.OpenAccountRequest;
