@@ -80,6 +80,31 @@ public class InternalAccountController {
         return R.ok(accountService.principal(id, app));
     }
 
+    /** 批量按 ID 取联系人（昵称/邮箱），报警接收人等场景用 */
+    @GetMapping("/contacts")
+    public R<List<Contact>> contacts(@RequestParam String ids) {
+        List<Long> idList = new java.util.ArrayList<>();
+        for (String part : ids.split(",")) {
+            String v = part.trim();
+            if (!v.isEmpty()) {
+                try { idList.add(Long.parseLong(v)); } catch (NumberFormatException ignored) {}
+            }
+        }
+        List<Contact> result = new java.util.ArrayList<>();
+        for (Long id : idList) {
+            try {
+                var account = accountService.detail(id);
+                Contact c = new Contact();
+                c.setAccountId(account.getId());
+                c.setUsername(account.getUsername());
+                c.setNickname(account.getNickname());
+                c.setEmail(account.getEmail());
+                result.add(c);
+            } catch (BizException ignored) { /* 查不到的跳过 */ }
+        }
+        return R.ok(result);
+    }
+
     /** 联系人信息（邮箱），供设置中心的待办/消息邮件通道取收件人；查不到返回空 data */
     @GetMapping("/{id}/contact")
     public R<Contact> contact(@PathVariable Long id) {

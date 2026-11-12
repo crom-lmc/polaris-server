@@ -1,5 +1,7 @@
 package com.laimengchao.sso.job.module.job.controller;
 
+import com.laimengchao.sso.client.api.AccountApi;
+import com.laimengchao.sso.client.dto.Contact;
 import com.laimengchao.sso.common.PageResult;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.job.constant.PermissionCodes;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** 报警配置：全局通知渠道、报警规则、报警流水 */
@@ -28,9 +31,11 @@ import java.util.List;
 public class AdminAlarmController {
 
     private final JobAlarmService alarmService;
+    private final AccountApi accountApi;
 
-    public AdminAlarmController(JobAlarmService alarmService) {
+    public AdminAlarmController(JobAlarmService alarmService, AccountApi accountApi) {
         this.alarmService = alarmService;
+        this.accountApi = accountApi;
     }
 
     @GetMapping("/channels")
@@ -77,5 +82,17 @@ public class AdminAlarmController {
     public R<PageResult<AlarmRecordVO>> records(@RequestParam(defaultValue = "1") long page,
                                                 @RequestParam(defaultValue = "20") long size) {
         return R.ok(alarmService.listRecords(page, size));
+    }
+
+    /** 前端根据账号 ID 批量查联系人（昵称/邮箱），用于编辑回写和列表展示名字 */
+    @GetMapping("/receivers")
+    @Permit(PermissionCodes.JOB_VIEW)
+    public R<List<Contact>> receivers(@RequestParam String ids) {
+        if (ids == null || ids.isBlank()) return R.ok(new ArrayList<>());
+        try {
+            var resp = accountApi.contacts(ids);
+            if (resp != null && resp.ok()) return R.ok(resp.getData() != null ? resp.getData() : new ArrayList<>());
+        } catch (Exception ignored) { /* account 不可用时返回空列表 */ }
+        return R.ok(new ArrayList<>());
     }
 }

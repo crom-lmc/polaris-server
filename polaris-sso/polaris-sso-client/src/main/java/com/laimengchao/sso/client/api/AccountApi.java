@@ -50,6 +50,10 @@ public interface AccountApi {
     R<AccountUser> principal(@PathVariable("id") Long accountId,
                              @RequestParam(value = "app", required = false) String app);
 
+    /** 批量按 ID 取联系人（昵称/邮箱），报警接收人等场景用 */
+    @GetMapping("/internal/accounts/contacts")
+    R<List<Contact>> contacts(@RequestParam("ids") String ids);
+
     /** 微信 openid 反查账号 ID，未绑定返回 null */
     @PostMapping("/internal/accounts/wechat/by-openid")
     R<Long> accountIdByOpenid(@RequestBody WechatOpenidRequest request);
