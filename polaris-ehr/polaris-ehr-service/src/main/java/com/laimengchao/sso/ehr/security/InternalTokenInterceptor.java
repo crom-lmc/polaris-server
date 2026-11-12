@@ -36,8 +36,11 @@ public class InternalTokenInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws IOException {
+        if (expected == null || expected.isBlank()) {
+            return true;
+        }
         String actual = request.getHeader(JwtClaims.Headers.INTERNAL_TOKEN);
-        if (actual != null && !expected.isEmpty() && expected.equals(actual)) {
+        if (expected.equals(actual)) {
             return true;
         }
         response.setStatus(ErrorCode.UNAUTHORIZED.getCode());

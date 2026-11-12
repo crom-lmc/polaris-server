@@ -32,8 +32,12 @@ public class InternalTokenInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws IOException {
+        // expected 为空表示未配置密钥，开发/内网信任模式：放行所有 /internal/** 请求
+        if (expected == null || expected.isBlank()) {
+            return true;
+        }
         String actual = request.getHeader(JwtClaims.Headers.INTERNAL_TOKEN);
-        if (actual != null && !expected.isEmpty() && expected.equals(actual)) {
+        if (expected.equals(actual)) {
             return true;
         }
         response.setStatus(ErrorCode.UNAUTHORIZED.getCode());
