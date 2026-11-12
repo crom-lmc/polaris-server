@@ -80,8 +80,8 @@ public class BlogProperties {
 
     @Data
     public static class Site {
-        /** 站点对外地址，用于 sitemap / RSS */
-        private String baseUrl = "http://localhost:8080";
+        /** 站点对外地址，用于 sitemap / RSS（生产由 BLOG_SITE_BASE_URL 指定，留空则输出站内相对地址） */
+        private String baseUrl = "";
     }
 
     @Data
