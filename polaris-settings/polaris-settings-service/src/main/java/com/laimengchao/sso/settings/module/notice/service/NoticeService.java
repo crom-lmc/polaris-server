@@ -90,7 +90,8 @@ public class NoticeService {
         msg.setRuleCode(rule == null ? safe(req.getRuleCode()) : rule.getCode());
         msg.setKind(req.getChannel() != null ? req.getChannel()
                 : (rule == null || rule.getChannel() == null ? 2 : rule.getChannel()));
-        msg.setModule(rule == null ? "" : safe(rule.getModule()));
+        msg.setModule(StringUtils.hasText(req.getModule()) ? safe(req.getModule())
+                : (rule == null ? "" : safe(rule.getModule())));
         msg.setTitle(title);
         msg.setContent(content);
         msg.setBizType(safe(req.getBizType()));

@@ -310,6 +310,9 @@ public class JobAlarmService {
             dto.setContent(content);
             dto.setBizType("job_alarm");
             dto.setBizId(String.valueOf(job.getId()));
+            dto.setBizNo(job.getName());
+            dto.setApplicantName("调度中心");
+            dto.setModule("调度中心");
             dto.setLink("/alarms");
             dto.setEmail(mail);
             com.laimengchao.sso.settings.client.dto.R<Integer> resp = noticeApi.sendBatch(dto);

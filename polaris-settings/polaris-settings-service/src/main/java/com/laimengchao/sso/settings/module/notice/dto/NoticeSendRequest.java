@@ -37,6 +37,8 @@ public class NoticeSendRequest {
     private String bizNo;
     /** 发起人：展示在消息列表「发起人」列，待办填申请人、审批结果填实际审批人 */
     private String applicantName;
+    /** 调用方模块，展示在消息列表「模块」列；优先级高于 rule.module */
+    private String module;
     /** 点击跳转的前端路由（可选） */
     private String link;
 }
