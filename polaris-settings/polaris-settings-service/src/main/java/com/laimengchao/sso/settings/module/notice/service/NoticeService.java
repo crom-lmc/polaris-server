@@ -71,16 +71,25 @@ public class NoticeService {
             rule = ruleMapper.selectOne(new LambdaQueryWrapper<NoticeRule>()
                     .eq(NoticeRule::getCode, req.getRuleCode().trim())
                     .last("LIMIT 1"));
-            if (rule != null && !Integer.valueOf(1).equals(rule.getEnabled())) {
+            if (rule == null) {
+                log.warn("消息规则未配置，跳过发送：ruleCode={} accountId={}", req.getRuleCode(), req.getAccountId());
                 return false;
             }
+            if (!Integer.valueOf(1).equals(rule.getEnabled())) {
+                log.info("消息规则已停用，跳过发送：ruleCode={} accountId={}", req.getRuleCode(), req.getAccountId());
+                return false;
+            }
+        } else {
+            // 没有 ruleCode 的一律不发——所有消息必须先在配置中心注册规则
+            log.warn("消息未带 ruleCode，跳过发送：accountId={} title={}", req.getAccountId(), req.getTitle());
+            return false;
         }
-        String title = rule != null && StringUtils.hasText(rule.getTitleTpl())
+        String title = StringUtils.hasText(rule.getTitleTpl())
                 ? render(rule.getTitleTpl(), req) : render(req.getTitle(), req);
-        String content = rule != null && StringUtils.hasText(rule.getContentTpl())
+        String content = StringUtils.hasText(rule.getContentTpl())
                 ? render(rule.getContentTpl(), req) : render(req.getContent(), req);
         if (!StringUtils.hasText(title) && !StringUtils.hasText(content)) {
-            log.warn("待办/消息未配置且无兜底内容，跳过：ruleCode={} accountId={}",
+            log.warn("消息规则模板为空且调用方无兜底内容，跳过：ruleCode={} accountId={}",
                     req.getRuleCode(), req.getAccountId());
             return false;
         }
