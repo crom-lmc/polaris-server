@@ -30,7 +30,7 @@ public class InternalHttpClient {
     private final String internalToken;
 
     public InternalHttpClient(ObjectMapper objectMapper,
-                              @Value("${approval.internal-token:${SSO_INTERNAL_TOKEN:}}") String internalToken) {
+                              @Value("${approval.internal-token:${settings.internal-token:${SSO_INTERNAL_TOKEN:}}}") String internalToken) {
         this.objectMapper = objectMapper;
         this.internalToken = internalToken;
         // 连接 3s / 读 5s：审批人解析是流程推进的前置步骤，超时必须短，失败按「解析不到人」处理
