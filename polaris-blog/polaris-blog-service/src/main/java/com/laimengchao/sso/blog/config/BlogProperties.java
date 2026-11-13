@@ -13,8 +13,6 @@ import java.util.List;
 @ConfigurationProperties(prefix = "blog")
 public class BlogProperties {
 
-    private Jwt jwt = new Jwt();
-
     private Upload upload = new Upload();
 
     private Security security = new Security();
@@ -26,14 +24,6 @@ public class BlogProperties {
     private Site site = new Site();
 
     private Search search = new Search();
-
-    @Data
-    public static class Jwt {
-        /** HS256 密钥，长度需 >= 32 字节 */
-        private String secret = "blog-system-default-secret-please-change-me-1234567890";
-        /** 令牌有效期（分钟） */
-        private long expireMinutes = 720;
-    }
 
     @Data
     public static class Upload {
