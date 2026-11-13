@@ -33,6 +33,27 @@ map $http_user_agent $bad_bot {
     ~*(nikto|sqlmap|nmap|masscan|acunetix|nessus|dirbuster|gobuster|wfuzz|zgrab|nuclei) 1;
 }
 
+# polaris-check: ^[[:space:]]*sendfile[[:space:]]+on[[:space:]]*;
+sendfile on;
+
+# polaris-check: ^[[:space:]]*tcp_nopush[[:space:]]+on[[:space:]]*;
+tcp_nopush on;
+
+# polaris-check: ^[[:space:]]*types_hash_max_size[[:space:]]+2048[[:space:]]*;
+types_hash_max_size 2048;
+
+# polaris-check: ^[[:space:]]*default_type[[:space:]]+application/octet-stream[[:space:]]*;
+default_type application/octet-stream;
+
+# polaris-check: ^[[:space:]]*ssl_protocols[[:space:]]+TLSv1\.2[[:space:]]+TLSv1\.3[[:space:]]*;
+ssl_protocols TLSv1.2 TLSv1.3;
+
+# polaris-check: ^[[:space:]]*ssl_prefer_server_ciphers[[:space:]]+off[[:space:]]*;
+ssl_prefer_server_ciphers off;
+
+# polaris-check: ^[[:space:]]*gzip[[:space:]]+on[[:space:]]*;
+gzip on;
+
 # polaris-check: ^[[:space:]]*log_format[[:space:]]+polaris_main
 log_format polaris_main '$remote_addr - $remote_user [$time_local] "$request" '
                         '$status $body_bytes_sent "$http_referer" '
