@@ -72,15 +72,6 @@ spring:
           uri: ${JOB_ROUTE:http://127.0.0.1:9008}
           predicates:
             - Path=/api/jobs/**
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            # 前端 sso-web 与本服务不同源，必须显式放开
-            allowedOriginPatterns: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
 
 sso:
   gateway:
