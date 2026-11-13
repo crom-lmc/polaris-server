@@ -18,7 +18,8 @@ ssh $target "mkdir -p $Remote/logs $Remote/uploads/blog"
 
 Write-Host '=== 2/4 上传产物 ===' -ForegroundColor Cyan
 scp (Join-Path $DeployRoot 'docker-compose.yml')     "${target}:$Remote/"
-scp (Join-Path $DeployRoot '.env')                   "${target}:$Remote/"
+$envFile = Join-Path $DeployRoot '.env'
+if (Test-Path $envFile) { scp $envFile "${target}:$Remote/" } else { Write-Host "  .env 本地不存在，跳过（服务器已有则沿用旧的）" -ForegroundColor Yellow }
 scp (Join-Path $DeployRoot 'nginx\polaris.conf.tpl') "${target}:$Remote/nginx-polaris.conf.tpl"
 scp (Join-Path $DeployRoot 'nginx\api-proxy.inc')    "${target}:$Remote/api-proxy.inc"
 scp (Join-Path $DeployRoot 'nginx\security.inc')     "${target}:$Remote/security.inc"
@@ -49,7 +50,7 @@ chmod 600 keys/*.pem 2>/dev/null || true
 COMPOSE_PARALLEL_LIMIT=1 docker compose up -d --remove-orphans
 docker compose ps
 '@
-$composeCmd.Replace('REMOTE_DIR', $Remote) | ssh $target 'bash -s'
+$composeCmd.Replace('REMOTE_DIR', $Remote) -replace "`r",'' | ssh $target 'bash -s'
 
 if (-not $SkipNginx) {
   Write-Host '=== 4/4 下发 nginx 配置 ===' -ForegroundColor Cyan
@@ -109,7 +110,7 @@ if [ "$FAIL" != "0" ]; then
 fi
 echo "自检通过：9 域名均 200，tengine 8443 可达"
 '@
-  $nginxCmd.Replace('REMOTE_DIR', $Remote) | ssh $target 'bash -s'
+  $nginxCmd.Replace('REMOTE_DIR', $Remote) -replace "`r",'' | ssh $target 'bash -s'
 }
 
 Write-Host '=== 完成；最近日志 ===' -ForegroundColor Green
