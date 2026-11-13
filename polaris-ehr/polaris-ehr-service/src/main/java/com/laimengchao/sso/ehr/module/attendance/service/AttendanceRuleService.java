@@ -27,12 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 考勤规则中心：规则 CRUD 与按人解析。
@@ -49,6 +45,51 @@ public class AttendanceRuleService {
     private final AttendanceRuleSegmentMapper segmentMapper;
     private final AttendanceDailyMapper dailyMapper;
     private final OrgNodeMapper orgMapper;
+
+    /** 规则/作用域/时间段本地缓存（30s TTL，规则不常变）。 */
+    private static final long CACHE_TTL_MS = 30_000L;
+    private volatile List<AttendanceRule> cachedRules;
+    private volatile long cachedRulesAt;
+    private volatile List<AttendanceRuleScope> cachedScopes;
+    private volatile long cachedScopesAt;
+    private final Map<Long, List<AttendanceRuleSegment>> segmentCache = new ConcurrentHashMap<>();
+    private final Map<Long, List<Long>> orgChainCache = new ConcurrentHashMap<>();
+
+    private List<AttendanceRule> getEnabledRules() {
+        long now = System.currentTimeMillis();
+        List<AttendanceRule> r = cachedRules;
+        if (r != null && now - cachedRulesAt < CACHE_TTL_MS) return r;
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (cachedRules != null && now - cachedRulesAt < CACHE_TTL_MS) return cachedRules;
+            cachedRules = ruleMapper.selectList(new LambdaQueryWrapper<AttendanceRule>()
+                    .eq(AttendanceRule::getStatus, 1));
+            cachedRulesAt = now;
+            return cachedRules;
+        }
+    }
+
+    private List<AttendanceRuleScope> getAllScopes() {
+        long now = System.currentTimeMillis();
+        List<AttendanceRuleScope> s = cachedScopes;
+        if (s != null && now - cachedScopesAt < CACHE_TTL_MS) return s;
+        synchronized (this) {
+            now = System.currentTimeMillis();
+            if (cachedScopes != null && now - cachedScopesAt < CACHE_TTL_MS) return cachedScopes;
+            cachedScopes = scopeMapper.selectList(null);
+            cachedScopesAt = now;
+            return cachedScopes;
+        }
+    }
+
+    private List<AttendanceRuleSegment> segmentsCached(Long ruleId) {
+        long now = System.currentTimeMillis();
+        List<AttendanceRuleSegment> cached = segmentCache.get(ruleId);
+        if (cached != null && !cached.isEmpty()) return cached;
+        List<AttendanceRuleSegment> segs = segmentsOf(ruleId);
+        segmentCache.put(ruleId, segs);
+        return segs;
+    }
 
     /** 命中的规则与时间段 */
     public record ResolvedRule(AttendanceRule rule, List<AttendanceRuleSegment> segments) {
@@ -139,8 +180,7 @@ public class AttendanceRuleService {
 
     /** 按员工解析规则：员工 &gt; 最近祖先部门 &gt; 全员 &gt; DEFAULT。 */
     public ResolvedRule resolveRule(Employee emp) {
-        List<AttendanceRule> enabled = ruleMapper.selectList(new LambdaQueryWrapper<AttendanceRule>()
-                .eq(AttendanceRule::getStatus, 1));
+        List<AttendanceRule> enabled = getEnabledRules();
         if (enabled.isEmpty()) {
             return null;
         }
@@ -154,8 +194,8 @@ public class AttendanceRuleService {
         int bestDistance = Integer.MAX_VALUE;
         int bestPriority = Integer.MIN_VALUE;
         if (emp != null) {
-            List<Long> chain = orgChain(emp.getOrgId());
-            List<AttendanceRuleScope> scopes = scopeMapper.selectList(null);
+            List<Long> chain = orgChainCached(emp.getOrgId());
+            List<AttendanceRuleScope> scopes = getAllScopes();
             for (AttendanceRuleScope s : scopes) {
                 AttendanceRule r = ruleById.get(s.getRuleId());
                 if (r == null) {
@@ -196,7 +236,12 @@ public class AttendanceRuleService {
         if (bestRule == null) {
             return null;
         }
-        return new ResolvedRule(bestRule, segmentsOf(bestRule.getId()));
+        return new ResolvedRule(bestRule, segmentsCached(bestRule.getId()));
+    }
+
+    private List<Long> orgChainCached(Long orgId) {
+        if (orgId == null) return List.of();
+        return orgChainCache.computeIfAbsent(orgId, this::orgChain);
     }
 
     public List<AttendanceRuleSegment> segmentsOf(Long ruleId) {

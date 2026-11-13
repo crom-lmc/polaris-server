@@ -108,15 +108,19 @@ public class AttendanceDailyService {
                 .in(Employee::getStatus, EmployeeStatus.PROBATION.getCode(), EmployeeStatus.ACTIVE.getCode())
                 .and(w -> w.isNull(Employee::getHireDate).or().le(Employee::getHireDate, date)));
         YearMonth ym = YearMonth.from(date);
+        // 一次性预查本月已确认的员工集合，避免 monthConfirmed N+1
+        Set<Long> confirmedEmpIds = monthMapper.selectList(new LambdaQueryWrapper<AttendanceMonth>()
+                        .eq(AttendanceMonth::getMonth, ym.toString())
+                        .eq(AttendanceMonth::getConfirmed, 1))
+                .stream().map(AttendanceMonth::getEmployeeId).collect(Collectors.toSet());
         for (Employee emp : employees) {
-            // 已确认锁定的月份不再重算日结果与汇总
-            if (monthConfirmed(emp.getId(), ym)) {
+            if (confirmedEmpIds.contains(emp.getId())) {
                 continue;
             }
             generateForEmployee(emp, date);
         }
         for (Employee emp : employees) {
-            if (monthConfirmed(emp.getId(), ym)) {
+            if (confirmedEmpIds.contains(emp.getId())) {
                 continue;
             }
             recalcMonth(emp, ym);
