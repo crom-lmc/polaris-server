@@ -2,6 +2,7 @@ package com.laimengchao.sso.blog.storage;
 
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.FileTypeValidator;
 import com.laimengchao.sso.blog.common.BlogErrorCode;
 import com.laimengchao.sso.blog.config.BlogProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -73,7 +75,9 @@ public class LocalStorageService implements StorageService {
         Path dir = resolveSafe(root.resolve(sanitizeFolder(folder)).resolve(datePath));
         Files.createDirectories(dir);
         Path target = resolveSafe(dir.resolve(fileName));
-        try (InputStream in = inputStream) {
+        String validatedContentType;
+        try (InputStream in = new BufferedInputStream(inputStream)) {
+            validatedContentType = FileTypeValidator.validate(in, ext);
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         }
 
@@ -82,7 +86,7 @@ public class LocalStorageService implements StorageService {
         stored.setOriginalName(originalName);
         stored.setPath(root.relativize(target).toString().replace("\\", "/"));
         stored.setUrl(urlPrefix + "/" + stored.getPath());
-        stored.setMimeType(contentType);
+        stored.setMimeType(validatedContentType);
         stored.setSize(Files.size(target));
         if (isImage(ext)) {
             int[] dimension = readImageSize(target);

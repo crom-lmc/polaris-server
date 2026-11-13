@@ -2,12 +2,14 @@ package com.laimengchao.sso.cms.storage;
 
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.FileTypeValidator;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
 import com.laimengchao.sso.cms.config.CmsProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -68,13 +70,15 @@ public class LocalStorageService implements StorageService {
         }
         Files.createDirectories(dir);
         Path target = dir.resolve(fileName);
-        try (InputStream in = inputStream) {
+        String validatedContentType;
+        try (InputStream in = new BufferedInputStream(inputStream)) {
+            validatedContentType = FileTypeValidator.validate(in, ext);
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         }
         StoredFile sf = new StoredFile();
         sf.setFilename(fileName);
         sf.setOriginalName(originalName);
-        sf.setContentType(contentType);
+        sf.setContentType(validatedContentType);
         sf.setSize(size);
         sf.setUrl(urlPrefix + "/" + dateDir + "/" + fileName);
         return sf;
