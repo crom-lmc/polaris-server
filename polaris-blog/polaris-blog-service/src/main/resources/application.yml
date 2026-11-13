@@ -67,11 +67,18 @@ mybatis-plus:
 
 springdoc:
   api-docs:
+    # 生产默认关闭接口文档，避免暴露接口清单与内部模型；排障时可临时置 true
+    enabled: ${SPRINGDOC_ENABLED:false}
     path: /v3/api-docs
   swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:false}
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
+
+polaris:
+  security:
+    download-path-patterns: /uploads/**
 
 # 业务配置：与单体博客一致，仅去掉登录/验证码相关项（登录已交给账号中心）
 blog:

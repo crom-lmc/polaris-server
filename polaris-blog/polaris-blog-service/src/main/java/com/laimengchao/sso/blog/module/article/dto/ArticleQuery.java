@@ -1,6 +1,8 @@
 package com.laimengchao.sso.blog.module.article.dto;
 
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,7 +42,8 @@ public class ArticleQuery {
 
     private LocalDateTime end;
 
-    /** 排序 SQL（由 sort 白名单转换，禁止外部直接传入） */
+    /** 排序 SQL（由 sort 白名单转换，禁止外部直接传入；不生成 setter 防止参数绑定注入） */
+    @Setter(AccessLevel.NONE)
     private String orderBy = "a.is_top DESC, a.published_at DESC, a.id DESC";
 
     public long offset() {
