@@ -27,6 +27,12 @@ INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cr
 SELECT 910000000000000012, 'ehr', '日考勤结果兜底重算', 'attendanceDaily', '每日 03:00 重算昨日全员日结果+月度汇总（独立于模拟考勤，不受 mock 开关控制）', 'CRON', '0 0 3 * * ?', NULL, 1800, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'attendanceDaily' AND deleted = 0);
 
+-- 月度考勤汇总兜底：排在 attendanceDaily 03:00 之后的 04:00，全量重算上一个完整日历月的全员汇总
+-- 兜住月底之后才审批通过的请假/补卡/加班等变更，已确认锁定（confirmed=1）的月份自动跳过
+INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cron_expr, interval_sec, timeout_sec, retry_times, retry_interval_sec, route_strategy, block_strategy, params, status, next_fire_time, lock_version)
+SELECT 910000000000000020, 'ehr', '月度考勤汇总兜底', 'attendanceMonthly', '每日 04:00 全量重算上一个完整日历月的全员月度汇总，兜住月底后才审批通过的请假/补卡/加班', 'CRON', '0 0 4 * * ?', NULL, 1800, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'attendanceMonthly' AND deleted = 0);
+
 INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cron_expr, interval_sec, timeout_sec, retry_times, retry_interval_sec, route_strategy, block_strategy, params, status, next_fire_time, lock_version)
 SELECT 910000000000000006, 'ehr', '次年日历维护提醒', 'calendarMaintainRemind', '每日 09:30 检查次年考勤日历是否需要维护', 'CRON', '0 30 9 * * ?', NULL, 900, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'calendarMaintainRemind' AND deleted = 0);
