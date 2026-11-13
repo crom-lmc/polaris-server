@@ -89,6 +89,8 @@ if [ "$DO_SYNC" = 1 ]; then
   install -m 644 "$DEPLOY/nginx/waf.conf" /etc/nginx/conf.d/waf.conf
   install -m 644 "$DEPLOY/nginx/vault.conf" /etc/nginx/conf.d/vault.conf
   install -m 644 "$DEPLOY/nginx/00-default-ssl.conf" /etc/nginx/conf.d/00-default-ssl.conf
+  install -m 644 "$DEPLOY/nginx/00-default-ports.conf" /etc/nginx/conf.d/00-default-ports.conf
+  install -m 644 "$DEPLOY/nginx/nacos.conf" /etc/nginx/conf.d/nacos.conf
   install -m 644 "$DEPLOY/nginx/50-tengine-backends.conf" /etc/nginx/conf.d/50-tengine-backends.conf
   # 站点默认经雷池 tengine(8443)；直连 9080/静态 是显式回滚路径（polaris-direct.inc）
   install -m 644 "$DEPLOY/nginx/polaris-tengine-proxy.inc" /etc/nginx/snippets/polaris-cms-root.inc
