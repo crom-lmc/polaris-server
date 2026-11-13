@@ -12,6 +12,7 @@ import com.laimengchao.sso.auth.dto.TokenResponse;
 import com.laimengchao.sso.auth.dto.WechatLoginRequest;
 import com.laimengchao.sso.auth.service.AccountClient;
 import com.laimengchao.sso.auth.service.EmailSender;
+import com.laimengchao.sso.auth.service.LoginAttemptGuard;
 import com.laimengchao.sso.auth.service.TokenService;
 import com.laimengchao.sso.auth.service.WechatService;
 import com.laimengchao.sso.auth.service.session.SessionService;
@@ -52,6 +53,7 @@ public class AuthController {
     private final EmailSender emailSender;
     private final WechatService wechatService;
     private final SessionService sessionService;
+    private final LoginAttemptGuard loginAttemptGuard;
 
     /**
      * 账号密码登录。除了签发 JWT，还会建立一个中心会话并写 HttpOnly cookie——
@@ -60,8 +62,16 @@ public class AuthController {
     @PostMapping("/login")
     public R<TokenResponse> login(@Valid @RequestBody LoginRequest req,
                                        HttpServletRequest request, HttpServletResponse response) {
-        AuthUser user = tokenService.authenticate(req.getUsername(), req.getPassword(),
-                clientIp(request), request.getHeader("User-Agent"), "password", req.getAppCode());
+        String ip = clientIp(request);
+        loginAttemptGuard.checkAllowed(ip);
+        AuthUser user;
+        try {
+            user = tokenService.authenticate(req.getUsername(), req.getPassword(),
+                    ip, request.getHeader("User-Agent"), "password", req.getAppCode());
+        } catch (BizException e) {
+            loginAttemptGuard.recordFailure(ip);
+            throw e;
+        }
         // 先建会话再签发：令牌里要带 sid，否则这次登录不受「一处登出、处处失效」管辖
         String sid = sessionService.create(user.getAccountId(), response);
         return R.ok(tokenService.issuePair(user, sid));
@@ -159,9 +169,11 @@ public class AuthController {
 
     /** 忘记密码：校验重置验证码并设置新密码。 */
     @PostMapping("/password/forgot/reset")
-    public R<Void> forgotPasswordReset(@Valid @RequestBody ForgotPasswordResetRequest req) {
+    public R<Void> forgotPasswordReset(@Valid @RequestBody ForgotPasswordResetRequest req,
+                                       HttpServletRequest request) {
         Long accountId = accountClient.verifyEmail(req.getEmail(), "reset", req.getCode());
-        accountClient.resetPassword(accountId, req.getNewPassword());
+        accountClient.resetPassword(accountId, req.getNewPassword(),
+                clientIp(request), request.getHeader("User-Agent"));
         // 密码已变更，作废此前所有会话，避免旧令牌继续可用
         sessionService.forceLogout(accountId);
         return R.ok();

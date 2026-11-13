@@ -161,7 +161,8 @@ public class InternalAccountController {
     /** 忘记密码：auth 已完成「reset」场景验证码校验，这里只按账号重置密码。 */
     @PostMapping("/password/reset")
     public R<Void> resetPassword(@Valid @RequestBody InternalResetPasswordRequest req) {
-        accountService.resetPasswordByAccount(req.getAccountId(), req.getNewPassword());
+        accountService.resetPasswordByAccount(req.getAccountId(), req.getNewPassword(),
+                req.getClientIp(), req.getUserAgent());
         return R.ok();
     }
 

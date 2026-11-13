@@ -25,6 +25,7 @@ import com.laimengchao.sso.account.mapper.SsoRoleMapper;
 import com.laimengchao.sso.account.security.AccountContextService;
 import com.laimengchao.sso.account.security.PasswordPolicy;
 import com.laimengchao.sso.account.service.AccountService;
+import com.laimengchao.sso.account.service.AuditLogService;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.PageResult;
@@ -53,6 +54,7 @@ public class AccountServiceImpl implements AccountService {
     private final SsoAccountAppMapper accountAppMapper;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EhrOrgClient ehrOrgClient;
+    private final AuditLogService auditLogService;
 
     @Value("${sso.security.max-login-fail:5}")
     private int maxLoginFail;
@@ -220,6 +222,8 @@ public class AccountServiceImpl implements AccountService {
         a.setLoginFailCount(0);
         a.setLockedUntil(null);
         accountMapper.updateById(a);
+        auditLogService.record(AuditLogService.PASSWORD_RESET, AuditLogService.TARGET_ACCOUNT, id,
+                "channel=admin;forceChange=" + (a.getPwdResetRequired() == 1));
     }
 
     @Override
@@ -240,11 +244,13 @@ public class AccountServiceImpl implements AccountService {
         a.setLoginFailCount(0);
         a.setLockedUntil(null);
         accountMapper.updateById(a);
+        auditLogService.record(AuditLogService.PASSWORD_CHANGE, AuditLogService.TARGET_ACCOUNT, id,
+                "channel=self");
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetPasswordByAccount(Long id, String newPassword) {
+    public void resetPasswordByAccount(Long id, String newPassword, String clientIp, String userAgent) {
         SsoAccount a = require(id);
         Asserts.notEmpty(newPassword, ErrorCode.PARAM_ERROR, "新密码必填");
         PasswordPolicy.validate(newPassword);
@@ -253,6 +259,8 @@ public class AccountServiceImpl implements AccountService {
         a.setLoginFailCount(0);
         a.setLockedUntil(null);
         accountMapper.updateById(a);
+        auditLogService.recordInternal(a.getId(), a.getUsername(), AuditLogService.PASSWORD_RESET,
+                AuditLogService.TARGET_ACCOUNT, id, "channel=email", clientIp, userAgent);
     }
 
     @Override

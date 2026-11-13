@@ -105,10 +105,12 @@ public class AccountClient {
     }
 
     /** 邮箱验证码校验通过后重置密码（不校验原密码）。 */
-    public void resetPassword(Long accountId, String newPassword) {
+    public void resetPassword(Long accountId, String newPassword, String clientIp, String userAgent) {
         PasswordResetRequest req = new PasswordResetRequest();
         req.setAccountId(accountId);
         req.setNewPassword(newPassword);
+        req.setClientIp(clientIp == null ? "" : clientIp);
+        req.setUserAgent(userAgent == null ? "" : userAgent);
         R<Void> res = invoke(() -> accountApi.resetPassword(req), "/internal/accounts/password/reset");
         if (res == null || !res.ok()) {
             throw new BizException(ErrorCode.SYSTEM_ERROR,

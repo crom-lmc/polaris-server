@@ -15,6 +15,7 @@ import com.laimengchao.sso.account.mapper.SsoPermissionMapper;
 import com.laimengchao.sso.account.mapper.SsoRoleMapper;
 import com.laimengchao.sso.account.mapper.SsoRolePermissionMapper;
 import com.laimengchao.sso.account.security.AccountContextService;
+import com.laimengchao.sso.account.service.AuditLogService;
 import com.laimengchao.sso.account.service.RoleService;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.PageResult;
@@ -37,6 +38,7 @@ public class RoleServiceImpl implements RoleService {
     private final SsoRolePermissionMapper rolePermissionMapper;
     private final SsoAccountRoleMapper accountRoleMapper;
     private final SsoPermissionMapper permissionMapper;
+    private final AuditLogService auditLogService;
 
     /** 平台角色域：权限码里的 app_code=sso，不对应 sso_application 里的记录 */
     public static final String PLATFORM_APP = "sso";
@@ -97,6 +99,8 @@ public class RoleServiceImpl implements RoleService {
             existing.setRemark(req.getRemark() == null ? "" : req.getRemark());
             roleMapper.updateById(existing);
             replacePermissions(existing.getId(), permissionIds);
+            auditLogService.record(AuditLogService.ROLE_CREATE, AuditLogService.TARGET_ROLE,
+                    existing.getId(), "code=" + code + ";restored=true;permissionIds=" + permissionIds);
             return toVO(existing);
         }
 
@@ -108,6 +112,8 @@ public class RoleServiceImpl implements RoleService {
         role.setRemark(req.getRemark() == null ? "" : req.getRemark());
         roleMapper.insert(role);
         replacePermissions(role.getId(), permissionIds);
+        auditLogService.record(AuditLogService.ROLE_CREATE, AuditLogService.TARGET_ROLE,
+                role.getId(), "code=" + code + ";restored=false;permissionIds=" + permissionIds);
         return toVO(role);
     }
 
@@ -127,8 +133,14 @@ public class RoleServiceImpl implements RoleService {
 
         // permissionIds 为 null 表示「本次不改权限」，与空数组（收回全部）区分开
         if (req.getPermissionIds() != null) {
-            replacePermissions(id, validPermissionIds(req.getPermissionIds()));
+            Set<Long> permissionIds = validPermissionIds(req.getPermissionIds());
+            replacePermissions(id, permissionIds);
+            auditLogService.record(AuditLogService.ROLE_PERMISSION_ASSIGN,
+                    AuditLogService.TARGET_ROLE, id,
+                    "code=" + role.getCode() + ";permissionIds=" + permissionIds);
         }
+        auditLogService.record(AuditLogService.ROLE_UPDATE, AuditLogService.TARGET_ROLE, id,
+                "code=" + role.getCode() + ";permissionsChanged=" + (req.getPermissionIds() != null));
         return toVO(role);
     }
 
@@ -148,6 +160,8 @@ public class RoleServiceImpl implements RoleService {
         roleMapper.deleteById(id);
         rolePermissionMapper.delete(new LambdaQueryWrapper<SsoRolePermission>()
                 .eq(SsoRolePermission::getRoleId, id));
+        auditLogService.record(AuditLogService.ROLE_DELETE, AuditLogService.TARGET_ROLE, id,
+                "code=" + role.getCode());
     }
 
     @Override
@@ -158,6 +172,9 @@ public class RoleServiceImpl implements RoleService {
         Set<Long> ids = validPermissionIds(permissionIds);
         // 角色可以跨应用授权：人事专员这类角色能同时挂 EHR、CMS 等应用的权限点
         replacePermissions(id, ids);
+        auditLogService.record(AuditLogService.ROLE_PERMISSION_ASSIGN,
+                AuditLogService.TARGET_ROLE, id,
+                "code=" + role.getCode() + ";permissionIds=" + ids);
     }
 
     // ---------------- 内部方法 ----------------

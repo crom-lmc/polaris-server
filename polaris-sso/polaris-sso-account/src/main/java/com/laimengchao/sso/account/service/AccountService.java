@@ -42,7 +42,7 @@ public interface AccountService {
     void changeMyPassword(Long id, String oldPassword, String newPassword);
 
     /** 忘记密码：验证码已由 auth 校验通过，按账号直接重置密码。 */
-    void resetPasswordByAccount(Long id, String newPassword);
+    void resetPasswordByAccount(Long id, String newPassword, String clientIp, String userAgent);
 
     /** 校验凭据，返回账户（失败抛异常）。 */
     SsoAccount authenticate(String username, String password);

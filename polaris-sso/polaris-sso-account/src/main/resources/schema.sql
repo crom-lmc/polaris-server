@@ -82,6 +82,22 @@ CREATE TABLE IF NOT EXISTS `sso_login_log` (
   KEY `idx_username_time` (`username`,`created_at`),
   KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='登录审计日志';
+CREATE TABLE IF NOT EXISTS `sso_audit_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `operator_id` bigint(20) NOT NULL COMMENT '操作人账号ID',
+  `operator_name` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人登录名',
+  `action` varchar(32) NOT NULL COMMENT '操作类型',
+  `target_type` varchar(32) NOT NULL COMMENT '操作对象类型',
+  `target_id` bigint(20) DEFAULT NULL COMMENT '操作对象ID',
+  `fields` varchar(255) NOT NULL DEFAULT '' COMMENT 'result=success/fail及非敏感详情',
+  `ip` varchar(64) NOT NULL DEFAULT '' COMMENT '客户端IP',
+  `ua` varchar(255) NOT NULL DEFAULT '' COMMENT 'User-Agent',
+  `created_at` datetime NOT NULL COMMENT '操作时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_operator_time` (`operator_id`,`created_at`),
+  KEY `idx_audit_target` (`target_type`,`target_id`,`created_at`),
+  KEY `idx_audit_action_time` (`action`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='SSO敏感操作审计日志';
 CREATE TABLE IF NOT EXISTS `sso_permission` (
   `id` bigint(20) NOT NULL,
   `code` varchar(128) NOT NULL COMMENT '鏉冮檺鐮侊紝濡� account:create锛堟寜閽骇锛�',

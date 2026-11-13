@@ -6,6 +6,7 @@ import com.laimengchao.sso.account.dto.response.ApplicationVO;
 import com.laimengchao.sso.account.service.AccountAppService;
 import com.laimengchao.sso.account.service.AccountService;
 import com.laimengchao.sso.account.service.ApplicationService;
+import com.laimengchao.sso.account.service.AuditLogService;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
@@ -33,6 +34,7 @@ public class CurrentAccountController {
     private final AccountService accountService;
     private final AccountAppService accountAppService;
     private final ApplicationService applicationService;
+    private final AuditLogService auditLogService;
 
     @GetMapping("/me")
     public R<AccountVO> me() {
@@ -52,8 +54,16 @@ public class CurrentAccountController {
     /** 当前用户修改自己的密码（校验原密码）。成功后前端应执行登出，下次用新密码登录。 */
     @PostMapping("/me/password")
     public R<Void> changeMyPassword(@RequestBody ChangePasswordRequest req) {
-        accountService.changeMyPassword(currentId(), req.getOldPassword(), req.getNewPassword());
-        return R.ok();
+        Long id = currentId();
+        try {
+            accountService.changeMyPassword(id, req.getOldPassword(), req.getNewPassword());
+            return R.ok();
+        } catch (BizException e) {
+            // 事务已回滚后再写失败审计，避免失败日志随业务事务一起回滚；不记录任何密码内容。
+            auditLogService.recordFailure(AuditLogService.PASSWORD_CHANGE,
+                    AuditLogService.TARGET_ACCOUNT, id, "reason=" + e.getMessage());
+            throw e;
+        }
     }
 
     private Long currentId() {

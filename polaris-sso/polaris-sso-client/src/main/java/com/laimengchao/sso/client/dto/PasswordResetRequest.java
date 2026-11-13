@@ -7,4 +7,7 @@ import lombok.Data;
 public class PasswordResetRequest {
     private Long accountId;
     private String newPassword;
+    /** 原始客户端信息仅用于审计，不能由 account 的内网请求地址代替。 */
+    private String clientIp;
+    private String userAgent;
 }

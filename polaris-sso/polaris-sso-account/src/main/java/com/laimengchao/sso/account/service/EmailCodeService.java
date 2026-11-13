@@ -1,5 +1,6 @@
 package com.laimengchao.sso.account.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.laimengchao.sso.account.domain.entity.SsoAccount;
 import com.laimengchao.sso.account.domain.entity.SsoEmailCode;
@@ -7,6 +8,7 @@ import com.laimengchao.sso.account.mapper.SsoAccountMapper;
 import com.laimengchao.sso.account.mapper.SsoEmailCodeMapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.InMemoryRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -32,12 +35,39 @@ public class EmailCodeService {
     private int ttlMinutes;
     @Value("${sso.account.email-code-max-try:5}")
     private int maxTry;
+    @Value("${sso.account.email-code-send-interval-seconds:60}")
+    private int sendIntervalSeconds;
+    @Value("${sso.account.email-code-ip-hourly-limit:10}")
+    private int ipHourlyLimit;
+    @Value("${sso.account.email-code-daily-limit:10}")
+    private int dailyLimit;
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    private final InMemoryRateLimiter sendLimiter = new InMemoryRateLimiter();
 
     /** 生成 6 位验证码，哈希入库，返回明文（供 auth 发送）。 */
     @Transactional(rollbackFor = Exception.class)
     public String create(String email, String scene, String ip) {
+        // 发送频率限制：同邮箱间隔 + 同 IP 每小时上限，防止邮件轰炸
+        String emailKey = "email-code:email:" + (email == null ? "" : email.trim().toLowerCase());
+        if (sendLimiter.isBlocked(emailKey, 1)) {
+            throw new BizException(ErrorCode.TOO_MANY_REQUESTS, "验证码发送过于频繁，请稍后再试");
+        }
+        Long sentToday = codeMapper.selectCount(new LambdaQueryWrapper<SsoEmailCode>()
+                .eq(SsoEmailCode::getEmail, email)
+                .ge(SsoEmailCode::getCreatedAt, LocalDate.now().atStartOfDay()));
+        if (sentToday != null && sentToday >= dailyLimit) {
+            throw new BizException(ErrorCode.TOO_MANY_REQUESTS, "该邮箱今日获取验证码次数已达上限，请明天再试");
+        }
+        if (ip != null && !ip.isBlank()) {
+            String ipKey = "email-code:ip:" + ip;
+            if (sendLimiter.isBlocked(ipKey, ipHourlyLimit)) {
+                throw new BizException(ErrorCode.TOO_MANY_REQUESTS, "当前网络请求验证码过于频繁，请稍后再试");
+            }
+            sendLimiter.record(ipKey, 3_600_000L);
+        }
+        sendLimiter.record(emailKey, sendIntervalSeconds * 1000L);
+
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         SsoEmailCode entity = new SsoEmailCode();
         entity.setEmail(email);

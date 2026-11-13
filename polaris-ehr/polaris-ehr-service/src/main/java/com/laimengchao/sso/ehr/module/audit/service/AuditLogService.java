@@ -4,20 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.AuditLogWriter;
 import com.laimengchao.sso.ehr.module.audit.entity.AuditLog;
 import com.laimengchao.sso.ehr.module.audit.mapper.AuditLogMapper;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
-import com.laimengchao.sso.common.security.SecurityUser;
-import com.laimengchao.sso.common.security.SecurityUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,26 +38,11 @@ public class AuditLogService {
 
     private final AuditLogMapper auditLogMapper;
     private final EmployeeMapper employeeMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     /** 记录一条审计；取不到登录主体（内部调用）时不记，避免产生无主记录 */
     public void record(String action, String targetType, Long targetId, String fields) {
-        SecurityUser user = SecurityUtils.currentUser().orElse(null);
-        if (user == null || user.getAccountId() == null) {
-            return;
-        }
-        AuditLog row = new AuditLog();
-        row.setOperatorId(user.getAccountId());
-        row.setOperatorName(user.getUsername());
-        row.setAction(action);
-        row.setTargetType(targetType);
-        row.setTargetId(targetId);
-        row.setFields(truncate(fields == null ? "" : fields, 255));
-        HttpServletRequest request = currentRequest();
-        if (request != null) {
-            row.setIp(truncate(clientIp(request), 64));
-            row.setUa(truncate(request.getHeader("User-Agent"), 255));
-        }
-        auditLogMapper.insert(row);
+        AuditLogWriter.record(jdbcTemplate, "ehr_audit_log", action, targetType, targetId, fields);
     }
 
     public R.Page<AuditLog> page(String action, String targetType, Long targetId, String operator,
@@ -110,32 +91,4 @@ public class AuditLogService {
         }
     }
 
-    private HttpServletRequest currentRequest() {
-        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
-            return attrs.getRequest();
-        }
-        return null;
-    }
-
-    private String clientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            String first = xff.split(",")[0].trim();
-            if (!first.isEmpty()) {
-                return first;
-            }
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp;
-        }
-        return request.getRemoteAddr() == null ? "" : request.getRemoteAddr();
-    }
-
-    private String truncate(String value, int max) {
-        if (value == null) {
-            return "";
-        }
-        return value.length() <= max ? value : value.substring(0, max);
-    }
 }

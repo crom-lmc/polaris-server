@@ -13,4 +13,8 @@ public class InternalResetPasswordRequest {
 
     @NotBlank(message = "新密码不能为空")
     private String newPassword;
+
+    /** 原始客户端信息仅用于审计。 */
+    private String clientIp;
+    private String userAgent;
 }

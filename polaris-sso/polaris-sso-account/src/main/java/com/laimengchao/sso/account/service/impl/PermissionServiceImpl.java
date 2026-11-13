@@ -13,6 +13,7 @@ import com.laimengchao.sso.account.mapper.SsoPermissionMapper;
 import com.laimengchao.sso.account.mapper.SsoRoleMapper;
 import com.laimengchao.sso.account.mapper.SsoRolePermissionMapper;
 import com.laimengchao.sso.account.security.AccountContextService;
+import com.laimengchao.sso.account.service.AuditLogService;
 import com.laimengchao.sso.account.service.PermissionService;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.enums.PermissionType;
@@ -46,6 +47,7 @@ public class PermissionServiceImpl implements PermissionService {
     private final SsoRolePermissionMapper rolePermissionMapper;
     private final SsoRoleMapper roleMapper;
     private final SsoApplicationMapper applicationMapper;
+    private final AuditLogService auditLogService;
 
     @Override
     public List<PermissionVO> tree(String appCode) {
@@ -101,7 +103,10 @@ public class PermissionServiceImpl implements PermissionService {
         Long parentId = resolveParentId(appCode, req);
         checkParent(parentId, appCode);
 
-        return toVO(createOrRestore(appCode, code, req, type, parentId));
+        SsoPermission permission = createOrRestore(appCode, code, req, type, parentId);
+        auditLogService.record(AuditLogService.PERMISSION_CREATE, AuditLogService.TARGET_PERMISSION,
+                permission.getId(), "appCode=" + appCode + ";code=" + code);
+        return toVO(permission);
     }
 
     @Override
@@ -147,6 +152,8 @@ public class PermissionServiceImpl implements PermissionService {
 
         applyFields(p, req.getName(), type, parentId, req.getSort(), req.getRemark());
         permissionMapper.updateById(p);
+        auditLogService.record(AuditLogService.PERMISSION_UPDATE, AuditLogService.TARGET_PERMISSION,
+                id, "appCode=" + p.getAppCode() + ";code=" + p.getCode());
         return toVO(p);
     }
 
@@ -167,6 +174,8 @@ public class PermissionServiceImpl implements PermissionService {
         rolePermissionMapper.delete(new LambdaQueryWrapper<SsoRolePermission>()
                 .eq(SsoRolePermission::getPermissionId, id));
         permissionMapper.deleteById(id);
+        auditLogService.record(AuditLogService.PERMISSION_DELETE, AuditLogService.TARGET_PERMISSION,
+                id, "appCode=" + p.getAppCode() + ";code=" + p.getCode());
     }
 
     @Override
@@ -202,6 +211,8 @@ public class PermissionServiceImpl implements PermissionService {
         }
         Asserts.isTrue(pending.isEmpty(), ErrorCode.PARAM_ERROR,
                 "以下权限点的上级码无法解析：" + pending.stream().map(CreatePermissionRequest::getCode).toList());
+        auditLogService.record(AuditLogService.PERMISSION_IMPORT, AuditLogService.TARGET_APPLICATION,
+                null, "appCode=" + app + ";created=" + created + ";total=" + items.size());
         return created;
     }
 
@@ -217,6 +228,9 @@ public class PermissionServiceImpl implements PermissionService {
                 .in(SsoRolePermission::getPermissionId, ids));
         permissionMapper.delete(new LambdaQueryWrapper<SsoPermission>()
                 .eq(SsoPermission::getAppCode, appCode));
+        auditLogService.record(AuditLogService.PERMISSION_DELETE_BY_APP,
+                AuditLogService.TARGET_APPLICATION, null,
+                "appCode=" + appCode + ";deleted=" + ids.size());
         return ids.size();
     }
 
