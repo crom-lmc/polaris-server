@@ -128,6 +128,30 @@ public class AttendanceDailyService {
         return employees.size();
     }
 
+    /** 全量重算指定月份的全员月度汇总（兜底下沉任务用）。 */
+    @Transactional(rollbackFor = Exception.class)
+    public int recalcMonthAll(YearMonth ym) {
+        if (ym == null) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "请指定月份");
+        }
+        List<Employee> employees = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                .in(Employee::getStatus, EmployeeStatus.PROBATION.getCode(), EmployeeStatus.ACTIVE.getCode()));
+        // 一次性预查该月已确认的员工集合，跳过
+        Set<Long> confirmedEmpIds = monthMapper.selectList(new LambdaQueryWrapper<AttendanceMonth>()
+                        .eq(AttendanceMonth::getMonth, ym.toString())
+                        .eq(AttendanceMonth::getConfirmed, 1))
+                .stream().map(AttendanceMonth::getEmployeeId).collect(Collectors.toSet());
+        int updated = 0;
+        for (Employee emp : employees) {
+            if (confirmedEmpIds.contains(emp.getId())) {
+                continue;
+            }
+            recalcMonth(emp, ym);
+            updated++;
+        }
+        return updated;
+    }
+
     /**
      * 请假状态变化（审批通过 / 撤销 / 销假）后，重算该员工指定日期区间内
      * <b>已生成</b>的日结果，并刷新对应月度汇总。
