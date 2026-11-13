@@ -6,7 +6,8 @@
 ## 1. 备份（服务器上执行）
 
 ```bash
-sudo /opt/polaris/src/polaris-server/deploy/scripts/safeline-backup.sh
+# 仓库内脚本统一 644，按约定用 bash 调用
+sudo bash /opt/polaris/src/polaris-server/deploy/scripts/safeline-backup.sh
 # 产物：/opt/polaris/backups/safeline-<时间戳>.tgz
 ```
 
@@ -40,7 +41,8 @@ docker cp safeline-mgt:/app/mgt ./mgt.patched-$(date +%Y%m%d)
    `cd /opt/safeline && docker compose up -d postgres`
 4. 恢复库（库为空或先 drop 重建）：
    ```bash
-   docker exec -i safeline-pg pg_restore -U safeline-ce -d safeline-ce --clean --if-exists \
+   docker exec -i safeline-pg sh -c \
+     'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -U safeline-ce -d safeline-ce --clean --if-exists' \
      < /opt/polaris/backups/safeline-<ts>/safeline-ce.dump
    ```
    若还有其它库，同样 `createdb` 后 `pg_restore`。
@@ -51,7 +53,7 @@ docker cp safeline-mgt:/app/mgt ./mgt.patched-$(date +%Y%m%d)
    sudo tar -xzf /opt/polaris/backups/safeline-<ts>/host-nginx.tgz -C /
    sudo nginx -t && sudo nginx -s reload
    ```
-8. 重新下发业务配置：`sudo deploy/scripts/server-deploy.sh --sync`（会把站点片段默认装成 tengine 代理）。
+8. 重新下发业务配置：`sudo bash /opt/polaris/src/polaris-server/deploy/scripts/server-deploy.sh --sync`（会把站点片段默认装成 tengine 代理）。
 9. 自检：脚本末尾自动 curl 9 个域名 + `127.0.0.1:8443`，全 200 即通。
 
 ## 4. 依赖关系与坑

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 雷池（SafeLine）与宿主机 nginx 配置备份。恢复步骤见 deploy/SAFELINE-RECOVERY.md。
-#   sudo deploy/scripts/safeline-backup.sh [输出目录]
+#   sudo bash deploy/scripts/safeline-backup.sh [输出目录]
 # 默认输出 /opt/polaris/backups/safeline-<时间戳>/，不写任何明文密码到本仓库。
 set -euo pipefail
 
