@@ -83,6 +83,13 @@
             <artifactId>mybatis-plus-boot-starter</artifactId>
         </dependency>
 
+        <!-- spring-tx (@Transactional + TransactionInterceptor) 由 starter-jdbc 带入；
+             只有 mybatis-plus-boot-starter 不足以带齐 spring-tx 的运行时类 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
