@@ -99,7 +99,7 @@ public class LeaveDaysCalculator {
             minutes += workMinutes(cur, start, st, end, et);
         }
         BigDecimal days = BigDecimal.valueOf(minutes)
-                .divide(BigDecimal.valueOf(WORK_MINUTES_PER_DAY), 2, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(WORK_MINUTES_PER_DAY), 3, RoundingMode.HALF_UP);
         return new Result(days, cal == null ? null : cal.warning);
     }
 
@@ -208,8 +208,8 @@ public class LeaveDaysCalculator {
             }
             if (cal.isWorkday(cur)) {
                 d = d.add(fraction);
-                // 工作日模式下按 0.5 天粒度取整，避免出现 0.25 之类不可用额度
-                d = new BigDecimal(d.setScale(1, java.math.RoundingMode.HALF_UP).toPlainString());
+                // 不再 setScale：fraction 本身就是 0/0.5/1.0 粒度，累加结果天然是 0.5 倍数，
+                // 保留原始精度到 3 位即可（LeaveDaysCalculator.divide 已用 scale=3）
             }
             cur = cur.plusDays(1);
         }

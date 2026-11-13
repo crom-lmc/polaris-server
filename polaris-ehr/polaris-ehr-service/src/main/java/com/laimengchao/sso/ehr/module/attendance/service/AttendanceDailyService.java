@@ -295,9 +295,10 @@ public class AttendanceDailyService {
         LocalDateTime firstIn = inPunch == null ? null : inPunch.getPunchTime();
         LocalDateTime lastOut = outPunch == null ? null : outPunch.getPunchTime();
 
+        // 只统计「已通过（status=1）」的请假单；已销假(4) / 已撤销(3) / 已驳回(2) 均不再影响考勤
         List<LeaveRequest> leaves = leaveMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
                 .eq(LeaveRequest::getEmployeeId, emp.getId())
-                .in(LeaveRequest::getStatus, 1, 4)
+                .eq(LeaveRequest::getStatus, 1)
                 .le(LeaveRequest::getStartDate, date)
                 .ge(LeaveRequest::getEndDate, date));
         LeaveRequest fullDayLeave = null;
@@ -435,31 +436,47 @@ public class AttendanceDailyService {
         }
         LocalDate first = ym.atDay(1);
         LocalDate last = ym.atEndOfMonth();
+        LocalDate today = LocalDate.now();
+        // 仅统计到今天：未来日期还没发生，不算实际出勤也不算缺勤
+        LocalDate actualLast = last.isBefore(today) ? last : today;
 
         Set<LocalDate> holidays = Set.copyOf(calendarMapper.holidays(first, last));
         Set<LocalDate> extras = Set.copyOf(calendarMapper.extraWorkdays(first, last));
+
+        // 整月应出勤天数（页面展示用）
         BigDecimal shouldDays = BigDecimal.ZERO;
+        // 已过工作日（截至今天），用于 actualDays 计算
+        BigDecimal pastShouldDays = BigDecimal.ZERO;
         for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
             DayOfWeek dow = d.getDayOfWeek();
             boolean weekend = dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
-            if (extras.contains(d) || (!holidays.contains(d) && !weekend)) {
+            boolean workday = extras.contains(d) || (!holidays.contains(d) && !weekend);
+            if (workday) {
                 shouldDays = shouldDays.add(BigDecimal.ONE);
+                if (!d.isAfter(actualLast)) {
+                    pastShouldDays = pastShouldDays.add(BigDecimal.ONE);
+                }
             }
         }
 
+        // Bug 1 修复：只统计已通过（status=1）的请假单；销假(4)/撤销(3)/驳回(2) 均不再计入
         BigDecimal leaveDays = BigDecimal.ZERO;
         List<LeaveRequest> leaves = leaveMapper.selectList(new LambdaQueryWrapper<LeaveRequest>()
                 .eq(LeaveRequest::getEmployeeId, emp.getId())
-                .in(LeaveRequest::getStatus, 1, 4)
+                .eq(LeaveRequest::getStatus, 1)
                 .lt(LeaveRequest::getStartDate, last.plusDays(1))
                 .ge(LeaveRequest::getEndDate, first));
         for (LeaveRequest lv : leaves) {
-            LocalDate leaveEnd = effectiveLeaveEnd(lv);
+            // 请假区间截断到今天（actualLast），未来部分不计入已过请假天数
+            LocalDate leaveEnd = lv.getEndDate();
             if (leaveEnd.isBefore(first)) {
                 continue;
             }
             LocalDate s = lv.getStartDate().isBefore(first) ? first : lv.getStartDate();
-            LocalDate e = leaveEnd.isAfter(last) ? last : leaveEnd;
+            LocalDate e = leaveEnd.isAfter(actualLast) ? actualLast : leaveEnd;
+            if (e.isBefore(s)) {
+                continue;
+            }
             String sp = s.equals(lv.getStartDate()) && lv.getStartPeriod() != null
                     ? lv.getStartPeriod() : "AM";
             String ep = e.equals(lv.getEndDate()) && lv.getEndPeriod() != null
@@ -483,16 +500,34 @@ public class AttendanceDailyService {
         BigDecimal absentHours = BigDecimal.ZERO;
         int workMinutes = 0;
         int overtimeMinutes = 0;
+        Set<LocalDate> coveredWorkdays = new java.util.HashSet<>();
         for (AttendanceDaily d : rows) {
             lateMinutes += nvl(d.getLateMinutes());
             earlyMinutes += nvl(d.getEarlyMinutes());
             absentHours = absentHours.add(d.getAbsentHours() == null ? BigDecimal.ZERO : d.getAbsentHours());
             workMinutes += nvl(d.getWorkMinutes());
             overtimeMinutes += nvl(d.getOvertimeMinutes());
+            if ("WORKDAY".equals(d.getDayType())) {
+                coveredWorkdays.add(d.getWorkDate());
+            }
         }
         absentHours = absentHours.setScale(2, RoundingMode.HALF_UP);
         BigDecimal absentDays = absentHours.divide(new BigDecimal("8"), 2, RoundingMode.HALF_UP);
-        BigDecimal actualDays = shouldDays.subtract(leaveDays).subtract(absentDays)
+
+        // Bug 2 修复：过去工作日但没有 daily 行的，整天视为缺勤
+        // （mock 只跑了前两周，后两周没 punch 也没 daily，不能被算成满勤）
+        for (LocalDate d = first; !d.isAfter(actualLast); d = d.plusDays(1)) {
+            DayOfWeek dow = d.getDayOfWeek();
+            boolean weekend = dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
+            boolean workday = extras.contains(d) || (!holidays.contains(d) && !weekend);
+            if (workday && !coveredWorkdays.contains(d)) {
+                absentDays = absentDays.add(BigDecimal.ONE);
+            }
+        }
+        absentDays = absentDays.setScale(2, RoundingMode.HALF_UP);
+
+        // 实际出勤 = 已过工作日 - 已过请假 - 缺勤（含未生成日结果的过去工作日）
+        BigDecimal actualDays = pastShouldDays.subtract(leaveDays).subtract(absentDays)
                 .max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
 
         AttendanceMonth row = new AttendanceMonth();
