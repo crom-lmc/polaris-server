@@ -85,9 +85,54 @@ if [ "$DO_SYNC" = 1 ]; then
   say "同步编排与 nginx 配置"
   install -m 644 "$DEPLOY/docker-compose.yml" "$ROOT/docker-compose.yml"
   install -m 644 "$DEPLOY/nginx/api-proxy.inc" /etc/nginx/snippets/polaris-api.inc
+  install -m 644 "$DEPLOY/nginx/security.inc" /etc/nginx/snippets/security.inc
+  install -m 644 "$DEPLOY/nginx/waf.conf" /etc/nginx/conf.d/waf.conf
+  install -m 644 "$DEPLOY/nginx/vault.conf" /etc/nginx/conf.d/vault.conf
+  install -m 644 "$DEPLOY/nginx/00-default-ssl.conf" /etc/nginx/conf.d/00-default-ssl.conf
+  install -m 644 "$DEPLOY/nginx/50-tengine-backends.conf" /etc/nginx/conf.d/50-tengine-backends.conf
+  # 站点默认经雷池 tengine(8443)；直连 9080/静态 是显式回滚路径（polaris-direct.inc）
+  install -m 644 "$DEPLOY/nginx/polaris-tengine-proxy.inc" /etc/nginx/snippets/polaris-cms-root.inc
+  install -m 644 "$DEPLOY/nginx/polaris-tengine-proxy.inc" /etc/nginx/snippets/polaris-batch1-root.inc
+  install -m 644 "$DEPLOY/nginx/polaris-tengine-proxy.inc" /etc/nginx/snippets/polaris-batch2-root.inc
+  install -m 644 "$DEPLOY/nginx/polaris-direct.inc" "$ROOT/polaris-direct.inc"
+  # zz-realip 属于 tengine 容器挂载目录，不是 /etc/nginx/conf.d
+  if [ -d /opt/safeline/resources/nginx/conf.d ]; then
+    install -m 644 "$DEPLOY/nginx/zz-realip.conf" /opt/safeline/resources/nginx/conf.d/zz-realip.conf
+  fi
+  # 宿主机 nginx.conf 只幂等补缺失的限流 zone / bad_bot map / 日志格式，不整文件覆盖
+  bash "$DEPLOY/scripts/apply-nginx-base.sh" "$DEPLOY/nginx/nginx-base.inc"
   DOMAIN="$DOMAIN" envsubst '${DOMAIN}' < "$DEPLOY/nginx/polaris.conf.tpl" > /tmp/polaris.conf
   install -m 644 /tmp/polaris.conf /etc/nginx/conf.d/polaris.conf
   nginx -t && nginx -s reload
+
+  # 发版自检：只告警、不自动回滚，保留现场
+  say "发版自检（9 站点 + tengine 8443）"
+  FAIL=0
+  for name in polaris-sso polaris-ehr polaris-cms polaris-settings polaris-job \
+              polaris-portal portal-blog-admin portal-blog-web vault; do
+    code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$name.$DOMAIN:443:127.0.0.1" "https://$name.$DOMAIN/" || echo 000)
+    printf '  %-20s %s\n' "$name" "$code"
+    [ "$code" = "200" ] || FAIL=1
+  done
+  WAF=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: polaris-cms.$DOMAIN" http://127.0.0.1:8443/ || echo 000)
+  printf '  %-20s %s\n' "tengine-8443" "$WAF"
+  [ "$WAF" = "200" ] || FAIL=1
+  if [ "$FAIL" != 0 ]; then
+    echo "!!! 自检失败：配置已生效，未自动回滚；请保留现场并按下面命令回滚"
+    if [ -f "$ROOT/polaris-direct.inc" ]; then
+      echo "  install -m 644 $ROOT/polaris-direct.inc /etc/nginx/snippets/polaris-batch1-root.inc"
+      echo "  install -m 644 $ROOT/polaris-direct.inc /etc/nginx/snippets/polaris-batch2-root.inc"
+      echo "  install -m 644 $ROOT/polaris-direct.inc /etc/nginx/snippets/polaris-cms-root.inc"
+    else
+      echo "  # $ROOT/polaris-direct.inc 尚未生成（首次发版前），用下面三条写入直连内容："
+      echo "  echo 'try_files \$uri \$uri/ /index.html;' | tee /etc/nginx/snippets/polaris-batch1-root.inc"
+      echo "  echo 'try_files \$uri \$uri/ /index.html;' | tee /etc/nginx/snippets/polaris-batch2-root.inc"
+      echo "  echo 'try_files \$uri \$uri/ /index.html;' | tee /etc/nginx/snippets/polaris-cms-root.inc"
+    fi
+    echo "  nginx -t && nginx -s reload"
+    exit 1
+  fi
+  echo "自检通过：9 域名均 200，tengine 8443 可达"
 fi
 
 say "5/5 重启服务"
