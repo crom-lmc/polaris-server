@@ -133,6 +133,7 @@ public class ApprovalCenterController {
 
     /** 终止：管理员强制结束在途单 */
     @PostMapping("/{id}/terminate")
+    @Permit(PermissionConstants.APPROVAL_OPS)
     public R<JsonNode> terminate(@PathVariable Long id,
                                  @RequestBody(required = false) ApprovalActionRequest req) {
         return R.ok(approvalClient.terminate(id, accountId(), operatorName(), orEmpty(req)));

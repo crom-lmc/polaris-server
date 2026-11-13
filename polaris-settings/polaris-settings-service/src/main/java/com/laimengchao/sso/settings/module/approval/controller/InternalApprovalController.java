@@ -443,7 +443,7 @@ public class InternalApprovalController {
     @PostMapping("/instances/{id}/terminate")
     public R<ApprovalInstanceVO> terminate(@PathVariable Long id, @RequestBody ApprovalActionRequest req) {
         ApprInstance inst = engine.terminate(id, req);
-        return R.ok(queryService.detail(inst.getId(), req.getOperatorId()));
+        return R.ok(queryService.toVO(inst, req.getOperatorId()));
     }
 
     /** 终审回调失败的，人工重试一次 */

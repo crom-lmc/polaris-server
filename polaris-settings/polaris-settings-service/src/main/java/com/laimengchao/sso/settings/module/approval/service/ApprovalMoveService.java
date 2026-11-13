@@ -221,7 +221,7 @@ public class ApprovalMoveService {
         if (!TaskStatus.PENDING.getCode().equals(task.getStatus())) {
             throw new BizException(SettingsErrorCode.APPROVAL_TASK_DONE);
         }
-        if (operatorId != null && !operatorId.equals(task.getApproverId())) {
+        if (!task.getApproverId().equals(operatorId)) {
             throw new BizException(SettingsErrorCode.APPROVAL_TASK_NOT_MINE);
         }
         ApprInstance inst = engine.require(task.getInstanceId());

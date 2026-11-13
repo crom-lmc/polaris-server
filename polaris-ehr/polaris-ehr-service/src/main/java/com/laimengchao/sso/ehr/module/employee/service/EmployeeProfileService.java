@@ -132,6 +132,7 @@ public class EmployeeProfileService {
         if (row == null || !row.getEmployeeId().equals(employeeId)) {
             throw new BizException(ErrorCode.NOT_FOUND, "银行卡不存在");
         }
+        requireAccessible(employeeId);
         return row;
     }
 
@@ -259,6 +260,14 @@ public class EmployeeProfileService {
         return emp;
     }
 
+    private Employee requireAccessible(Long employeeId) {
+        Employee emp = requireEmployeeExists(employeeId);
+        if (!dataScope.canAccess(emp)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权维护该员工子档案");
+        }
+        return emp;
+    }
+
     /**
      * 写子档案前的状态闸门：只有 待入职(10) / 试用期(30) / 在职(40) 允许维护档案信息。
      * <p>
@@ -266,7 +275,7 @@ public class EmployeeProfileService {
      * 这三态改档案会让审批结论与档案对不上，统一拒绝。
      */
     private void requireWritable(Long employeeId) {
-        Employee emp = requireEmployeeExists(employeeId);
+        Employee emp = requireAccessible(employeeId);
         EmployeeStatus st = EmployeeStatus.of(emp.getStatus());
         boolean writable = st == EmployeeStatus.PENDING
                 || st == EmployeeStatus.PROBATION
@@ -291,6 +300,7 @@ public class EmployeeProfileService {
         if (!ownId.equals(employeeId)) {
             throw new BizException(ErrorCode.NOT_FOUND, message);
         }
+        requireAccessible(employeeId);
         return row;
     }
 

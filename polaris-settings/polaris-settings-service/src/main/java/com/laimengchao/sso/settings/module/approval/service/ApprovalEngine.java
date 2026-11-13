@@ -441,7 +441,7 @@ public class ApprovalEngine {
         if (!TaskStatus.PENDING.getCode().equals(task.getStatus())) {
             throw new BizException(SettingsErrorCode.APPROVAL_TASK_DONE);
         }
-        if (req.getOperatorId() != null && !req.getOperatorId().equals(task.getApproverId())) {
+        if (!task.getApproverId().equals(req.getOperatorId())) {
             throw new BizException(SettingsErrorCode.APPROVAL_TASK_NOT_MINE);
         }
         // 多层分支下两条尾任务可能同时触发汇合，先锁实例行把「读状态→改任务→推进」串行化
@@ -778,7 +778,7 @@ public class ApprovalEngine {
         if (!InstanceStatus.RUNNING.getCode().equals(inst.getStatus())) {
             throw new BizException(SettingsErrorCode.APPROVAL_INSTANCE_FINISHED);
         }
-        if (req.getOperatorId() != null && !req.getOperatorId().equals(inst.getApplicantId())) {
+        if (!inst.getApplicantId().equals(req.getOperatorId())) {
             throw new BizException(SettingsErrorCode.APPROVAL_NOT_APPLICANT);
         }
         cancelAll(instanceId, "发起人撤回");

@@ -2,6 +2,8 @@ package com.laimengchao.sso.settings.module.approval.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laimengchao.sso.common.BizException;
+import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.settings.module.approval.constant.InstanceStatus;
 import com.laimengchao.sso.settings.module.approval.constant.TaskStatus;
 import com.laimengchao.sso.settings.module.approval.entity.ApprAction;
@@ -46,7 +48,22 @@ public class ApprovalQueryService {
     /** 实例详情：步骤条 + 分支任务 + 表单快照 */
     public ApprovalInstanceVO detail(Long instanceId, Long viewerId) {
         ApprInstance inst = engine.require(instanceId);
+        requireParticipant(inst, viewerId);
         return toVO(inst, viewerId);
+    }
+
+    /** 详情和渲染上下文共用同一参与人口径：申请人、审批/抄送人、委托人均可查看。 */
+    public void requireParticipant(ApprInstance inst, Long viewerId) {
+        if (viewerId != null && viewerId.equals(inst.getApplicantId())) {
+            return;
+        }
+        Long participants = viewerId == null ? 0L : taskMapper.selectCount(Wrappers.<ApprTask>lambdaQuery()
+                .eq(ApprTask::getInstanceId, inst.getId())
+                .and(w -> w.eq(ApprTask::getApproverId, viewerId)
+                        .or().eq(ApprTask::getDelegateOwnerId, viewerId)));
+        if (participants == null || participants == 0) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权查看该审批单");
+        }
     }
 
     /**
