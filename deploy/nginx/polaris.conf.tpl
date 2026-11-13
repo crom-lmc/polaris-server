@@ -50,8 +50,9 @@ server {
 
     include /etc/nginx/snippets/polaris-api.inc;
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch2-root.inc;
     }
 }
 
@@ -75,8 +76,9 @@ server {
         proxy_set_header Host $host;
     }
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch2-root.inc;
     }
 }
 
@@ -100,8 +102,9 @@ server {
         proxy_set_header Host $host;
     }
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-cms-root.inc;
     }
 }
 
@@ -120,8 +123,9 @@ server {
 
     include /etc/nginx/snippets/polaris-api.inc;
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch1-root.inc;
     }
 }
 
@@ -140,8 +144,9 @@ server {
 
     include /etc/nginx/snippets/polaris-api.inc;
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch2-root.inc;
     }
 }
 
@@ -165,8 +170,9 @@ server {
         proxy_set_header Host $host;
     }
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch1-root.inc;
     }
 }
 
@@ -191,8 +197,9 @@ server {
         proxy_set_header Host $host;
     }
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch1-root.inc;
     }
 }
 
@@ -217,8 +224,9 @@ server {
         proxy_set_header Host $host;
     }
 
+    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
-        try_files $uri $uri/ /index.html;
+        include /etc/nginx/snippets/polaris-batch1-root.inc;
     }
 }
 
