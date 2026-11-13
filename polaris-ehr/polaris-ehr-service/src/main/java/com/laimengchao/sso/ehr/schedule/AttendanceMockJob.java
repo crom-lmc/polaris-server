@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
 /**
- * 每日 01:00 生成前一天的模拟考勤数据，受配置中心埋点 ehr.attendance.mock.enabled 开关控制。
+ * 每日 02:00 生成前一天的模拟考勤数据，受配置中心埋点 ehr.attendance.mock.enabled 开关控制。
  * <p>
- * 触发由调度中心配置（cron 0 0 1 * * ?）。
+ * 触发由调度中心配置（cron 0 0 2 * * ?）。
  */
 @Slf4j
 @Component
