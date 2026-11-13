@@ -14,6 +14,8 @@ x-base: &base
   environment:
     TZ: Asia/Shanghai
     SERVER_ADDRESS: 127.0.0.1
+    # 服务间 /internal/** 准入令牌：缺失时直接启动失败，避免内部接口静默裸奔
+    SSO_INTERNAL_TOKEN: ${SSO_INTERNAL_TOKEN:?SSO_INTERNAL_TOKEN 未配置}
     # 最低内存档：48/128 堆 + 112 元空间 + 24 代码缓存，串行 GC，单服务实测常驻约 230MB
     JAVA_TOOL_OPTIONS: >-
       -Xms48m -Xmx128m -XX:MaxMetaspaceSize=112m -XX:ReservedCodeCacheSize=24m

@@ -17,7 +17,8 @@ sso:
     access-ttl-seconds: 7200        # 2h, worst-case logout delay
     refresh-ttl-seconds: 2592000    # 30d, rotated on every use
     account-base-url: lb://sso-account
-    internal-token: ENC(9iJGPbUP9f09u4VfJSfZi1SVu40A1IyvoKrOZ9i3ZPYExpr8cvE2vmr8FVH5FX+eil5gebCp1vb9Bod/HtOndnfXK7pEY5dvYDD7UA==)
+    # 与各服务 /internal/** 校验共用同一令牌，来源统一为部署环境变量
+    internal-token: ${SSO_INTERNAL_TOKEN:}
     account-timeout-millis: 3000
     # revocation list storage: redis so it is shared and survives restarts
     revocation-store: redis

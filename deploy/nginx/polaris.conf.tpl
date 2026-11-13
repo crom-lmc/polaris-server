@@ -8,6 +8,13 @@ upstream polaris_gateway {
     keepalive 16;
 }
 
+# 所有站点统一继承安全响应头；always 确保错误响应同样携带。
+add_header X-Frame-Options "DENY" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+add_header Strict-Transport-Security "max-age=31536000" always;
+
 server {
     listen 80;
     server_name
