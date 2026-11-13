@@ -37,7 +37,14 @@ public class AttendanceMockJob implements JobHandler {
         if (!embedPointReader.flag(EMBED_MOCK_ENABLED, "enabled", false)) {
             return JobResult.ok("模拟考勤开关未开启，跳过");
         }
-        attendanceMockService.run(LocalDate.now().minusDays(1));
-        return JobResult.ok();
+        LocalDate target;
+        String dateParam = ctx.param("date");
+        if (dateParam != null && !dateParam.isBlank()) {
+            target = LocalDate.parse(dateParam);
+        } else {
+            target = LocalDate.now().minusDays(1);
+        }
+        attendanceMockService.run(target);
+        return JobResult.ok("mock 日期=" + target);
     }
 }

@@ -30,8 +30,14 @@ public class AttendanceDailyJob implements JobHandler {
 
     @Override
     public JobResult execute(JobContext ctx) {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        int rows = dailyService.generate(yesterday);
-        return JobResult.ok("日期=" + yesterday + " 日结果重算完成，共 " + rows + " 行");
+        LocalDate target;
+        String dateParam = ctx.param("date");
+        if (dateParam != null && !dateParam.isBlank()) {
+            target = LocalDate.parse(dateParam);
+        } else {
+            target = LocalDate.now().minusDays(1);
+        }
+        int rows = dailyService.generate(target);
+        return JobResult.ok("日期=" + target + " 日结果重算完成，共 " + rows + " 行");
     }
 }
