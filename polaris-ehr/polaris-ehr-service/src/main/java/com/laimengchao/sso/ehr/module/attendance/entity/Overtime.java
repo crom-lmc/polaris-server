@@ -8,6 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /** 加班申请：审批通过后按小时折算调休额度。 */
 @Data
@@ -21,8 +22,13 @@ public class Overtime {
     private Long employeeId;
     private Long accountId;
     private LocalDate workDate;
+    /** 加班开始时间（HH:mm，不含日期） */
+    private LocalTime startTime;
+    /** 加班结束时间（HH:mm） */
+    private LocalTime endTime;
+    /** 有效加班小时数（扣除当天工作时段+午休后，0.5 小时粒度） */
     private BigDecimal hours;
-    /** NORMAL 工作日 / HOLIDAY 节假日 / RESTDAY 休息日 */
+    /** NORMAL 工作日 / HOLIDAY 节假日 / RESTDAY 休息日（由工作日历自动判定，不再手动选择） */
     private String type;
     private String reason;
     /** 0 待审批 / 1 已通过 / 2 已驳回 / 3 已撤销 */

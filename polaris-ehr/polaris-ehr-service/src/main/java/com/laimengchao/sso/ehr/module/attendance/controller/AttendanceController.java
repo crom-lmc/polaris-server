@@ -5,6 +5,7 @@ import com.laimengchao.sso.ehr.constant.PermissionCodes;
 import com.laimengchao.sso.ehr.module.attendance.dto.OvertimeRequest;
 import com.laimengchao.sso.ehr.module.attendance.service.AttendanceService;
 import com.laimengchao.sso.ehr.module.attendance.vo.AttendanceMonthVO;
+import com.laimengchao.sso.ehr.module.attendance.vo.OvertimePreviewVO;
 import com.laimengchao.sso.ehr.module.attendance.vo.OvertimeVO;
 import com.laimengchao.sso.ehr.security.Permit;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,13 @@ public class AttendanceController {
     @Permit(PermissionCodes.OVERTIME_VIEW)
     public R<OvertimeVO> submit(@RequestBody OvertimeRequest req) {
         return R.ok(attendanceService.submit(req));
+    }
+
+    /** 加班申请试算（前端实时预览，与 submit 口径完全一致但不入库） */
+    @PostMapping("/overtimes/preview")
+    @Permit(PermissionCodes.OVERTIME_VIEW)
+    public R<OvertimePreviewVO> preview(@RequestBody OvertimeRequest req) {
+        return R.ok(attendanceService.preview(req));
     }
 
     @PostMapping("/overtimes/{id}/cancel")
