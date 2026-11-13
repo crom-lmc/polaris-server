@@ -27,6 +27,8 @@ scp (Join-Path $DeployRoot 'nginx\50-tengine-backends.conf') "${target}:$Remote/
 scp (Join-Path $DeployRoot 'nginx\zz-realip.conf')   "${target}:$Remote/zz-realip.conf"
 scp (Join-Path $DeployRoot 'nginx\vault.conf')       "${target}:$Remote/vault.conf"
 scp (Join-Path $DeployRoot 'nginx\00-default-ssl.conf') "${target}:$Remote/00-default-ssl.conf"
+scp (Join-Path $DeployRoot 'nginx\00-default-ports.conf') "${target}:$Remote/00-default-ports.conf"
+scp (Join-Path $DeployRoot 'nginx\nacos.conf')       "${target}:$Remote/nacos.conf"
 scp (Join-Path $DeployRoot 'nginx\nginx-base.inc')   "${target}:$Remote/nginx-base.inc"
 scp (Join-Path $DeployRoot 'scripts\apply-nginx-base.sh') "${target}:$Remote/apply-nginx-base.sh"
 scp (Join-Path $DeployRoot 'nginx\polaris-tengine-proxy.inc') "${target}:$Remote/polaris-tengine-proxy.inc"
@@ -61,6 +63,8 @@ cp security.inc /etc/nginx/snippets/security.inc
 cp waf.conf /etc/nginx/conf.d/waf.conf
 cp vault.conf /etc/nginx/conf.d/vault.conf
 cp 00-default-ssl.conf /etc/nginx/conf.d/00-default-ssl.conf
+cp 00-default-ports.conf /etc/nginx/conf.d/00-default-ports.conf
+cp nacos.conf /etc/nginx/conf.d/nacos.conf
 cp 50-tengine-backends.conf /etc/nginx/conf.d/50-tengine-backends.conf
 # 宿主机 nginx.conf 只幂等补缺失的限流 zone / bad_bot map / 日志格式，不整文件覆盖
 bash apply-nginx-base.sh nginx-base.inc
