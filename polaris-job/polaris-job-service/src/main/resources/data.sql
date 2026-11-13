@@ -20,8 +20,12 @@ SELECT 910000000000000004, 'ehr', '年假结转到期提醒', 'annualLeaveCarryo
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'annualLeaveCarryoverNotice' AND deleted = 0);
 
 INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cron_expr, interval_sec, timeout_sec, retry_times, retry_interval_sec, route_strategy, block_strategy, params, status, next_fire_time, lock_version)
-SELECT 910000000000000005, 'ehr', '模拟考勤生成', 'attendanceMock', '每日 01:00 生成昨日模拟考勤（受配置埋点开关控制）', 'CRON', '0 0 1 * * ?', NULL, 1800, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
+SELECT 910000000000000005, 'ehr', '模拟考勤生成', 'attendanceMock', '每日 02:00 生成昨日模拟考勤（受配置埋点开关控制）', 'CRON', '0 0 2 * * ?', NULL, 1800, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'attendanceMock' AND deleted = 0);
+
+INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cron_expr, interval_sec, timeout_sec, retry_times, retry_interval_sec, route_strategy, block_strategy, params, status, next_fire_time, lock_version)
+SELECT 910000000000000012, 'ehr', '日考勤结果兜底重算', 'attendanceDaily', '每日 03:00 重算昨日全员日结果+月度汇总（独立于模拟考勤，不受 mock 开关控制）', 'CRON', '0 0 3 * * ?', NULL, 1800, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM job_info WHERE app_code = 'ehr' AND handler = 'attendanceDaily' AND deleted = 0);
 
 INSERT INTO job_info (id, app_code, name, handler, description, trigger_type, cron_expr, interval_sec, timeout_sec, retry_times, retry_interval_sec, route_strategy, block_strategy, params, status, next_fire_time, lock_version)
 SELECT 910000000000000006, 'ehr', '次年日历维护提醒', 'calendarMaintainRemind', '每日 09:30 检查次年考勤日历是否需要维护', 'CRON', '0 30 9 * * ?', NULL, 900, 0, 30, 'ROUND', 'DISCARD', '{}', 1, NULL, 0
