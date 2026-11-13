@@ -19,6 +19,7 @@ import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.common.security.HtmlSanitizer;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.CodeRuleApi;
@@ -248,7 +249,7 @@ public class AnnouncementService {
         if (title.isEmpty()) {
             throw new BizException(ErrorCode.PARAM_ERROR, "标题不能为空");
         }
-        String content = req.getContent() == null ? "" : req.getContent();
+        String content = HtmlSanitizer.cleanRichText(req.getContent());
         if (stripHtml(content).isEmpty()) {
             throw new BizException(ErrorCode.PARAM_ERROR, "通知内容不能为空");
         }

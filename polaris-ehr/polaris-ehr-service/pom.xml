@@ -24,6 +24,12 @@
             <groupId>com.laimengchao.sso</groupId>
             <artifactId>polaris-common</artifactId>
         </dependency>
+        <!-- 通知富文本复用 common 的 HtmlSanitizer 白名单清洗 -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
         <!-- 调度中心客户端：上报 JobHandler 清单并接收中心触发 -->
         <dependency>
             <groupId>com.laimengchao.sso</groupId>

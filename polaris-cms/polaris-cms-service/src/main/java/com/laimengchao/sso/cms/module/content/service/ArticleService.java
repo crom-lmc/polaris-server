@@ -20,6 +20,7 @@ import com.laimengchao.sso.cms.module.content.mapper.ArticleMapper;
 import com.laimengchao.sso.cms.module.content.mapper.ArticleVersionMapper;
 import com.laimengchao.sso.cms.module.content.mapper.CategoryMapper;
 import com.laimengchao.sso.cms.module.content.mapper.TagMapper;
+import com.laimengchao.sso.common.security.HtmlSanitizer;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
 import com.laimengchao.sso.settings.client.dto.ApprovalActionDTO;
@@ -28,7 +29,6 @@ import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Safelist;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -629,10 +629,7 @@ public class ArticleService {
         if (!StringUtils.hasText(html)) {
             return "";
         }
-        return Jsoup.clean(html, Safelist.basicWithImages()
-                .addTags("h1", "h2", "h3", "h4", "h5", "h6", "p", "pre", "blockquote", "table",
-                        "thead", "tbody", "tr", "th", "td", "hr", "del", "figure", "figcaption")
-                .addAttributes(":all", "style", "class", "target"));
+        return HtmlSanitizer.cleanRichText(html);
     }
 
     private String excerpt(String text, int max) {
