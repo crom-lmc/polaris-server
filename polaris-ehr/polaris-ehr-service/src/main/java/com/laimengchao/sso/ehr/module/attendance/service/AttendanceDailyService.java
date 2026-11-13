@@ -25,6 +25,7 @@ import com.laimengchao.sso.ehr.module.attendance.mapper.AttendanceMonthMapper;
 import com.laimengchao.sso.ehr.module.attendance.mapper.AttendancePunchMapper;
 import com.laimengchao.sso.ehr.module.attendance.mapper.OvertimeMapper;
 import com.laimengchao.sso.ehr.module.attendance.vo.AttendanceDailyVO;
+import com.laimengchao.sso.ehr.module.attendance.vo.AttendancePunchVO;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
@@ -123,6 +124,45 @@ public class AttendanceDailyService {
         return employees.size();
     }
 
+    /**
+     * 请假状态变化（审批通过 / 撤销 / 销假）后，重算该员工指定日期区间内
+     * <b>已生成</b>的日结果，并刷新对应月度汇总。
+     * <p>
+     * 只刷新已有的行，不给尚未生成（如未来日期）补行，避免凭空产生缺卡提醒；
+     * 已确认锁定的月份按既有规则跳过。日结果是派生数据，调用方需自行兜底异常。
+     */
+    public void recalculate(Long employeeId, LocalDate from, LocalDate to) {
+        if (employeeId == null || from == null || to == null || to.isBefore(from)) {
+            return;
+        }
+        Employee emp = employeeMapper.selectById(employeeId);
+        if (emp == null || !workingOn(emp, to)) {
+            return;
+        }
+        List<AttendanceDaily> rows = dailyMapper.selectList(new LambdaQueryWrapper<AttendanceDaily>()
+                .eq(AttendanceDaily::getEmployeeId, employeeId)
+                .ge(AttendanceDaily::getWorkDate, from)
+                .le(AttendanceDaily::getWorkDate, to)
+                .orderByAsc(AttendanceDaily::getWorkDate));
+        Set<YearMonth> months = new LinkedHashSet<>();
+        for (AttendanceDaily row : rows) {
+            YearMonth ym = YearMonth.from(row.getWorkDate());
+            if (monthConfirmed(employeeId, ym)) {
+                continue;
+            }
+            generateForEmployee(emp, row.getWorkDate());
+            months.add(ym);
+        }
+        months.forEach(ym -> recalcMonth(emp, ym));
+    }
+
+    /** 与 {@link #generate(LocalDate)} 同一口径：仅试用期 / 在职，且已入职 */
+    private boolean workingOn(Employee emp, LocalDate date) {
+        EmployeeStatus status = EmployeeStatus.of(emp.getStatus());
+        return status != null && status.isWorking()
+                && (emp.getHireDate() == null || !emp.getHireDate().isAfter(date));
+    }
+
     /* ---------- 查询 ---------- */
 
     public R.Page<AttendanceDailyVO> page(String month, Long employeeId, String status,
@@ -166,7 +206,7 @@ public class AttendanceDailyService {
         return rows.stream().map(d -> toVO(d, nvl(emp.getName()))).toList();
     }
 
-    public R.Page<AttendancePunch> punches(Long employeeId, LocalDate date, int page, int size) {
+    public R.Page<AttendancePunchVO> punches(Long employeeId, LocalDate date, int page, int size) {
         LambdaQueryWrapper<AttendancePunch> w = new LambdaQueryWrapper<>();
         if (employeeId != null) {
             w.eq(AttendancePunch::getEmployeeId, requireAccessible(employeeId).getId());
@@ -183,7 +223,13 @@ public class AttendanceDailyService {
         }
         w.orderByDesc(AttendancePunch::getPunchTime).orderByDesc(AttendancePunch::getId);
         IPage<AttendancePunch> ip = punchMapper.selectPage(new Page<>(page, size), w);
-        return R.Page.of(ip.getRecords(), ip.getTotal());
+        // 打卡表只存员工 ID，翻页后按本页 ID 批量回填姓名与工号，避免逐行查询
+        Map<Long, Employee> emps = employees(ip.getRecords().stream()
+                .map(AttendancePunch::getEmployeeId).collect(Collectors.toSet()));
+        List<AttendancePunchVO> rows = ip.getRecords().stream()
+                .map(p -> toPunchVO(p, emps.get(p.getEmployeeId())))
+                .toList();
+        return R.Page.of(rows, ip.getTotal());
     }
 
     /** HR 手工补录打卡：落 source=MANUAL，然后重算当天。 */
@@ -408,8 +454,12 @@ public class AttendanceDailyService {
                 .lt(LeaveRequest::getStartDate, last.plusDays(1))
                 .ge(LeaveRequest::getEndDate, first));
         for (LeaveRequest lv : leaves) {
+            LocalDate leaveEnd = effectiveLeaveEnd(lv);
+            if (leaveEnd.isBefore(first)) {
+                continue;
+            }
             LocalDate s = lv.getStartDate().isBefore(first) ? first : lv.getStartDate();
-            LocalDate e = lv.getEndDate().isAfter(last) ? last : lv.getEndDate();
+            LocalDate e = leaveEnd.isAfter(last) ? last : leaveEnd;
             String sp = s.equals(lv.getStartDate()) && lv.getStartPeriod() != null
                     ? lv.getStartPeriod() : "AM";
             String ep = e.equals(lv.getEndDate()) && lv.getEndPeriod() != null
@@ -539,19 +589,32 @@ public class AttendanceDailyService {
         return Math.max(0, Duration.between(start, end).toMinutes());
     }
 
+    /**
+     * 请假对考勤生效的结束日期：已销假（status=4）且填了返岗日期的，返岗当天起不再算请假，
+     * 否则仍以原结束日期为准。
+     */
+    private LocalDate effectiveLeaveEnd(LeaveRequest lv) {
+        if (Integer.valueOf(4).equals(lv.getStatus()) && lv.getReturnDate() != null
+                && lv.getReturnDate().isBefore(lv.getEndDate())) {
+            return lv.getReturnDate().minusDays(1);
+        }
+        return lv.getEndDate();
+    }
+
     private boolean coversFullDay(LeaveRequest lv, LocalDate date) {
-        if (date.isBefore(lv.getStartDate()) || date.isAfter(lv.getEndDate())) {
+        LocalDate end = effectiveLeaveEnd(lv);
+        if (date.isBefore(lv.getStartDate()) || date.isAfter(end)) {
             return false;
         }
         String sp = lv.getStartPeriod() == null ? "AM" : lv.getStartPeriod();
-        String ep = lv.getEndPeriod() == null ? "PM" : lv.getEndPeriod();
-        if (date.equals(lv.getStartDate()) && date.equals(lv.getEndDate())) {
+        String ep = end.equals(lv.getEndDate()) && lv.getEndPeriod() != null ? lv.getEndPeriod() : "PM";
+        if (date.equals(lv.getStartDate()) && date.equals(end)) {
             return "AM".equals(sp) && "PM".equals(ep);
         }
         if (date.equals(lv.getStartDate())) {
             return "AM".equals(sp);
         }
-        if (date.equals(lv.getEndDate())) {
+        if (date.equals(end)) {
             return "PM".equals(ep);
         }
         return true;
@@ -560,11 +623,12 @@ public class AttendanceDailyService {
     private int leaveMinutesOn(List<LeaveRequest> leaves, LocalDate date, int standardMinutes) {
         BigDecimal days = BigDecimal.ZERO;
         for (LeaveRequest lv : leaves) {
-            if (date.isBefore(lv.getStartDate()) || date.isAfter(lv.getEndDate())) {
+            LocalDate end = effectiveLeaveEnd(lv);
+            if (date.isBefore(lv.getStartDate()) || date.isAfter(end)) {
                 continue;
             }
             LocalDate s = lv.getStartDate().isBefore(date) ? date : lv.getStartDate();
-            LocalDate e = lv.getEndDate().isAfter(date) ? date : lv.getEndDate();
+            LocalDate e = end.isAfter(date) ? date : end;
             String sp = s.equals(lv.getStartDate()) && lv.getStartPeriod() != null
                     ? lv.getStartPeriod() : "AM";
             String ep = e.equals(lv.getEndDate()) && lv.getEndPeriod() != null
@@ -648,6 +712,34 @@ public class AttendanceDailyService {
             map.put(e.getId(), nvl(e.getName()));
         }
         return map;
+    }
+
+    private Map<Long, Employee> employees(Set<Long> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Employee> map = new HashMap<>();
+        for (Employee e : employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                .in(Employee::getId, ids))) {
+            map.put(e.getId(), e);
+        }
+        return map;
+    }
+
+    private AttendancePunchVO toPunchVO(AttendancePunch p, Employee emp) {
+        AttendancePunchVO vo = new AttendancePunchVO();
+        vo.setId(p.getId());
+        vo.setEmployeeId(p.getEmployeeId());
+        vo.setEmployeeName(emp == null ? "" : nvl(emp.getName()));
+        vo.setEmployeeNo(emp == null ? "" : nvl(emp.getEmpNo()));
+        vo.setPunchTime(p.getPunchTime());
+        vo.setPunchType(p.getPunchType());
+        vo.setSource(p.getSource());
+        vo.setDeviceNo(nvl(p.getDeviceNo()));
+        vo.setLocation(nvl(p.getLocation()));
+        vo.setRemark(nvl(p.getRemark()));
+        vo.setCreatedAt(p.getCreatedAt());
+        return vo;
     }
 
     private AttendanceDailyVO toVO(AttendanceDaily d, String employeeName) {

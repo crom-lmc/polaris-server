@@ -10,7 +10,7 @@
       <option name="IS_IGNORE_MISSING_FILES" value="false" />
       <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
       <ENTRIES>
-        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" PATH="F:/code/polaris-server/polaris-nacos/.env" />
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" PATH="F:/code/sso/tmp/repo/polaris-server/polaris-nacos/.env" />
       </ENTRIES>
     </EXTENSION>
     <envs>
@@ -19,9 +19,9 @@
       <env name="SSO_NACOS_ADDR" value="127.0.0.1:18848" />
       <env name="SSO_NACOS_NAMESPACE" value="sso-ms-local" />
       <env name="SSO_NACOS_GROUP" value="SSO" />
-      <env name="SSO_CONF_KEY_FILE" value="F:/code/polaris-server/polaris-nacos/.secrets/conf-key.txt" />
-      <env name="SSO_JWT_PRIVATE_KEY" value="file:F:/code/polaris-server/polaris-nacos/.secrets/jwt-private.pem" />
-      <env name="SSO_JWT_PUBLIC_KEY" value="file:F:/code/polaris-server/polaris-nacos/.secrets/jwt-public.pem" />
+      <env name="SSO_CONF_KEY_FILE" value="F:/code/sso/tmp/repo/polaris-server/polaris-nacos/.secrets/conf-key.txt" />
+      <env name="SSO_JWT_PRIVATE_KEY" value="file:F:/code/sso/tmp/repo/polaris-server/polaris-nacos/.secrets/jwt-private.pem" />
+      <env name="SSO_JWT_PUBLIC_KEY" value="file:F:/code/sso/tmp/repo/polaris-server/polaris-nacos/.secrets/jwt-public.pem" />
     </envs>
     <method v="2">
       <option name="Make" enabled="true" />

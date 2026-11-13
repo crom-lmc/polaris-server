@@ -7,6 +7,7 @@ import com.laimengchao.sso.ehr.module.leave.dto.LeaveApplyRequest;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveService;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeavePolicyVO;
+import com.laimengchao.sso.ehr.module.leave.vo.LeavePreviewVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
 import com.laimengchao.sso.ehr.security.Permit;
 import jakarta.validation.Valid;
@@ -109,6 +110,18 @@ public class AdminLeaveController {
     public R<LeavePolicyVO> plan(@RequestParam String leaveType,
                                  @RequestParam String startDate) {
         return R.ok(leaveService.plan(leaveType, startDate));
+    }
+
+    /** 申请弹窗「本次请假时长」试算：与提交共用同一套天数计算口径 */
+    @GetMapping("/preview")
+    @Permit(PermissionCodes.LEAVE_APPLY)
+    public R<LeavePreviewVO> preview(@RequestParam String leaveType,
+                                     @RequestParam String startDate,
+                                     @RequestParam String endDate,
+                                     @RequestParam(required = false) String startTime,
+                                     @RequestParam(required = false) String endTime,
+                                     @RequestParam(required = false) String dayMode) {
+        return R.ok(leaveService.preview(leaveType, startDate, endDate, startTime, endTime, dayMode));
     }
 
     public record TypeOption(String value, String label) {

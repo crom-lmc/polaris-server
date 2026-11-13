@@ -15,6 +15,7 @@ import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
+import com.laimengchao.sso.ehr.module.attendance.service.AttendanceDailyService;
 import com.laimengchao.sso.ehr.module.attachment.entity.Attachment;
 import com.laimengchao.sso.ehr.module.attachment.service.AttachmentService;
 import com.laimengchao.sso.ehr.module.leave.dto.EarlyReturnRequest;
@@ -27,6 +28,7 @@ import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveAttachmentVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveDelegateOptionsVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeavePolicyVO;
+import com.laimengchao.sso.ehr.module.leave.vo.LeavePreviewVO;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.entity.OrgType;
@@ -117,6 +119,8 @@ public class LeaveService {
     private final AttachmentService attachmentService;
     private final LeaveAttachmentMapper attachmentMapper;
     private final BizNoService bizNoService;
+    /** 请假终态后同步重算考勤日结果，保证「我的考勤」与请假单状态一致 */
+    private final AttendanceDailyService attendanceDailyService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -163,6 +167,32 @@ public class LeaveService {
         vo.setDays(policy.days());
         vo.setDayMode(policy.dayMode());
         vo.setEndDate(daysCalculator.endDateFor(parseDate(startDateRaw), policy.days(), policy.dayMode()));
+        return vo;
+    }
+
+    /**
+     * 申请弹窗「本次请假时长」试算：与提交走同一个 {@link LeaveDaysCalculator}，
+     * 城市政策类假期直接返回政策固定天数，保证展示值与最终落库值口径一致。
+     */
+    public LeavePreviewVO preview(String typeRaw, String startDateRaw, String endDateRaw,
+                                  String startTime, String endTime, String dayModeRaw) {
+        String type = typeRaw == null ? "" : typeRaw.trim().toUpperCase();
+        LeaveCityPolicyService.CityPolicy policy = cityPolicyService.supports(type)
+                ? cityPolicyService.policy(currentEmployee(), type) : null;
+        LeavePreviewVO vo = new LeavePreviewVO();
+        if (policy != null) {
+            vo.setDays(policy.days());
+            vo.setDayMode(policy.dayMode());
+            return vo;
+        }
+        String dayMode = trimToNull(dayModeRaw) == null
+                ? LeaveDaysCalculator.MODE_WORKDAY : dayModeOr(dayModeRaw);
+        LeaveDaysCalculator.Result calc = daysCalculator.calculate(
+                parseDate(startDateRaw), LeaveDaysCalculator.PERIOD_AM, trimToNull(startTime),
+                parseDate(endDateRaw), LeaveDaysCalculator.PERIOD_PM, trimToNull(endTime), dayMode);
+        vo.setDays(calc.days());
+        vo.setDayMode(dayMode);
+        vo.setWarning(calc.warning());
         return vo;
     }
 
@@ -454,6 +484,10 @@ public class LeaveService {
                         .eq(LeaveAttachment::getLeaveId, leaveId));
             }
         }
+        if (st != 2) {
+            // 通过 / 撤销：请假是否生效发生变化，已有考勤日结果需要按最新状态重算
+            refreshAttendance(leave);
+        }
         log.info("请假审批终审已处理 leaveId={} status={} result={}", leaveId, st, req.getResultName());
     }
 
@@ -488,6 +522,8 @@ public class LeaveService {
         // 请假单已撤销：证明材料关联行一并删除（附件本身留档）
         attachmentMapper.delete(new LambdaQueryWrapper<LeaveAttachment>()
                 .eq(LeaveAttachment::getLeaveId, id));
+        // 撤销后不再算请假：已生成的考勤日结果同步重算
+        refreshAttendance(leave);
         return toVO(leave, user);
     }
 
@@ -767,9 +803,30 @@ public class LeaveService {
             throw new BizException(EhrErrorCode.LEAVE_EARLY_RETURN_INVALID, "请假单状态已变化，请刷新后重试");
         }
         quotaService.returnDays(leave, refund, user.getAccountId());
+        LeaveRequest latest = leaveMapper.selectById(id);
+        // 销假后返岗之日起不再算请假：已生成的考勤日结果同步重算
+        refreshAttendance(latest);
         log.info("请假销假完成 leaveId={} 原{}天 实际{}天 退回{}天", id,
                 leave.getDays(), actual, refund);
-        return toVO(leaveMapper.selectById(id), user);
+        return toVO(latest, user);
+    }
+
+    /**
+     * 请假状态变化后重算该员工请假区间内已生成的考勤日结果与月度汇总。
+     * <p>
+     * 考勤是派生数据：重算失败只记日志，不回滚请假主流程，也不影响审批终态落库。
+     */
+    private void refreshAttendance(LeaveRequest leave) {
+        if (leave == null || leave.getEmployeeId() == null
+                || leave.getStartDate() == null || leave.getEndDate() == null) {
+            return;
+        }
+        try {
+            attendanceDailyService.recalculate(leave.getEmployeeId(),
+                    leave.getStartDate(), leave.getEndDate());
+        } catch (Exception e) {
+            log.warn("请假状态变更后重算考勤失败 leaveId={}", leave.getId(), e);
+        }
     }
 
     /** 组织子树ID：自身 + path 中包含该节点ID的所有后代（path 形如 1/2/3） */

@@ -6,6 +6,7 @@ import com.laimengchao.sso.ehr.module.attendance.dto.AttendancePunchRequest;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendancePunch;
 import com.laimengchao.sso.ehr.module.attendance.service.AttendanceDailyService;
 import com.laimengchao.sso.ehr.module.attendance.vo.AttendanceDailyVO;
+import com.laimengchao.sso.ehr.module.attendance.vo.AttendancePunchVO;
 import com.laimengchao.sso.ehr.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -51,11 +52,11 @@ public class AttendanceDailyController {
 
     @GetMapping("/punches")
     @Permit(PermissionCodes.ATTENDANCE_VIEW)
-    public R<R.Page<AttendancePunch>> punches(@RequestParam(required = false) Long employeeId,
-                                              @RequestParam(required = false)
-                                              @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
-                                              @RequestParam(defaultValue = "1") int page,
-                                              @RequestParam(defaultValue = "50") int size) {
+    public R<R.Page<AttendancePunchVO>> punches(@RequestParam(required = false) Long employeeId,
+                                                @RequestParam(required = false)
+                                                @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+                                                @RequestParam(defaultValue = "1") int page,
+                                                @RequestParam(defaultValue = "50") int size) {
         return R.ok(dailyService.punches(employeeId, date, page, size));
     }
 

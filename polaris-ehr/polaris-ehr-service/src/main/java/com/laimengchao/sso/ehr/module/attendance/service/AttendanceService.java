@@ -399,8 +399,15 @@ public class AttendanceService {
                 .lt(LeaveRequest::getStartDate, last.plusDays(1))
                 .ge(LeaveRequest::getEndDate, first));
         for (LeaveRequest lv : leaves) {
+            // 已销假：返岗当天起不再算请假（与日结果口径一致）
+            LocalDate leaveEnd = Integer.valueOf(4).equals(lv.getStatus()) && lv.getReturnDate() != null
+                    && lv.getReturnDate().isBefore(lv.getEndDate())
+                    ? lv.getReturnDate().minusDays(1) : lv.getEndDate();
+            if (leaveEnd.isBefore(first)) {
+                continue;
+            }
             LocalDate s = lv.getStartDate().isBefore(first) ? first : lv.getStartDate();
-            LocalDate e = lv.getEndDate().isAfter(last) ? last : lv.getEndDate();
+            LocalDate e = leaveEnd.isAfter(last) ? last : leaveEnd;
             String sp = "AM";
             String ep = "PM";
             if (s.equals(lv.getStartDate())) {
