@@ -33,9 +33,9 @@ tar -C /etc -czf "$OUT/host-nginx.tgz" \
   nginx/nginx.conf nginx/conf.d nginx/snippets nginx/certs letsencrypt 2>/dev/null || true
 ls -1 /etc/nginx/conf.d > "$OUT/conf.d.list"
 
-echo "== 4/5 polaris 发版配置（不含 jar/www/密钥）=="
+echo "== 4/5 polaris 发版配置（不含 jar/www）=="
 tar -C /opt/polaris -czf "$OUT/polaris-deploy.tgz" \
-  docker-compose.yml nginx-polaris.conf.tpl polaris-*.inc 2>/dev/null || true
+  docker-compose.yml nginx-polaris.conf.tpl polaris-*.inc nacos keys 2>/dev/null || true
 cp -a /opt/polaris/.env "$OUT/polaris.env" 2>/dev/null || true
 chmod 600 "$OUT/polaris.env" 2>/dev/null || true
 
