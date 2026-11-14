@@ -12,7 +12,7 @@ import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.attendance.dto.AttendanceCorrectionApproveRequest;
 import com.laimengchao.sso.ehr.module.attendance.dto.AttendanceCorrectionRequest;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendanceCorrection;

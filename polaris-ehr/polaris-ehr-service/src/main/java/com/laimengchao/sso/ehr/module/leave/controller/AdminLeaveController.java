@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.leave.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.leave.dto.EarlyReturnRequest;
 import com.laimengchao.sso.ehr.module.leave.dto.LeaveApplyRequest;
 import com.laimengchao.sso.ehr.module.leave.service.LeaveService;

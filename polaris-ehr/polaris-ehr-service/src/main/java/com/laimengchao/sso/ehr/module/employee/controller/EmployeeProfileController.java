@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.employee.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeProfileDtos.BankRequest;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeProfileDtos.EducationRequest;
 import com.laimengchao.sso.ehr.module.employee.dto.EmployeeProfileDtos.FamilyRequest;

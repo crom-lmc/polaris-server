@@ -4,7 +4,7 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.cms.module.banner.entity.Banner;
 import com.laimengchao.sso.cms.module.banner.service.BannerService;
 import com.laimengchao.sso.cms.security.Permit;
-import com.laimengchao.sso.cms.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

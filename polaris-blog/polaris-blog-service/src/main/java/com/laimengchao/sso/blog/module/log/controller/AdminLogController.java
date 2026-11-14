@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import com.laimengchao.sso.blog.security.Permit;
-import com.laimengchao.sso.blog.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 
 /**
  * 后台操作日志（仅管理员）。

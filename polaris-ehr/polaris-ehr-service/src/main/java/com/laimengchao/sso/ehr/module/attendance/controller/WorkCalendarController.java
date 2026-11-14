@@ -3,7 +3,7 @@ package com.laimengchao.sso.ehr.module.attendance.controller;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.attendance.dto.WorkCalendarItem;
 import com.laimengchao.sso.ehr.module.attendance.service.AttendanceCalendarService;
 import com.laimengchao.sso.ehr.module.attendance.vo.WorkCalendarVO;

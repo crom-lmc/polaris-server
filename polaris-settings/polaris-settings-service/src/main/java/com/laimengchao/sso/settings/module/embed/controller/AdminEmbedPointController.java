@@ -2,7 +2,7 @@ package com.laimengchao.sso.settings.module.embed.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.approval.service.InternalHttpClient;
 import com.laimengchao.sso.settings.module.embed.dto.EmbedPointCreate;
 import com.laimengchao.sso.settings.module.embed.dto.EmbedPointPatch;

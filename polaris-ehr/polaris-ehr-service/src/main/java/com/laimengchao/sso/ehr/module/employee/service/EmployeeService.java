@@ -10,7 +10,7 @@ import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.utils.ValidateUtil;
 import com.laimengchao.sso.utils.SensitiveMasker;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.integration.AccountClient;
 import com.laimengchao.sso.ehr.integration.AccountDtos;
 import com.laimengchao.sso.ehr.module.audit.service.AuditLogService;

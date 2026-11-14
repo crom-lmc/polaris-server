@@ -1,7 +1,7 @@
 package com.laimengchao.sso.settings.module.bizdata.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.bizdata.service.BizItemService;
 import com.laimengchao.sso.settings.module.bizdata.vo.BizCategoryVO;
 import com.laimengchao.sso.settings.module.bizdata.vo.BizItemVO;

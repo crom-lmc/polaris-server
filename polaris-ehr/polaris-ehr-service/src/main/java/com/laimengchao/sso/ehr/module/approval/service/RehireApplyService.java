@@ -8,7 +8,7 @@ import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.approval.dto.RehireApplyRequest;
 import com.laimengchao.sso.ehr.module.approval.entity.RehireApply;
 import com.laimengchao.sso.ehr.module.approval.mapper.RehireApplyMapper;

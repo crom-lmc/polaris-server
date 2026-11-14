@@ -1,7 +1,7 @@
 package com.laimengchao.sso.settings.module.dict.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.dict.service.DictService;
 import com.laimengchao.sso.settings.module.dict.vo.DictItemVO;
 import com.laimengchao.sso.settings.module.dict.vo.DictTypeVO;

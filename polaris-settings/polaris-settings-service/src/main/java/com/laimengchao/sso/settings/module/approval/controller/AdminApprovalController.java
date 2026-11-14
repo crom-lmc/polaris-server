@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.approval.dto.ApprovalActionRequest;
 import com.laimengchao.sso.settings.module.approval.dto.BatchApprovalRequest;
 import com.laimengchao.sso.settings.module.approval.dto.BizSceneVO;

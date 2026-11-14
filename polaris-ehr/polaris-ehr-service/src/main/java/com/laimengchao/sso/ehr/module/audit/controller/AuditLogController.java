@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.audit.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.audit.entity.AuditLog;
 import com.laimengchao.sso.ehr.module.audit.service.AuditLogService;
 import com.laimengchao.sso.ehr.security.Permit;

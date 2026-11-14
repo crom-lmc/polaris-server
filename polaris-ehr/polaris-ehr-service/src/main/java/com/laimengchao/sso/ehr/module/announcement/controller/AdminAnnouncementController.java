@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.announcement.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.announcement.dto.AnnouncementSaveRequest;
 import com.laimengchao.sso.ehr.module.announcement.service.AnnouncementService;
 import com.laimengchao.sso.ehr.module.announcement.vo.AnnouncementVO;

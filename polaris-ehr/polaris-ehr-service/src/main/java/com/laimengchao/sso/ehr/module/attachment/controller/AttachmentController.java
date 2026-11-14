@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.attachment.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.attachment.service.AttachmentService;
 import com.laimengchao.sso.ehr.module.attachment.vo.AttachmentVO;
 import com.laimengchao.sso.ehr.security.Permit;
