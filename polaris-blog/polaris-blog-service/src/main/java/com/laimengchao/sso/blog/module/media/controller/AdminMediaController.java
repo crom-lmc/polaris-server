@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台媒体库（author 角色可访问）。
@@ -34,7 +35,7 @@ public class AdminMediaController {
 
     @GetMapping
     @Operation(summary = "媒体列表", description = "folderId：不传=全部，0=未分组，>0=指定目录")
-    @Permit("media:list")
+    @Permit(PermissionCodes.MEDIA_LIST)
     public R<PageResult<Media>> page(@RequestParam(defaultValue = "1") long page,
                                      @RequestParam(required = false) Long size,
                                      @RequestParam(required = false) String folder,
@@ -47,7 +48,7 @@ public class AdminMediaController {
     @PutMapping("/{id}")
     @OpLog(module = "media", action = "update")
     @Operation(summary = "修改媒体文件", description = "重命名与移动目录；两个字段都可选，只更新传入的字段")
-    @Permit("media:edit")
+    @Permit(PermissionCodes.MEDIA_EDIT)
     public R<Void> update(@PathVariable Long id, @RequestBody UpdateMediaRequest request) {
         if (request == null) {
             throw new com.laimengchao.sso.common.BizException(com.laimengchao.sso.common.ErrorCode.PARAM_ERROR);
@@ -58,14 +59,14 @@ public class AdminMediaController {
 
     @GetMapping("/folders")
     @Operation(summary = "目录列表（存储路径去重，兼容保留）")
-    @Permit("media:list")
+    @Permit(PermissionCodes.MEDIA_LIST)
     public R<List<String>> folders() {
         return R.ok(mediaService.folders());
     }
 
     @GetMapping("/folders/tree")
     @Operation(summary = "目录树（含各目录媒体数）")
-    @Permit("media:list")
+    @Permit(PermissionCodes.MEDIA_LIST)
     public R<List<MediaFolderVO>> folderTree() {
         return R.ok(mediaFolderService.tree());
     }
@@ -73,7 +74,7 @@ public class AdminMediaController {
     @PostMapping("/folders")
     @OpLog(module = "media", action = "folder-create")
     @Operation(summary = "新增目录", description = "parentId 为 0 或不传时创建顶级目录")
-    @Permit("media:edit")
+    @Permit(PermissionCodes.MEDIA_EDIT)
     public R<Long> createFolder(@RequestBody FolderRequest request) {
         return R.ok(mediaFolderService.create(request.getName(), request.getParentId()));
     }
@@ -81,7 +82,7 @@ public class AdminMediaController {
     @PutMapping("/folders/{id}")
     @OpLog(module = "media", action = "folder-rename")
     @Operation(summary = "重命名目录")
-    @Permit("media:edit")
+    @Permit(PermissionCodes.MEDIA_EDIT)
     public R<Void> renameFolder(@PathVariable Long id, @RequestBody FolderRequest request) {
         mediaFolderService.rename(id, request.getName());
         return R.ok();
@@ -90,7 +91,7 @@ public class AdminMediaController {
     @DeleteMapping("/folders/{id}")
     @OpLog(module = "media", action = "folder-delete")
     @Operation(summary = "删除目录", description = "仅空目录（无子目录且无文件）可删除")
-    @Permit("media:delete")
+    @Permit(PermissionCodes.MEDIA_DELETE)
     public R<Void> deleteFolder(@PathVariable Long id) {
         mediaFolderService.delete(id);
         return R.ok();
@@ -99,7 +100,7 @@ public class AdminMediaController {
     @PostMapping("/upload")
     @OpLog(module = "media", action = "upload")
     @Operation(summary = "上传文件", description = "类型白名单 + 大小限制（默认 5MB），自动读取图片宽高")
-    @Permit("media:upload")
+    @Permit(PermissionCodes.MEDIA_UPLOAD)
     public R<Media> upload(@RequestPart("file") MultipartFile file,
                            @RequestParam(required = false, defaultValue = "") String folder,
                            @RequestParam(required = false) Long folderId) {
@@ -108,14 +109,14 @@ public class AdminMediaController {
 
     @PostMapping("/upload/chunk/init")
     @Operation(summary = "分片上传 - 初始化", description = "返回 uploadId，客户端按序号依次上传分片")
-    @Permit("media:upload")
+    @Permit(PermissionCodes.MEDIA_UPLOAD)
     public R<String> initChunk(@RequestBody ChunkInitRequest request) {
         return R.ok(mediaService.initChunk(request.getUploadId(), request.getOriginalName()));
     }
 
     @PostMapping("/upload/chunk")
     @Operation(summary = "分片上传 - 写入分片")
-    @Permit("media:upload")
+    @Permit(PermissionCodes.MEDIA_UPLOAD)
     public R<Void> writeChunk(@RequestPart("file") MultipartFile file,
                               @RequestParam String uploadId,
                               @RequestParam int index) {
@@ -126,7 +127,7 @@ public class AdminMediaController {
     @PostMapping("/upload/chunk/merge")
     @OpLog(module = "media", action = "upload-chunk")
     @Operation(summary = "分片上传 - 合并")
-    @Permit("media:upload")
+    @Permit(PermissionCodes.MEDIA_UPLOAD)
     public R<Media> mergeChunk(@RequestBody ChunkMergeRequest request) {
         return R.ok(mediaService.mergeChunk(request.getUploadId(), request.getOriginalName(),
                 request.getContentType(), request.getFolder(), request.getFolderId()));
@@ -135,7 +136,7 @@ public class AdminMediaController {
     @DeleteMapping("/{id}")
     @OpLog(module = "media", action = "delete")
     @Operation(summary = "删除媒体文件（同时删除磁盘文件）")
-    @Permit("media:delete")
+    @Permit(PermissionCodes.MEDIA_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         mediaService.delete(id);
         return R.ok();
@@ -144,7 +145,7 @@ public class AdminMediaController {
     @PostMapping("/batch/delete")
     @OpLog(module = "media", action = "batch-delete")
     @Operation(summary = "批量删除媒体文件")
-    @Permit("media:delete")
+    @Permit(PermissionCodes.MEDIA_DELETE)
     public R<Integer> batchDelete(@RequestBody BatchRequest request) {
         return R.ok(mediaService.delete(request.getIds()));
     }

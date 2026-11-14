@@ -9,6 +9,7 @@ import com.laimengchao.sso.cms.module.content.mapper.ArticleMapper;
 import com.laimengchao.sso.cms.module.media.entity.Media;
 import com.laimengchao.sso.cms.module.media.mapper.MediaMapper;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class DashboardController {
     private final BannerMapper bannerMapper;
 
     @GetMapping
-    @Permit("dashboard:view")
+    @Permit(PermissionCodes.DASHBOARD_VIEW)
     public R<Stats> stats() {
         Stats s = new Stats();
         s.setTotal(articleMapper.selectCount(new LambdaQueryWrapper<Article>()));

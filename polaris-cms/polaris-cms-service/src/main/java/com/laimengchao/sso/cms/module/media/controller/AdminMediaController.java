@@ -5,6 +5,7 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.cms.module.media.entity.Media;
 import com.laimengchao.sso.cms.module.media.service.MediaService;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,13 +25,13 @@ public class AdminMediaController {
     private final MediaService mediaService;
 
     @PostMapping("/upload")
-    @Permit("media:upload")
+    @Permit(PermissionCodes.MEDIA_UPLOAD)
     public R<Media> upload(@RequestParam("file") MultipartFile file) {
         return R.ok(mediaService.upload(file));
     }
 
     @GetMapping
-    @Permit("media:view")
+    @Permit(PermissionCodes.MEDIA_VIEW)
     public R<R.Page<Media>> page(@RequestParam(required = false) String keyword,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "12") int size) {
@@ -39,7 +40,7 @@ public class AdminMediaController {
     }
 
     @DeleteMapping("/{id}")
-    @Permit("media:delete")
+    @Permit(PermissionCodes.MEDIA_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         mediaService.delete(id);
         return R.ok();

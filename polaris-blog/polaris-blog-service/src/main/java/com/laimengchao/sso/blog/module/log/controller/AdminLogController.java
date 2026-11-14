@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台操作日志（仅管理员）。
@@ -25,7 +26,7 @@ public class AdminLogController {
 
     @GetMapping
     @Operation(summary = "操作日志分页列表")
-    @Permit("log:list")
+    @Permit(PermissionCodes.LOG_LIST)
     public R<PageResult<OperationLog>> page(@RequestParam(defaultValue = "1") long page,
                                             @RequestParam(required = false) Long size,
                                             @RequestParam(required = false) String module,
@@ -37,7 +38,7 @@ public class AdminLogController {
 
     @DeleteMapping("/clean")
     @Operation(summary = "清理历史日志", description = "删除 days 天之前的记录，days 默认 90")
-    @Permit("log:clean")
+    @Permit(PermissionCodes.LOG_CLEAN)
     public R<Integer> clean(@RequestParam(defaultValue = "90") int days) {
         return R.ok(operationLogService.cleanBefore(days));
     }

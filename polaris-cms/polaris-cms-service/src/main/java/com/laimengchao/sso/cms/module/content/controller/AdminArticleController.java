@@ -7,6 +7,7 @@ import com.laimengchao.sso.cms.module.content.dto.ArticleVO;
 import com.laimengchao.sso.cms.module.content.dto.VersionVO;
 import com.laimengchao.sso.cms.module.content.service.ArticleService;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,26 +33,26 @@ public class AdminArticleController {
     private final ArticleService articleService;
 
     @GetMapping
-    @Permit("article:view")
+    @Permit(PermissionCodes.ARTICLE_VIEW)
     public R<R.Page<ArticleVO>> page(ArticleQuery query) {
         return R.ok(articleService.page(query));
     }
 
     @GetMapping("/{id}")
-    @Permit("article:view")
+    @Permit(PermissionCodes.ARTICLE_VIEW)
     public R<ArticleVO> detail(@PathVariable Long id) {
         return R.ok(articleService.detail(id));
     }
 
     @PostMapping
-    @Permit("article:create")
+    @Permit(PermissionCodes.ARTICLE_CREATE)
     public R<ArticleVO> create(@Valid @RequestBody ArticleSaveRequest req) {
         req.setId(null);
         return R.ok(articleService.save(req));
     }
 
     @PutMapping("/{id}")
-    @Permit("article:edit")
+    @Permit(PermissionCodes.ARTICLE_EDIT)
     public R<ArticleVO> update(@PathVariable Long id, @Valid @RequestBody ArticleSaveRequest req) {
         req.setId(id);
         return R.ok(articleService.save(req));
@@ -59,7 +60,7 @@ public class AdminArticleController {
 
     /** 提审（作者本人）：置「6 审批中」并发起 cms.article_publish 审批 */
     @PostMapping("/{id}/submit")
-    @Permit({"article:create", "article:edit"})
+    @Permit({PermissionCodes.ARTICLE_CREATE, PermissionCodes.ARTICLE_EDIT})
     public R<Void> submit(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         articleService.submit(id, body == null ? "" : body.getOrDefault("note", ""));
         return R.ok();
@@ -67,7 +68,7 @@ public class AdminArticleController {
 
     /** 撤回审批中的稿件（作者本人 / 超管） */
     @PostMapping("/{id}/withdraw")
-    @Permit("article:edit")
+    @Permit(PermissionCodes.ARTICLE_EDIT)
     public R<Void> withdraw(@PathVariable Long id) {
         articleService.withdraw(id);
         return R.ok();
@@ -75,7 +76,7 @@ public class AdminArticleController {
 
     /** 审核通过 */
     @PostMapping("/{id}/approve")
-    @Permit("article:audit")
+    @Permit(PermissionCodes.ARTICLE_AUDIT)
     public R<Void> approve(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         articleService.approve(id, body == null ? "" : body.getOrDefault("note", ""));
         return R.ok();
@@ -83,7 +84,7 @@ public class AdminArticleController {
 
     /** 驳回 */
     @PostMapping("/{id}/reject")
-    @Permit("article:audit")
+    @Permit(PermissionCodes.ARTICLE_AUDIT)
     public R<Void> reject(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         articleService.reject(id, body == null ? "" : body.getOrDefault("note", ""));
         return R.ok();
@@ -91,7 +92,7 @@ public class AdminArticleController {
 
     /** 发布（仅审批通过、待发布的稿件；草稿/驳回/审批中会被引擎拒绝） */
     @PostMapping("/{id}/publish")
-    @Permit("article:publish")
+    @Permit(PermissionCodes.ARTICLE_PUBLISH)
     public R<Void> publish(@PathVariable Long id) {
         articleService.publishNow(id);
         return R.ok();
@@ -99,7 +100,7 @@ public class AdminArticleController {
 
     /** 下线 */
     @PostMapping("/{id}/offline")
-    @Permit("article:publish")
+    @Permit(PermissionCodes.ARTICLE_PUBLISH)
     public R<Void> offline(@PathVariable Long id) {
         articleService.offline(id);
         return R.ok();
@@ -107,7 +108,7 @@ public class AdminArticleController {
 
     /** 置顶 / 推荐（flag = pin | recommend） */
     @PatchMapping("/{id}/flag")
-    @Permit("article:pin")
+    @Permit(PermissionCodes.ARTICLE_PIN)
     public R<Void> flag(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         String flag = String.valueOf(body.getOrDefault("flag", ""));
         boolean on = Boolean.TRUE.equals(body.get("on"))
@@ -118,7 +119,7 @@ public class AdminArticleController {
 
     /** 移入回收站 */
     @DeleteMapping("/{id}")
-    @Permit("article:delete")
+    @Permit(PermissionCodes.ARTICLE_DELETE)
     public R<Void> recycle(@PathVariable Long id) {
         articleService.toRecycle(id);
         return R.ok();
@@ -126,7 +127,7 @@ public class AdminArticleController {
 
     /** 从回收站恢复 */
     @PostMapping("/{id}/restore")
-    @Permit("article:delete")
+    @Permit(PermissionCodes.ARTICLE_DELETE)
     public R<Void> restore(@PathVariable Long id) {
         articleService.restore(id);
         return R.ok();
@@ -134,7 +135,7 @@ public class AdminArticleController {
 
     /** 彻底删除（不可恢复） */
     @DeleteMapping("/{id}/forever")
-    @Permit("article:delete")
+    @Permit(PermissionCodes.ARTICLE_DELETE)
     public R<Void> deleteForever(@PathVariable Long id) {
         articleService.deleteForever(id);
         return R.ok();
@@ -142,14 +143,14 @@ public class AdminArticleController {
 
     /** 版本列表 */
     @GetMapping("/{id}/versions")
-    @Permit("article:version")
+    @Permit(PermissionCodes.ARTICLE_VERSION)
     public R<List<VersionVO>> versions(@PathVariable Long id) {
         return R.ok(articleService.versions(id));
     }
 
     /** 一键回滚 */
     @PostMapping("/{id}/rollback/{versionId}")
-    @Permit("article:rollback")
+    @Permit(PermissionCodes.ARTICLE_ROLLBACK)
     public R<Void> rollback(@PathVariable Long id, @PathVariable Long versionId) {
         articleService.rollback(id, versionId);
         return R.ok();

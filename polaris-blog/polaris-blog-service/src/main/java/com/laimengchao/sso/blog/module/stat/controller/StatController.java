@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台仪表盘统计。
@@ -24,7 +25,7 @@ public class StatController {
 
     @GetMapping("/stats")
     @Operation(summary = "仪表盘统计数据")
-    @Permit("stat:view")
+    @Permit(PermissionCodes.STAT_VIEW)
     public R<DashboardStatsVO> stats() {
         return R.ok(statService.dashboard());
     }

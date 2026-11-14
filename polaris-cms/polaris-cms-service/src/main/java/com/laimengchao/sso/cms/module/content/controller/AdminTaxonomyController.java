@@ -6,6 +6,7 @@ import com.laimengchao.sso.cms.module.content.dto.TagVO;
 import com.laimengchao.sso.cms.module.content.service.CategoryService;
 import com.laimengchao.sso.cms.module.content.service.TagService;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,20 +32,20 @@ public class AdminTaxonomyController {
     private final TagService tagService;
 
     @GetMapping("/categories")
-    @Permit("category:view")
+    @Permit(PermissionCodes.CATEGORY_VIEW)
     public R<List<TagVO>> categories() {
         return R.ok(categoryService.listAll());
     }
 
     @PostMapping("/categories")
-    @Permit("category:manage")
+    @Permit(PermissionCodes.CATEGORY_MANAGE)
     public R<Void> createCategory(@Valid @RequestBody CategorySaveRequest req) {
         categoryService.save(req);
         return R.ok();
     }
 
     @PutMapping("/categories/{id}")
-    @Permit("category:manage")
+    @Permit(PermissionCodes.CATEGORY_MANAGE)
     public R<Void> updateCategory(@PathVariable Long id, @Valid @RequestBody CategorySaveRequest req) {
         req.setId(id);
         categoryService.save(req);
@@ -52,33 +53,33 @@ public class AdminTaxonomyController {
     }
 
     @DeleteMapping("/categories/{id}")
-    @Permit("category:manage")
+    @Permit(PermissionCodes.CATEGORY_MANAGE)
     public R<Void> deleteCategory(@PathVariable Long id) {
         categoryService.delete(id);
         return R.ok();
     }
 
     @GetMapping("/tags")
-    @Permit("tag:view")
+    @Permit(PermissionCodes.TAG_VIEW)
     public R<List<TagVO>> tags(@RequestParam(required = false) String keyword) {
         return R.ok(tagService.listAll(keyword));
     }
 
     @PostMapping("/tags")
-    @Permit("tag:manage")
+    @Permit(PermissionCodes.TAG_MANAGE)
     public R<TagVO> createTag(@RequestBody Map<String, String> body) {
         return R.ok(tagService.create(body.get("name")));
     }
 
     @PutMapping("/tags/{id}")
-    @Permit("tag:manage")
+    @Permit(PermissionCodes.TAG_MANAGE)
     public R<Void> renameTag(@PathVariable Long id, @RequestBody Map<String, String> body) {
         tagService.rename(id, body.get("name"));
         return R.ok();
     }
 
     @DeleteMapping("/tags/{id}")
-    @Permit("tag:manage")
+    @Permit(PermissionCodes.TAG_MANAGE)
     public R<Void> deleteTag(@PathVariable Long id) {
         tagService.delete(id);
         return R.ok();

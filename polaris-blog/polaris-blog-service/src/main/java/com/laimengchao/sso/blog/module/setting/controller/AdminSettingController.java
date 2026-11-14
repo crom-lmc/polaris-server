@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台站点设置（仅管理员）。
@@ -24,7 +25,7 @@ public class AdminSettingController {
 
     @GetMapping
     @Operation(summary = "获取全部站点设置")
-    @Permit("setting:view")
+    @Permit(PermissionCodes.SETTING_VIEW)
     public R<Map<String, String>> all() {
         return R.ok(settingService.all());
     }
@@ -32,7 +33,7 @@ public class AdminSettingController {
     @PutMapping
     @OpLog(module = "setting", action = "save")
     @Operation(summary = "批量保存站点设置", description = "传入 KV Map，缺失的 key 不会被动删除")
-    @Permit("setting:edit")
+    @Permit(PermissionCodes.SETTING_EDIT)
     public R<Void> save(@RequestBody Map<String, String> values) {
         settingService.save(values);
         return R.ok();
@@ -40,7 +41,7 @@ public class AdminSettingController {
 
     @PostMapping("/refresh")
     @Operation(summary = "刷新站点设置缓存")
-    @Permit("setting:edit")
+    @Permit(PermissionCodes.SETTING_EDIT)
     public R<Void> refresh() {
         settingService.refresh();
         return R.ok();

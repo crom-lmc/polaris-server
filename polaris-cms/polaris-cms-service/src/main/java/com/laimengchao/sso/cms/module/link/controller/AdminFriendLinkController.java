@@ -4,6 +4,7 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.cms.module.link.entity.FriendLink;
 import com.laimengchao.sso.cms.module.link.service.FriendLinkService;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,27 +26,27 @@ public class AdminFriendLinkController {
     private final FriendLinkService friendLinkService;
 
     @GetMapping
-    @Permit("link:view")
+    @Permit(PermissionCodes.LINK_VIEW)
     public R<List<FriendLink>> list() {
         return R.ok(friendLinkService.listAll());
     }
 
     @PostMapping
-    @Permit("link:manage")
+    @Permit(PermissionCodes.LINK_MANAGE)
     public R<FriendLink> create(@RequestBody FriendLink link) {
         link.setId(null);
         return R.ok(friendLinkService.save(link));
     }
 
     @PutMapping("/{id}")
-    @Permit("link:manage")
+    @Permit(PermissionCodes.LINK_MANAGE)
     public R<FriendLink> update(@PathVariable Long id, @RequestBody FriendLink link) {
         link.setId(id);
         return R.ok(friendLinkService.save(link));
     }
 
     @DeleteMapping("/{id}")
-    @Permit("link:manage")
+    @Permit(PermissionCodes.LINK_MANAGE)
     public R<Void> delete(@PathVariable Long id) {
         friendLinkService.delete(id);
         return R.ok();

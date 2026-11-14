@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台评论管理（author 角色可访问）。
@@ -30,7 +31,7 @@ public class AdminCommentController {
 
     @GetMapping
     @Operation(summary = "评论分页列表", description = "status: pending/approved/spam/deleted")
-    @Permit("comment:list")
+    @Permit(PermissionCodes.COMMENT_LIST)
     public R<PageResult<CommentVO>> page(@RequestParam(defaultValue = "1") long page,
                                          @RequestParam(required = false) Long size,
                                          @RequestParam(required = false) String status,
@@ -43,7 +44,7 @@ public class AdminCommentController {
     @PutMapping("/{id}/approve")
     @OpLog(module = "comment", action = "approve")
     @Operation(summary = "审核通过")
-    @Permit("comment:audit")
+    @Permit(PermissionCodes.COMMENT_AUDIT)
     public R<Void> approve(@PathVariable Long id) {
         commentService.approve(List.of(id));
         return R.ok();
@@ -52,7 +53,7 @@ public class AdminCommentController {
     @PutMapping("/{id}/reject")
     @OpLog(module = "comment", action = "reject")
     @Operation(summary = "拒绝（标记为垃圾评论）")
-    @Permit("comment:audit")
+    @Permit(PermissionCodes.COMMENT_AUDIT)
     public R<Void> reject(@PathVariable Long id) {
         commentService.reject(List.of(id));
         return R.ok();
@@ -61,7 +62,7 @@ public class AdminCommentController {
     @PostMapping("/batch/approve")
     @OpLog(module = "comment", action = "batch-approve")
     @Operation(summary = "批量审核通过")
-    @Permit("comment:audit")
+    @Permit(PermissionCodes.COMMENT_AUDIT)
     public R<Void> batchApprove(@RequestBody BatchRequest request) {
         commentService.approve(request.getIds());
         return R.ok();
@@ -70,7 +71,7 @@ public class AdminCommentController {
     @PostMapping("/batch/delete")
     @OpLog(module = "comment", action = "batch-delete")
     @Operation(summary = "批量删除")
-    @Permit("comment:delete")
+    @Permit(PermissionCodes.COMMENT_DELETE)
     public R<Integer> batchDelete(@RequestBody BatchRequest request) {
         return R.ok(commentService.delete(request.getIds()));
     }
@@ -78,7 +79,7 @@ public class AdminCommentController {
     @DeleteMapping("/{id}")
     @OpLog(module = "comment", action = "delete")
     @Operation(summary = "删除评论")
-    @Permit("comment:delete")
+    @Permit(PermissionCodes.COMMENT_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         commentService.delete(List.of(id));
         return R.ok();
@@ -87,7 +88,7 @@ public class AdminCommentController {
     @PostMapping("/reply")
     @OpLog(module = "comment", action = "reply")
     @Operation(summary = "回复评论（管理员身份，直接通过审核）")
-    @Permit("comment:reply")
+    @Permit(PermissionCodes.COMMENT_REPLY)
     public R<CommentVO> reply(@RequestBody ReplyRequest request) {
         return R.ok(commentService.reply(request.getArticleId(), request.getParentId(), request.getContent()));
     }
