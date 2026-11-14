@@ -9,7 +9,7 @@ import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
 import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;

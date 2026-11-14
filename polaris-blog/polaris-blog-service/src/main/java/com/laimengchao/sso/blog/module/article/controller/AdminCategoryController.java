@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import com.laimengchao.sso.blog.security.Permit;
-import com.laimengchao.sso.blog.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 
 /**
  * 后台分类管理。

@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.leave.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.leave.entity.AnnualLeavePolicy;
 import com.laimengchao.sso.ehr.module.leave.service.AnnualLeaveService;
 import com.laimengchao.sso.ehr.module.leave.vo.AnnualLeaveLedgerVO;

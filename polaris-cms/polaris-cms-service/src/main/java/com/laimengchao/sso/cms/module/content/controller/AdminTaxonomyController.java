@@ -6,7 +6,7 @@ import com.laimengchao.sso.cms.module.content.dto.TagVO;
 import com.laimengchao.sso.cms.module.content.service.CategoryService;
 import com.laimengchao.sso.cms.module.content.service.TagService;
 import com.laimengchao.sso.cms.security.Permit;
-import com.laimengchao.sso.cms.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;

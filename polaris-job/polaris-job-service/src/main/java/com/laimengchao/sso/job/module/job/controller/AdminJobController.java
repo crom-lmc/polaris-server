@@ -5,7 +5,7 @@ import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.PageResult;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.job.common.JobErrorCode;
-import com.laimengchao.sso.job.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.job.module.job.dto.JobSaveRequest;
 import com.laimengchao.sso.job.module.job.entity.JobInfo;
 import com.laimengchao.sso.job.module.job.service.CronService;

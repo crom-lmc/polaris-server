@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.importexport.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.importexport.service.ExcelExportService;
 import com.laimengchao.sso.ehr.module.importexport.service.ExcelImportService;
 import com.laimengchao.sso.ehr.module.importexport.vo.ImportVos;

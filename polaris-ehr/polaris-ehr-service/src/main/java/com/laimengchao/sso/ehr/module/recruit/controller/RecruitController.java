@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.recruit.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.recruit.dto.CandidateCommRequest;
 import com.laimengchao.sso.ehr.module.recruit.dto.CandidateRequest;
 import com.laimengchao.sso.ehr.module.recruit.dto.InterviewFeedbackRequest;

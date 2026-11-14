@@ -1,7 +1,7 @@
 package com.laimengchao.sso.settings.module.security.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.security.dto.SecurityConfigRequest;
 import com.laimengchao.sso.settings.module.security.entity.SecurityConfig;
 import com.laimengchao.sso.settings.module.security.service.SecurityConfigService;

@@ -4,7 +4,7 @@ import com.laimengchao.sso.client.api.AccountApi;
 import com.laimengchao.sso.client.dto.Contact;
 import com.laimengchao.sso.common.PageResult;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.job.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.job.module.job.dto.AlarmChannelRequest;
 import com.laimengchao.sso.job.module.job.dto.AlarmRuleRequest;
 import com.laimengchao.sso.job.module.job.entity.JobAlarm;

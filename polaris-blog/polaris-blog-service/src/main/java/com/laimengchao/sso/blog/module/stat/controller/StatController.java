@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.laimengchao.sso.blog.security.Permit;
-import com.laimengchao.sso.blog.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 
 /**
  * 后台仪表盘统计。

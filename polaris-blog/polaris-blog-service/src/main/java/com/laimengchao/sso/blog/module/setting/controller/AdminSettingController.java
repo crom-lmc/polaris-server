@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import com.laimengchao.sso.blog.security.Permit;
-import com.laimengchao.sso.blog.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 
 /**
  * 后台站点设置（仅管理员）。

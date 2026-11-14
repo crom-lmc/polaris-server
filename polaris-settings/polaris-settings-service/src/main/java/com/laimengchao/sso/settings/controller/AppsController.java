@@ -5,7 +5,7 @@ import com.laimengchao.sso.client.dto.AppInfo;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.security.Permit;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

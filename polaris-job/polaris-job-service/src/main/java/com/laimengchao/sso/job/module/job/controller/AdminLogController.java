@@ -2,7 +2,7 @@ package com.laimengchao.sso.job.module.job.controller;
 
 import com.laimengchao.sso.common.PageResult;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.job.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.job.module.job.service.JobLogService;
 import com.laimengchao.sso.job.module.job.vo.JobLogVO;
 import com.laimengchao.sso.job.security.Permit;

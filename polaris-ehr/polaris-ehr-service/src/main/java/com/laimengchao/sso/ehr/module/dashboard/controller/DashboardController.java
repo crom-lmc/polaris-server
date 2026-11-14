@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.dashboard.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.dashboard.service.DashboardSummaryService;
 import com.laimengchao.sso.ehr.module.dashboard.vo.DashboardSummaryVO;
 import com.laimengchao.sso.ehr.security.Permit;

@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import com.laimengchao.sso.blog.security.Permit;
-import com.laimengchao.sso.blog.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 
 /**
  * 后台文章管理（author 角色可访问）。

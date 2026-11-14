@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.attendance.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.attendance.dto.AttendancePunchRequest;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendancePunch;
 import com.laimengchao.sso.ehr.module.attendance.service.AttendanceDailyService;

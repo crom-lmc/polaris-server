@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.org.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.org.dto.OrgLeaderRequest;
 import com.laimengchao.sso.ehr.module.org.dto.OrgNodeRequest;
 import com.laimengchao.sso.ehr.module.org.service.OrgService;

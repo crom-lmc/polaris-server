@@ -1,7 +1,7 @@
 package com.laimengchao.sso.settings.module.coderule.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.settings.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.settings.module.coderule.entity.CodeRule;
 import com.laimengchao.sso.settings.module.coderule.service.CodeRuleService;
 import com.laimengchao.sso.settings.security.Permit;

@@ -3,7 +3,7 @@ package com.laimengchao.sso.ehr.module.leave.controller;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.leave.dto.QuotaAdjustRequest;

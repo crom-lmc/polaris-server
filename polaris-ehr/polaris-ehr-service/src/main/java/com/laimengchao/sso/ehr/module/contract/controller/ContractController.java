@@ -1,7 +1,7 @@
 package com.laimengchao.sso.ehr.module.contract.controller;
 
 import com.laimengchao.sso.common.R;
-import com.laimengchao.sso.ehr.constant.PermissionCodes;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.contract.dto.ContractRenewRequest;
 import com.laimengchao.sso.ehr.module.contract.dto.ContractRequest;
 import com.laimengchao.sso.ehr.module.contract.dto.ContractTerminateRequest;
