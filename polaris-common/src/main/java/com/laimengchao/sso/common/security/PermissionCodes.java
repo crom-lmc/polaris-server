@@ -176,6 +176,9 @@ public final class PermissionCodes {
     public static final String CODE_VIEW = "code:view";
     public static final String CODE_MANAGE = "code:manage";
 
+    /* 消息配置（NOTICE_VIEW 已在 SSO 组定义，值相同） */
+    public static final String NOTICE_MANAGE = "notice:manage";
+
     /* 安全配置 */
     public static final String SECURITY_VIEW = "security:view";
     public static final String SECURITY_MANAGE = "security:manage";
