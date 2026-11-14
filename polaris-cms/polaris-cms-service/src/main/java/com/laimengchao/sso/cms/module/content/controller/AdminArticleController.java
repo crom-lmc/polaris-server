@@ -59,6 +59,7 @@ public class AdminArticleController {
 
     /** 提审（作者本人）：置「6 审批中」并发起 cms.article_publish 审批 */
     @PostMapping("/{id}/submit")
+    @Permit({"article:create", "article:edit"})
     public R<Void> submit(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         articleService.submit(id, body == null ? "" : body.getOrDefault("note", ""));
         return R.ok();
@@ -66,6 +67,7 @@ public class AdminArticleController {
 
     /** 撤回审批中的稿件（作者本人 / 超管） */
     @PostMapping("/{id}/withdraw")
+    @Permit("article:edit")
     public R<Void> withdraw(@PathVariable Long id) {
         articleService.withdraw(id);
         return R.ok();
