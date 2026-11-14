@@ -4,6 +4,7 @@ import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.cms.module.portal.entity.PortalLayout;
 import com.laimengchao.sso.cms.module.portal.service.PortalLayoutService;
 import com.laimengchao.sso.cms.security.Permit;
+import com.laimengchao.sso.cms.constant.PermissionCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,14 +24,14 @@ public class AdminPortalLayoutController {
 
     /** 全部模块（含隐藏），供后台配置页展示 */
     @GetMapping
-    @Permit("portal:view")
+    @Permit(PermissionCodes.PORTAL_VIEW)
     public R<List<PortalLayout>> list() {
         return R.ok(portalLayoutService.listAll());
     }
 
     /** 保存布局：传入按顺序排好的模块列表 */
     @PutMapping
-    @Permit("portal:config")
+    @Permit(PermissionCodes.PORTAL_CONFIG)
     public R<List<PortalLayout>> save(@RequestBody List<PortalLayout> items) {
         return R.ok(portalLayoutService.saveLayout(items));
     }

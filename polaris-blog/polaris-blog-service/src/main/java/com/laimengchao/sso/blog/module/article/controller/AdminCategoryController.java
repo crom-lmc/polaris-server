@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台分类管理。
@@ -26,7 +27,7 @@ public class AdminCategoryController {
 
     @GetMapping
     @Operation(summary = "分类树")
-    @Permit("category:list")
+    @Permit(PermissionCodes.CATEGORY_LIST)
     public R<List<CategoryVO>> tree() {
         return R.ok(categoryService.tree());
     }
@@ -34,7 +35,7 @@ public class AdminCategoryController {
     @PostMapping
     @OpLog(module = "category", action = "create")
     @Operation(summary = "新增分类")
-    @Permit("category:edit")
+    @Permit(PermissionCodes.CATEGORY_EDIT)
     public R<Long> create(@RequestBody CategorySaveRequest request) {
         request.setId(null);
         return R.ok(categoryService.save(request));
@@ -43,7 +44,7 @@ public class AdminCategoryController {
     @PutMapping("/{id}")
     @OpLog(module = "category", action = "update")
     @Operation(summary = "修改分类")
-    @Permit("category:edit")
+    @Permit(PermissionCodes.CATEGORY_EDIT)
     public R<Long> update(@PathVariable Long id, @RequestBody CategorySaveRequest request) {
         request.setId(id);
         return R.ok(categoryService.save(request));
@@ -52,7 +53,7 @@ public class AdminCategoryController {
     @PutMapping("/sort")
     @OpLog(module = "category", action = "sort")
     @Operation(summary = "拖拽排序", description = "按传入顺序重新计算 sort 值")
-    @Permit("category:edit")
+    @Permit(PermissionCodes.CATEGORY_EDIT)
     public R<Void> sort(@RequestBody List<Long> ids) {
         categoryService.sort(ids);
         return R.ok();
@@ -61,7 +62,7 @@ public class AdminCategoryController {
     @DeleteMapping("/{id}")
     @OpLog(module = "category", action = "delete")
     @Operation(summary = "删除分类", description = "子分类上移到父级，文章解除关联")
-    @Permit("category:delete")
+    @Permit(PermissionCodes.CATEGORY_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return R.ok();
@@ -69,7 +70,7 @@ public class AdminCategoryController {
 
     @PostMapping("/recount")
     @Operation(summary = "重算分类文章数")
-    @Permit("category:edit")
+    @Permit(PermissionCodes.CATEGORY_EDIT)
     public R<Void> recount() {
         categoryService.tree();
         return R.ok();

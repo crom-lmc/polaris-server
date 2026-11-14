@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import com.laimengchao.sso.blog.security.Permit;
+import com.laimengchao.sso.blog.constant.PermissionCodes;
 
 /**
  * 后台文章管理（author 角色可访问）。
@@ -34,7 +35,7 @@ public class AdminArticleController {
 
     @GetMapping
     @Operation(summary = "文章分页列表", description = "支持状态/分类/标签/时间/关键词筛选")
-    @Permit("article:list")
+    @Permit(PermissionCodes.ARTICLE_LIST)
     public R<PageResult<ArticleListVO>> page(@RequestParam(required = false) String keyword,
                                              @RequestParam(required = false) String status,
                                              @RequestParam(required = false) Long categoryId,
@@ -67,7 +68,7 @@ public class AdminArticleController {
 
     @GetMapping("/{id}")
     @Operation(summary = "文章详情（含 Markdown 原文，用于编辑回显）")
-    @Permit("article:list")
+    @Permit(PermissionCodes.ARTICLE_LIST)
     public R<ArticleDetailVO> detail(@PathVariable Long id) {
         return R.ok(articleService.detail(articleService.getById(id), false));
     }
@@ -75,7 +76,7 @@ public class AdminArticleController {
     @PostMapping
     @OpLog(module = "article", action = "create")
     @Operation(summary = "新增文章")
-    @Permit("article:create")
+    @Permit(PermissionCodes.ARTICLE_CREATE)
     public R<Map<String, Object>> create(@Valid @RequestBody ArticleSaveRequest request) {
         request.setId(null);
         return R.ok(Map.of("id", articleService.save(request)));
@@ -84,7 +85,7 @@ public class AdminArticleController {
     @PutMapping("/{id}")
     @OpLog(module = "article", action = "update")
     @Operation(summary = "修改文章")
-    @Permit("article:edit")
+    @Permit(PermissionCodes.ARTICLE_EDIT)
     public R<Map<String, Object>> update(@PathVariable Long id, @Valid @RequestBody ArticleSaveRequest request) {
         request.setId(id);
         return R.ok(Map.of("id", articleService.save(request)));
@@ -93,7 +94,7 @@ public class AdminArticleController {
     @PostMapping("/{id}/publish")
     @OpLog(module = "article", action = "publish")
     @Operation(summary = "发布 / 下线")
-    @Permit("article:publish")
+    @Permit(PermissionCodes.ARTICLE_PUBLISH)
     public R<Void> publish(@PathVariable Long id, @RequestParam(defaultValue = "true") boolean publish) {
         articleService.publish(id, publish);
         return R.ok();
@@ -102,7 +103,7 @@ public class AdminArticleController {
     @PostMapping("/{id}/top")
     @OpLog(module = "article", action = "top")
     @Operation(summary = "置顶 / 取消置顶")
-    @Permit("article:edit")
+    @Permit(PermissionCodes.ARTICLE_EDIT)
     public R<Void> top(@PathVariable Long id, @RequestParam(defaultValue = "true") boolean top) {
         articleService.top(id, top);
         return R.ok();
@@ -111,7 +112,7 @@ public class AdminArticleController {
     @DeleteMapping("/{id}")
     @OpLog(module = "article", action = "delete")
     @Operation(summary = "删除文章")
-    @Permit("article:delete")
+    @Permit(PermissionCodes.ARTICLE_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         articleService.delete(List.of(id));
         return R.ok();
@@ -120,14 +121,14 @@ public class AdminArticleController {
     @PostMapping("/batch/delete")
     @OpLog(module = "article", action = "batch-delete")
     @Operation(summary = "批量删除文章")
-    @Permit("article:delete")
+    @Permit(PermissionCodes.ARTICLE_DELETE)
     public R<Integer> batchDelete(@RequestBody BatchRequest request) {
         return R.ok(articleService.delete(request.getIds()));
     }
 
     @GetMapping("/{id}/export")
     @Operation(summary = "导出 Markdown（含 Front Matter）")
-    @Permit("article:list")
+    @Permit(PermissionCodes.ARTICLE_LIST)
     public R<Map<String, String>> export(@PathVariable Long id) {
         return R.ok(Map.of("markdown", articleService.exportMarkdown(id)));
     }
@@ -135,7 +136,7 @@ public class AdminArticleController {
     @PostMapping("/import")
     @OpLog(module = "article", action = "import")
     @Operation(summary = "导入 Markdown 文件", description = "自动识别 Front Matter，缺失分类/标签自动创建")
-    @Permit("article:create")
+    @Permit(PermissionCodes.ARTICLE_CREATE)
     public R<Map<String, Object>> importMarkdown(@RequestPart("file") MultipartFile file,
                                                  @RequestParam(defaultValue = "draft") String status) {
         String content;
@@ -151,7 +152,7 @@ public class AdminArticleController {
     @PostMapping("/rebuild-search")
     @OpLog(module = "article", action = "rebuild-search")
     @Operation(summary = "重建检索文本", description = "从已渲染 HTML 抽取纯文本回填 search_text，用于存量数据初始化或索引重建")
-    @Permit("article:edit")
+    @Permit(PermissionCodes.ARTICLE_EDIT)
     public R<Void> rebuildSearch() {
         articleService.rebuildSearchText();
         return R.ok();
