@@ -66,6 +66,7 @@ public class AdminDictController {
     /* ---------------- 字典项 ---------------- */
 
     @GetMapping("/items")
+    @Permit(PermissionCodes.DICT_VIEW)
     public R<List<DictItemVO>> items(@RequestParam String typeCode,
                                      @RequestParam(required = false) Boolean includeDisabled) {
         return R.ok(dictService.listItems(typeCode, includeDisabled));
