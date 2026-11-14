@@ -102,7 +102,6 @@ public class ApprovalService {
             vo.setApproverName(r.getApproverName());
             vo.setApproveNote(r.getApproveNote());
             vo.setApprovedAt(fmt(r.getApprovedAt()));
-            vo.setActionable(true);
             out.add(vo);
         }
         return out;
@@ -161,7 +160,6 @@ public class ApprovalService {
             vo.setHandoverProgress(p.text());
             vo.setHandoverCompleted(r.getHandoverStatus() != null && r.getHandoverStatus() != 0);
             vo.setHandoverMine(user.getAccountId().equals(r.getHandoverAccountId()));
-            vo.setActionable(true);
             out.add(vo);
         }
         return out;

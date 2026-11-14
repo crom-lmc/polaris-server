@@ -480,17 +480,6 @@ public class OrgService {
     }
 
     /**
-     * 设置 / 更换负责人（不带原因的兼容入口）。
-     *
-     * @deprecated 指定新负责人必须说明原因，请用 {@link #setLeader(Long, Long, String)}；
-     *             这个重载只保留给「清除负责人」的历史调用方，指定人选时会因缺原因被拒。
-     */
-    @Deprecated
-    public OrgNodeVO setLeader(Long id, Long employeeId) {
-        return setLeader(id, employeeId, null);
-    }
-
-    /**
      * 设置 / 更换负责人。负责人是「建部门之后的事」：新增节点时不填，
      * 建完再从员工档案里挑人，避免建部门时档案还没录全。
      * <p>
