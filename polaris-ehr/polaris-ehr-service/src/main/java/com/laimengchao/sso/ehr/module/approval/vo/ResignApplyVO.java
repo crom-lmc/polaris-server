@@ -81,8 +81,6 @@ public class ResignApplyVO {
 
     /** 当前登录人是否就是提交人 */
     private boolean mine;
-    /** 当前登录人是否可以审批这一条（已废弃：审批动作统一走审批中心，恒 false） */
-    private boolean actionable;
 
     /* ---------- 当前在途审批（统一走审批中心后新增） ---------- */
 

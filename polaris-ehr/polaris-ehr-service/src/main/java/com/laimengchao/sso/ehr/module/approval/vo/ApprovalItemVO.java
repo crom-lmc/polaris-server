@@ -32,8 +32,6 @@ public class ApprovalItemVO {
     private String approverName;
     private String approveNote;
     private String approvedAt;
-    /** 当前登录人是否可以审批这一条 */
-    private boolean actionable;
 
     /* ---------- 离职/减员单的交接进度（请假单为空） ---------- */
 

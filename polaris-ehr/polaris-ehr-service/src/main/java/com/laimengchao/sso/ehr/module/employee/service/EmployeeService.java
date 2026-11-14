@@ -1334,41 +1334,6 @@ public class EmployeeService {
     }
 
     /**
-     * 纯构造「转正审批」发起请求；表单快照里放审批人判断要用的试用期信息。
-     * <p>
-     * 已由 {@link com.laimengchao.sso.ehr.module.approval.service.RegularizeApplyService} 取代，
-     * 保留仅供历史代码参考，不再调用。
-     */
-    @Deprecated
-    private ApprovalStartDTO buildRegularizeStart(Employee emp) {
-        SecurityUser user = SecurityUtils.currentUser().orElse(null);
-        ApprovalStartDTO dto = new ApprovalStartDTO();
-        dto.setBizType(BIZ_REGULARIZE);
-        dto.setBizId(String.valueOf(emp.getId()));
-        dto.setBizNo(nvl(emp.getEmpNo()));
-        dto.setTitle("转正审批 · " + emp.getName());
-        dto.setApplicantId(user == null ? null : user.getAccountId());
-        dto.setApplicantName(user == null ? "系统" : approverName(user));
-        dto.setApplicantOrgId(emp.getOrgId());
-        dto.setOrgPath(orgPathOf(emp.getOrgId()));
-        Map<String, Object> form = new LinkedHashMap<>();
-        form.put("employeeId", String.valueOf(emp.getId()));
-        form.put("empNo", nvl(emp.getEmpNo()));
-        form.put("name", nvl(emp.getName()));
-        form.put("orgPath", orgPathOf(emp.getOrgId()));
-        form.put("position", nvl(emp.getPosition()));
-        form.put("hireDate", emp.getHireDate() == null ? null : emp.getHireDate().toString());
-        form.put("probationMonths", Boolean.TRUE.equals(emp.getExemptProbation()) ? 0 : emp.getProbationMonths());
-        form.put("expectedRegularizeDate",
-                emp.getExpectedRegularizeDate() == null ? null : emp.getExpectedRegularizeDate().toString());
-        form.put("probationText", probationSummary(emp));
-        form.put("profileStats", profileStats(emp.getId()));
-        dto.setFormData(form);
-        dto.setCallbackUrl(selfBaseUrl + CALLBACK_PATH);
-        return dto;
-    }
-
-    /**
      * 提交入职前的完整性校验：基本信息除「备注」外都要有值（工号/邮箱由系统生成，不校验），
      * 且银行卡、教育背景、工作经历、家庭成员四个档案卡片各至少 1 条。
      * <p>

@@ -1060,8 +1060,6 @@ public class LeaveService {
                 : r.getCreatedAt().toString().replace('T', ' '));
         Long me = user.getAccountId();
         vo.setMine(me != null && me.equals(r.getAccountId()));
-        // 审批动作统一走审批中心，本地不再判断「轮到我审」
-        vo.setActionable(false);
         vo.setApprovalInstanceId(r.getApprovalInstanceId());
         vo.setApprovalBizType(r.getApprovalInstanceId() == null ? null : BIZ_LEAVE);
         return vo;

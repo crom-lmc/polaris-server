@@ -799,8 +799,6 @@ public class ResignApplyService {
             vo.setMine(me.equals(a.getApplicantAccountId()));
             vo.setHandoverMine(me.equals(a.getHandoverAccountId()));
         }
-        // 审批动作统一走审批中心，本地不再判断「轮到我审」
-        vo.setActionable(false);
         vo.setApprovalInstanceId(a.getApprovalInstanceId());
         vo.setApprovalBizType(a.getApprovalInstanceId() == null ? null : bizTypeOf(a));
         return vo;
