@@ -752,7 +752,7 @@ public class AttendanceDailyService {
         if (emp == null) {
             throw new BizException(EhrErrorCode.EMP_NOT_FOUND, "员工不存在");
         }
-        if (!dataScopeService.canAccess(emp)) {
+        if (!dataScopeService.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工的考勤");
         }
         return emp;
@@ -760,7 +760,7 @@ public class AttendanceDailyService {
 
     private List<Employee> accessibleEmployees() {
         LambdaQueryWrapper<Employee> w = new LambdaQueryWrapper<>();
-        dataScopeService.applyTo(w);
+        dataScopeService.applyOrgScope(w, Employee::getOrgCode);
         w.orderByAsc(Employee::getEmpNo);
         return employeeMapper.selectList(w);
     }

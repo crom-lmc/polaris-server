@@ -157,4 +157,19 @@ public class AccountController {
         accountAppService.grant(id, req.getAppIds());
         return R.ok();
     }
+
+    /** 设置账号的数据权限根组织编码（前端「数据权限」按钮弹窗提交） */
+    @PutMapping("/{id}/data-scope")
+    @Permit(PermissionConstants.ACCOUNT_EDIT)
+    public R<Void> setDataScope(@PathVariable Long id,
+                                @RequestBody DataScopeRequest req) {
+        accountService.setDataScope(id, req.getDataScopeOrgCode());
+        return R.ok();
+    }
+
+    @lombok.Data
+    public static class DataScopeRequest {
+        /** 数据权限根组织编码；null 表示清除 */
+        private String dataScopeOrgCode;
+    }
 }

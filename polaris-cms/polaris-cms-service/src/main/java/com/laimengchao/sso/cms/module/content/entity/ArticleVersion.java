@@ -25,6 +25,9 @@ public class ArticleVersion {
     private String remark;
     private String operator;
 
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

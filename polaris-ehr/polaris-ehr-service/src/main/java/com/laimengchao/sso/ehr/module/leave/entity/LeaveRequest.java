@@ -22,6 +22,8 @@ public class LeaveRequest extends BaseEntity {
     /** 结束时间 HH:mm（精确到半小时） */
     private String endTime;
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private Long accountId;
     private String applicantName;
     /** ANNUAL/SICK/PERSONAL/MARRIAGE/MATERNITY/OTHER */

@@ -68,4 +68,10 @@ public interface AccountService {
      * 登录名/初始密码留空时由账户域生成——唯一性、密码策略、来源标记都只在这里实现一份。
      */
     OpenAccountResult openAccount(InternalOpenAccountRequest req);
+
+    /** 按 accountId 取数据权限根组织编码（其他模块 Feign 调用）；未配置返回 null */
+    String dataScopeCode(Long accountId);
+
+    /** 设置指定账号的数据权限根组织编码（null 表示清除，返回全局不可见） */
+    void setDataScope(Long accountId, String dataScopeOrgCode);
 }

@@ -18,6 +18,10 @@ public class Category {
     private Long id;
     private String name;
     private Integer sort;
+
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableLogic
     private Integer deleted;
     @TableField(fill = FieldFill.INSERT)

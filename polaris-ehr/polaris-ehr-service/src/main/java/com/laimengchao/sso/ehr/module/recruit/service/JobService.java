@@ -10,6 +10,7 @@ import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.recruit.dto.JobPostRequest;
 import com.laimengchao.sso.ehr.module.recruit.entity.Candidate;
 import com.laimengchao.sso.ehr.module.recruit.entity.JobPost;
@@ -41,6 +42,7 @@ public class JobService {
     private final CandidateMapper candidateMapper;
     private final OrgNodeMapper orgMapper;
     private final BizNoService bizNoService;
+    private final DataScopeService dataScopeService;
 
     public R.Page<JobPostVO> page(String status, String keyword, int page, int size) {
         LambdaQueryWrapper<JobPost> w = new LambdaQueryWrapper<>();
@@ -51,6 +53,7 @@ public class JobService {
             w.and(q -> q.like(JobPost::getTitle, keyword.trim())
                     .or().like(JobPost::getJobNo, keyword.trim()));
         }
+        dataScopeService.applyOrgScope(w, JobPost::getOrgCode);
         w.orderByDesc(JobPost::getSortNo).orderByDesc(JobPost::getCreatedAt);
         IPage<JobPost> p = jobMapper.selectPage(new Page<>(page, size), w);
         List<JobPostVO> list = toVOList(p.getRecords());
@@ -96,6 +99,12 @@ public class JobService {
         job.setCreatedBy(user == null ? null : user.getAccountId());
         if (job.getOwnerId() == null && user != null) {
             job.setOwnerId(user.getAccountId());
+        }
+        if (job.getOrgId() != null) {
+            OrgNode org = orgMapper.selectById(job.getOrgId());
+            if (org != null) {
+                job.setOrgCode(org.getCode());
+            }
         }
         jobMapper.insert(job);
         return toVO(job, 0L);

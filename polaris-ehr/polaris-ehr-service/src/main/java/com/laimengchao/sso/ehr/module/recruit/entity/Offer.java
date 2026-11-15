@@ -23,6 +23,8 @@ public class Offer extends BaseEntity {
     private BigDecimal salary;
     private LocalDate expectedOnboardDate;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     /** DRAFT / APPROVING / APPROVED / CONFIRMED / DECLINED / REJECTED */
     private String status;
     private LocalDateTime confirmedAt;

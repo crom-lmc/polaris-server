@@ -62,4 +62,30 @@ public class EhrOrgClient {
             throw new BizException(ErrorCode.SYSTEM_ERROR, "组织服务暂时不可用，请稍后重试");
         }
     }
+
+    /**
+     * 该组织编码（scopeCode）下所有账号 ID。
+     * 走 Feign 内部 API 按 org_code LIKE 查 EHR 员工 → 账号列表。
+     */
+    public List<Long> accountIdsByCode(String scopeCode) {
+        if (scopeCode == null || scopeCode.isBlank()) return List.of();
+        try {
+            R<List<String>> resp = ehrOrgApi.accountIdsByCode(scopeCode);
+            if (resp == null || !resp.ok()) {
+                return List.of();
+            }
+            List<Long> out = new ArrayList<>();
+            if (resp.getData() != null) {
+                for (String s : resp.getData()) {
+                    if (s != null && !s.isBlank()) {
+                        try { out.add(Long.valueOf(s.trim())); } catch (NumberFormatException ignored) {}
+                    }
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            log.warn("按组织编码反查账号失败：scopeCode={} err={}", scopeCode, e.getMessage());
+            return List.of();
+        }
+    }
 }

@@ -27,4 +27,6 @@ public class AccountVO {
     private LocalDateTime createdAt;
     /** 角色编码列表 */
     private List<String> roles;
+    /** 数据权限根组织编码（前端展示 + 配置回显用） */
+    private String dataScopeOrgCode;
 }

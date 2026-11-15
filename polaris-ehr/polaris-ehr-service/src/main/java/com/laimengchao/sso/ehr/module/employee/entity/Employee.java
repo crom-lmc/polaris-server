@@ -48,6 +48,8 @@ public class Employee extends BaseEntity {
     private String currentAddress;
     /** 所属组织节点：集团/子公司/部门/项目/子项目都可以直接挂人 */
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段，由 org_id JOIN ehr_org_node.code 回填） */
+    private String orgCode;
     private String position;
     private LocalDate hireDate;
     /** 生命周期状态：10 待入职 / 20 入职审批中 / 25 入职审批通过 / 30 试用期 / 40 在职 / 50 离职中 / 60 已离职 */

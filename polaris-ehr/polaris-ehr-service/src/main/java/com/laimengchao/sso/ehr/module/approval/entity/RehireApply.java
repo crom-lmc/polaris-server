@@ -26,6 +26,8 @@ public class RehireApply extends BaseEntity {
     private String empNo;
     private String employeeName;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String orgName;
     /** 原离职日期快照，审批人据此判断离职时长 */
     private LocalDate resignDate;

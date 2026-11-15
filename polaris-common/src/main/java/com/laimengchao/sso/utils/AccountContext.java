@@ -54,6 +54,12 @@ public final class AccountContext {
         return info == null ? null : info.getAppCode();
     }
 
+    /** 当前账号的数据权限根组织编码（ThreadLocal 直取，登录时已填充） */
+    public static String getDataScopeOrgCode() {
+        AccountInfo info = HOLDER.get();
+        return info == null ? null : info.getDataScopeOrgCode();
+    }
+
     /** 当前账户快照 */
     public static class AccountInfo {
         private Long accountId;
@@ -62,6 +68,8 @@ public final class AccountContext {
         private boolean superAdmin;
         /** 令牌作用域：sso 表示平台自身，其余是业务应用编码 */
         private String appCode;
+        /** 数据权限根组织编码，登录时由 ScopeCodeCache 填充；null 表示未配置 */
+        private String dataScopeOrgCode;
 
         public AccountInfo() {
         }
@@ -117,6 +125,14 @@ public final class AccountContext {
 
         public void setSuperAdmin(boolean superAdmin) {
             this.superAdmin = superAdmin;
+        }
+
+        public String getDataScopeOrgCode() {
+            return dataScopeOrgCode;
+        }
+
+        public void setDataScopeOrgCode(String dataScopeOrgCode) {
+            this.dataScopeOrgCode = dataScopeOrgCode;
         }
     }
 }

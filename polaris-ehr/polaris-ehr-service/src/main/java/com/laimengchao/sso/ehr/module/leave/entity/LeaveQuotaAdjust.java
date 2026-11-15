@@ -17,6 +17,8 @@ public class LeaveQuotaAdjust extends BaseEntity {
     private String adjustNo;
     private Long quotaId;
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String leaveType;
     private Integer year;
     /** 调整增量，可为负 */

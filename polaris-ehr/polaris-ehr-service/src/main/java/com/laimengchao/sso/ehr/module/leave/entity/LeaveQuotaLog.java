@@ -17,6 +17,8 @@ public class LeaveQuotaLog extends BaseEntity {
 
     private Long quotaId;
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private Long leaveId;
     /** 幂等键，如 LEAVE:123:DEDUCT / ADJUST:456 */
     private String bizKey;

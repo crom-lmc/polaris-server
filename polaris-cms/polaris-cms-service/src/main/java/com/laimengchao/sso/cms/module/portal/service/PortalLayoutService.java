@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
+import com.laimengchao.sso.cms.security.DataScopeService;
 import com.laimengchao.sso.cms.module.portal.entity.PortalLayout;
 import com.laimengchao.sso.cms.module.portal.mapper.PortalLayoutMapper;
+import com.laimengchao.sso.utils.AccountContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class PortalLayoutService {
 
     private final PortalLayoutMapper mapper;
+    private final DataScopeService dataScopeService;
 
     /** 默认模块（首次启动种子）。config 用 JSON 串描述每个区块的取数参数 */
     private static final List<PortalLayout> DEFAULTS = List.of(
@@ -60,6 +63,14 @@ public class PortalLayoutService {
     /** 管理端：全部模块（含隐藏），按 sort 排 */
     public List<PortalLayout> listAll() {
         LambdaQueryWrapper<PortalLayout> w = new LambdaQueryWrapper<>();
+        String scopeCode = dataScopeService.currentScopeCode();
+        if (scopeCode == null || scopeCode.isBlank()) {
+            w.eq(PortalLayout::getOrgCode, "__NO_ACCESS__");
+        } else {
+            // 显示本组织的布局 + 全局种子（null orgCode）
+            w.and(x -> x.likeRight(PortalLayout::getOrgCode, scopeCode)
+                    .or().isNull(PortalLayout::getOrgCode));
+        }
         w.orderByAsc(PortalLayout::getSort).orderByAsc(PortalLayout::getId);
         return mapper.selectList(w);
     }
@@ -103,6 +114,7 @@ public class PortalLayoutService {
                     it.setModuleName(key);
                 }
                 it.setId(null);
+                it.setOrgCode(AccountContext.getDataScopeOrgCode());
                 mapper.insert(it);
             } else {
                 it.setId(db.getId());

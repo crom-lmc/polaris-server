@@ -2,6 +2,7 @@ package com.laimengchao.sso.account.security;
 
 import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.account.mapper.SsoAccountMapper;
+import com.laimengchao.sso.common.security.ScopeCodeCache;
 import com.laimengchao.sso.utils.AccountContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class AccountContextService {
     public static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 
     private final SsoAccountMapper accountMapper;
+    private final ScopeCodeCache scopeCodeCache;
 
     /**
      * 直接采用网关验签后的结论填充上下文：不查库，零额外开销。
@@ -38,8 +40,12 @@ public class AccountContextService {
                                 Set<String> permissions, String appCode) {
         String app = (appCode == null || appCode.isBlank())
                 ? PermissionConstants.PLATFORM_APP : appCode.trim();
-        AccountContext.set(
-                new AccountContext.AccountInfo(accountId, username, permissions, superAdmin, app));
+        AccountContext.AccountInfo info = new AccountContext.AccountInfo(
+                accountId, username, permissions, superAdmin, app);
+        // 登录时一次性加载 scopeCode → 塞进 ThreadLocal，后续 Service 层全靠 ThreadLocal 命中
+        String scopeCode = scopeCodeCache.get(accountId);
+        info.setDataScopeOrgCode(scopeCode);
+        AccountContext.set(info);
     }
 
     public void fill(Long accountId) {

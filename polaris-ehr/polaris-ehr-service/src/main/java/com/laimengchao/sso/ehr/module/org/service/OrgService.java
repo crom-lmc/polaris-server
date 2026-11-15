@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
 import com.laimengchao.sso.ehr.module.employee.dto.ApprovalCallbackRequest;
@@ -64,6 +65,8 @@ public class OrgService {
     private final ApprovalApi approvalApi;
     /** 统一的三段式发起：仅在途才回写实例号，避免回调竞态 */
     private final ApprovalLauncher approvalLauncher;
+    /** 数据权限：按 scopeCode 过滤组织树 + CRUD 校验 */
+    private final DataScopeService dataScopeService;
 
     /** 负责人变更审批场景编码，对应 settings 的 cfg_biz_scene.biz_type */
     /**
@@ -93,6 +96,15 @@ public class OrgService {
     public List<OrgNodeVO> tree(String keyword) {
         List<OrgNode> all = orgMapper.selectList(new LambdaQueryWrapper<OrgNode>()
                 .orderByAsc(OrgNode::getSort).orderByAsc(OrgNode::getId));
+        // 数据权限内存 filter：scopeCode 既能看到自己节点，也能看到其祖先链（scopeCode.startsWith(n.code)），
+        // 同时也能看到所有子孙节点（n.code.startsWith(scopeCode)）
+        String scopeCode = dataScopeService.currentScopeCode();
+        if (scopeCode != null && !scopeCode.isBlank()) {
+            all = all.stream()
+                    .filter(n -> n.getCode() != null
+                            && (scopeCode.startsWith(n.getCode()) || n.getCode().startsWith(scopeCode)))
+                    .collect(Collectors.toList());
+        }
         Map<Long, OrgCounts> counts = employeeCounts();
 
         // keyword 只做「保留命中的节点及其祖先链」，避免搜索时把树结构拍平成列表
@@ -194,6 +206,7 @@ public class OrgService {
 
     public OrgNodeVO detail(Long id) {
         OrgNode node = require(id);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         Map<Long, OrgCounts> counts = employeeCounts();
         OrgCounts self = counts.getOrDefault(id, OrgCounts.EMPTY);
         OrgNodeVO vo = toVO(node, self);
@@ -231,6 +244,8 @@ public class OrgService {
         if (req.getParentId() != null) {
             parent = require(req.getParentId());
             checkParentAllows(parent, type);
+            // 父组织必须在自己的数据范围内
+            dataScopeService.assertCanAccessOrg(parent.getCode());
         } else if (!type.canBeRoot()) {
             throw new BizException(EhrErrorCode.ORG_PARENT_NOT_ALLOWED,
                     "根节点只能是「集团」；" + type.getLabel() + "必须挂在上级节点下");
@@ -283,6 +298,7 @@ public class OrgService {
     @Transactional(rollbackFor = Exception.class)
     public OrgNodeVO update(Long id, OrgNodeRequest req) {
         OrgNode node = require(id);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         // 负责人变更要留痕：先把旧值记下来，落库后比对
         Long oldLeaderId = node.getLeaderEmployeeId();
         String oldLeaderName = nvl(node.getLeader());
@@ -496,6 +512,7 @@ public class OrgService {
      */
     public OrgNodeVO setLeader(Long id, Long employeeId, String reason) {
         OrgNode node = require(id);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         String cause = reason == null ? "" : reason.trim();
         if (employeeId == null || employeeId <= 0L) {
             return clearLeader(node, cause);
@@ -598,7 +615,8 @@ public class OrgService {
      * 某部门的负责人变更记录（新→旧）。给组织详情的时间线用，按提交时间倒序。
      */
     public List<LeaderChangeVO> leaderChanges(Long orgId) {
-        require(orgId);
+        OrgNode node = require(orgId);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         return leaderChangeMapper.selectList(new LambdaQueryWrapper<LeaderChange>()
                         .eq(LeaderChange::getOrgId, orgId)
                         .ne(LeaderChange::getStatus, LeaderChange.STATUS_CANCELLED)
@@ -904,6 +922,7 @@ public class OrgService {
             throw new BizException(ErrorCode.PARAM_ERROR, "状态只能是 1（启用）或 2（禁用）");
         }
         OrgNode node = require(id);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         if (Objects.equals(node.getStatus(), status)) {
             return detail(id);
         }
@@ -927,7 +946,8 @@ public class OrgService {
     /** 删除节点：有子节点或有人，一律拒绝——组织树错删比错建难恢复得多 */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        require(id);
+        OrgNode node = require(id);
+        dataScopeService.assertCanAccessOrg(node.getCode());
         if (childCount(id) > 0) {
             throw new BizException(EhrErrorCode.ORG_HAS_CHILDREN, "该节点下还有子节点，不能删除");
         }

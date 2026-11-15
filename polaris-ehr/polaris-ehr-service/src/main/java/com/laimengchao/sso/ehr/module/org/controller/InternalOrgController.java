@@ -300,4 +300,25 @@ public class InternalOrgController {
         }
         return R.ok(new ArrayList<>(ids));
     }
+
+    /**
+     * 按 org_code LIKE 前缀查该范围下所有已开户员工的账号 ID（数据权限引擎用）。
+     * scopeCode = "XC00010001" → 查所有 org_code LIKE "XC00010001%" 的员工 accountId。
+     */
+    @GetMapping("/account-ids-by-code")
+    public R<List<String>> accountIdsByCode(@RequestParam String scopeCode) {
+        if (scopeCode == null || scopeCode.isBlank()) {
+            return R.ok(List.of());
+        }
+        List<Employee> emps = employeeMapper.selectList(new LambdaQueryWrapper<Employee>()
+                .likeRight(Employee::getOrgCode, scopeCode.trim())
+                .isNotNull(Employee::getAccountId));
+        Set<String> ids = new LinkedHashSet<>();
+        for (Employee e : emps) {
+            if (e.getAccountId() != null) {
+                ids.add(String.valueOf(e.getAccountId()));
+            }
+        }
+        return R.ok(new ArrayList<>(ids));
+    }
 }

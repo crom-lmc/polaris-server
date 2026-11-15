@@ -20,6 +20,8 @@ import java.time.LocalTime;
 public class AttendanceDaily extends BaseEntity {
 
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private LocalDate workDate;
     private Long ruleId;
     /** 规则与时间段 JSON 快照 */

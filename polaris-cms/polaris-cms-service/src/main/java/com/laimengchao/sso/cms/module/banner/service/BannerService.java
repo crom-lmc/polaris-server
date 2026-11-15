@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
+import com.laimengchao.sso.cms.security.DataScopeService;
 import com.laimengchao.sso.cms.module.banner.entity.Banner;
 import com.laimengchao.sso.cms.module.banner.mapper.BannerMapper;
+import com.laimengchao.sso.utils.AccountContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -18,9 +20,11 @@ import java.util.List;
 public class BannerService {
 
     private final BannerMapper bannerMapper;
+    private final DataScopeService dataScopeService;
 
     public List<Banner> listAll() {
         LambdaQueryWrapper<Banner> w = new LambdaQueryWrapper<>();
+        dataScopeService.applyOrgScope(w, Banner::getOrgCode);
         w.orderByAsc(Banner::getSort);
         w.orderByAsc(Banner::getId);
         return bannerMapper.selectList(w);
@@ -39,20 +43,25 @@ public class BannerService {
         banner.setSort(banner.getSort() == null ? 0 : banner.getSort());
         banner.setStatus(banner.getStatus() == null ? 1 : banner.getStatus());
         if (banner.getId() == null) {
+            banner.setOrgCode(AccountContext.getDataScopeOrgCode());
             bannerMapper.insert(banner);
         } else {
-            if (bannerMapper.selectById(banner.getId()) == null) {
+            Banner existing = bannerMapper.selectById(banner.getId());
+            if (existing == null) {
                 throw new BizException(CmsErrorCode.DATA_NOT_FOUND, "Banner 不存在");
             }
+            dataScopeService.assertCanAccessOrg(existing.getOrgCode());
             bannerMapper.updateById(banner);
         }
         return banner;
     }
 
     public void delete(Long id) {
-        if (bannerMapper.selectById(id) == null) {
+        Banner existing = bannerMapper.selectById(id);
+        if (existing == null) {
             throw new BizException(CmsErrorCode.DATA_NOT_FOUND, "Banner 不存在");
         }
+        dataScopeService.assertCanAccessOrg(existing.getOrgCode());
         bannerMapper.deleteById(id);
     }
 }

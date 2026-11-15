@@ -20,6 +20,8 @@ public class Overtime {
     /** 加班单号：由配置中心单号规则生成 */
     private String overtimeNo;
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private Long accountId;
     private LocalDate workDate;
     /** 加班开始时间（HH:mm，不含日期） */

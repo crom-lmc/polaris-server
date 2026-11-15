@@ -31,6 +31,8 @@ public class RegularizeApply extends BaseEntity {
     private String empNo;
     private String employeeName;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String orgName;
     /** 组织全路径快照，审批页展示用 */
     private String orgPath;

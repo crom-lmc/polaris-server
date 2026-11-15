@@ -68,6 +68,9 @@ public class Article {
     /** 审批中心实例ID：非空且 status=6 表示内容发布审批进行中 */
     private Long approvalInstanceId;
 
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     /** 逻辑删除：1=回收站 */
     @TableLogic
     private Integer deleted;

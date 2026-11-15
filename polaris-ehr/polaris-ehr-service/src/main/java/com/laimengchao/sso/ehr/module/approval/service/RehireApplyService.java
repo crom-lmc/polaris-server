@@ -21,6 +21,7 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.employee.service.EmployeeService;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
@@ -75,6 +76,7 @@ public class RehireApplyService {
     private final EmployeeService employeeService;
     private final ApprovalApi approvalApi;
     private final ApprovalLauncher approvalLauncher;
+    private final DataScopeService dataScopeService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -119,6 +121,7 @@ public class RehireApplyService {
         apply.setEmpNo(emp.getEmpNo());
         apply.setEmployeeName(emp.getName());
         apply.setOrgId(emp.getOrgId());
+        apply.setOrgCode(emp.getOrgCode());
         apply.setOrgName(org == null ? "" : nvl(org.getName()));
         apply.setResignDate(emp.getResignDate());
         apply.setRehireDate(rehireDate);
@@ -288,7 +291,9 @@ public class RehireApplyService {
     /* ---------------- 查询 ---------------- */
 
     public RehireApplyVO detail(Long id) {
-        return toVO(require(id), currentUserOrNull());
+        RehireApply detail = require(id);
+        dataScopeService.assertCanAccessOrg(detail.getOrgCode());
+        return toVO(detail, currentUserOrNull());
     }
 
     /** scope=mine 我提交的；scope=all 全部（需审批权限） */
@@ -309,6 +314,9 @@ public class RehireApplyService {
         } else {
             // 已撤销只留档，不在列表展示
             w.ne(RehireApply::getStatus, 3);
+        }
+        if ("all".equalsIgnoreCase(scope)) {
+            dataScopeService.applyOrgScope(w, RehireApply::getOrgCode);
         }
         w.orderByDesc(RehireApply::getCreatedAt);
         IPage<RehireApply> ip = mapper.selectPage(new Page<>(page, size), w);

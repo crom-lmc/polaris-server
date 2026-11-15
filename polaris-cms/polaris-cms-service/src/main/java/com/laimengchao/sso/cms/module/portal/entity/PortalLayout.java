@@ -25,6 +25,10 @@ public class PortalLayout {
     private Integer sort;
     /** 模块参数 JSON，如 {"limit":6} */
     private String config;
+
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)

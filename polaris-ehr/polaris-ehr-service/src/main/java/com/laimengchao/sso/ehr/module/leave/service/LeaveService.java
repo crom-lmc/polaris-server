@@ -33,6 +33,7 @@ import com.laimengchao.sso.ehr.module.leave.vo.LeaveVO;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.entity.OrgType;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
@@ -121,6 +122,7 @@ public class LeaveService {
     private final BizNoService bizNoService;
     /** 请假终态后同步重算考勤日结果，保证「我的考勤」与请假单状态一致 */
     private final AttendanceDailyService attendanceDailyService;
+    private final DataScopeService dataScopeService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -204,6 +206,7 @@ public class LeaveService {
             if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.LEAVE_APPROVE)) {
                 throw new BizException(ErrorCode.FORBIDDEN, "没有审批权限，只能查看自己的请假");
             }
+            dataScopeService.applyOrgScope(w, LeaveRequest::getOrgCode);
         } else {
             w.eq(LeaveRequest::getAccountId, user.getAccountId());
         }
@@ -340,6 +343,7 @@ public class LeaveService {
         leave.setLeaveNo(bizNoService.next("ehr_leave"));
         leave.setEmployeeId(emp.getId());
         leave.setAccountId(user.getAccountId());
+        leave.setOrgCode(emp.getOrgCode());
         leave.setApplicantName(emp.getName());
         leave.setLeaveType(type);
         leave.setStartDate(start);

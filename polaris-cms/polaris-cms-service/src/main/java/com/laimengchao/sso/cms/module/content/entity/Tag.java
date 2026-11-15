@@ -16,6 +16,10 @@ public class Tag {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
+
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

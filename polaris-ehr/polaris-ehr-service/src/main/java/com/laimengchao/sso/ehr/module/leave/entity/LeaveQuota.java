@@ -16,6 +16,8 @@ import java.time.LocalDate;
 public class LeaveQuota extends BaseEntity {
 
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String leaveType;
     /** MySQL 里 YEAR 是关键字，显式加反引号 */
     @TableField("`year`")

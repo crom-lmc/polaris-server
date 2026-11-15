@@ -198,7 +198,7 @@ public class AttachmentService {
         if (emp == null) {
             throw new BizException(EhrErrorCode.EMP_NOT_FOUND, "员工不存在");
         }
-        if (!dataScopeService.canAccess(emp)) {
+        if (!dataScopeService.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工的附件");
         }
         return emp;

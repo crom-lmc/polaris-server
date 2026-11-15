@@ -138,7 +138,7 @@ public class EmployeeService {
      */
     private LambdaQueryWrapper<Employee> listWrapper(String keyword, Long orgId, Integer status) {
         LambdaQueryWrapper<Employee> w = new LambdaQueryWrapper<>();
-        dataScope.applyTo(w);
+        dataScope.applyOrgScope(w, Employee::getOrgCode);
         if (keyword != null && !keyword.isBlank()) {
             String kw = keyword.trim();
             w.and(q -> q.like(Employee::getName, kw)
@@ -160,7 +160,7 @@ public class EmployeeService {
     /** 详情：先校验数据范围（越权 403），再按敏感权限决定明文/掩码，并记审计 */
     public EmployeeVO detail(Long id) {
         Employee emp = require(id);
-        if (!dataScope.canAccess(emp)) {
+        if (!dataScope.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工档案");
         }
         boolean reveal = dataScope.canRevealSensitive();
@@ -173,7 +173,7 @@ public class EmployeeService {
     /** 查看敏感明文：数据范围 + 敏感权限双校验，必留 PLAIN 审计 */
     public EmployeeVO sensitiveView(Long id) {
         Employee emp = require(id);
-        if (!dataScope.canAccess(emp)) {
+        if (!dataScope.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工档案");
         }
         if (!dataScope.canRevealSensitive()) {

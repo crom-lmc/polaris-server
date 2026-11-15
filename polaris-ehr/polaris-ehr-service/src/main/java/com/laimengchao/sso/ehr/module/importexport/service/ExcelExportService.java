@@ -89,7 +89,7 @@ public class ExcelExportService {
         List<Contract> visible = contracts.stream()
                 .filter(c -> {
                     Employee e = emps.get(c.getEmployeeId());
-                    return e != null && dataScopeService.canAccess(e);
+                    return e != null && dataScopeService.canAccessOrg(e.getOrgCode());
                 })
                 .collect(Collectors.toList());
 

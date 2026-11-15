@@ -6,11 +6,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.cms.common.CmsErrorCode;
+import com.laimengchao.sso.cms.security.DataScopeService;
 import com.laimengchao.sso.cms.module.media.entity.Media;
 import com.laimengchao.sso.cms.module.media.mapper.MediaMapper;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.cms.storage.StorageService;
 import com.laimengchao.sso.cms.storage.StoredFile;
+import com.laimengchao.sso.utils.AccountContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +26,7 @@ public class MediaService {
 
     private final MediaMapper mediaMapper;
     private final StorageService storageService;
+    private final DataScopeService dataScopeService;
 
     public Media upload(MultipartFile file) {
         Long uid = SecurityUtils.currentUserId();
@@ -44,12 +47,14 @@ public class MediaService {
         m.setSize(sf.getSize());
         m.setUploadedBy(uid);
         m.setUploadedName(SecurityUtils.currentUsername().orElse(""));
+        m.setOrgCode(AccountContext.getDataScopeOrgCode());
         mediaMapper.insert(m);
         return m;
     }
 
     public IPage<Media> page(String keyword, int page, int size) {
         LambdaQueryWrapper<Media> w = new LambdaQueryWrapper<>();
+        dataScopeService.applyOrgScope(w, Media::getOrgCode);
         if (keyword != null && !keyword.isBlank()) {
             w.like(Media::getOriginalName, keyword.trim());
         }
@@ -62,6 +67,7 @@ public class MediaService {
         if (m == null) {
             throw new BizException(CmsErrorCode.DATA_NOT_FOUND, "文件不存在");
         }
+        dataScopeService.assertCanAccessOrg(m.getOrgCode());
         storageService.delete(m.getUrl());
         mediaMapper.deleteById(id);
     }

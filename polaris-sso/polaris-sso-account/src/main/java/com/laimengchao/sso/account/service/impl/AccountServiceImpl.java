@@ -24,12 +24,14 @@ import com.laimengchao.sso.account.mapper.SsoApplicationMapper;
 import com.laimengchao.sso.account.mapper.SsoRoleMapper;
 import com.laimengchao.sso.account.security.AccountContextService;
 import com.laimengchao.sso.account.security.PasswordPolicy;
+import com.laimengchao.sso.common.security.ScopeCodeCache;
 import com.laimengchao.sso.account.service.AccountService;
 import com.laimengchao.sso.account.service.AuditLogService;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.PageResult;
 import com.laimengchao.sso.common.enums.AccountStatus;
+import com.laimengchao.sso.utils.AccountContext;
 import com.laimengchao.sso.utils.Asserts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +57,7 @@ public class AccountServiceImpl implements AccountService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final EhrOrgClient ehrOrgClient;
     private final AuditLogService auditLogService;
+    private final ScopeCodeCache scopeCodeCache;
 
     @Value("${sso.security.max-login-fail:5}")
     private int maxLoginFail;
@@ -73,14 +76,29 @@ public class AccountServiceImpl implements AccountService {
                     .or().like(SsoAccount::getNickname, kw)
                     .or().like(SsoAccount::getEmail, kw));
         }
-        if (orgId != null) {
+
+        // 数据权限过滤：自动把当前账号的 scopeCode 转成 orgId 列表灌进查询
+        String scopeCode = scopeCodeCache.get(AccountContext.getAccountId());
+        Long effectiveOrgId = orgId;
+        if (scopeCode != null && !scopeCode.isBlank()) {
+            // scopeCode 转 orgId（scopeCode 是 org.code，需要通过 EhrOrgClient 反查 accountIds）
+            // EhrOrgClient.accountIds 内部应该支持按 org_code 拿 account 列表
+            List<Long> scopeIds = ehrOrgClient.accountIdsByCode(scopeCode);
+            if (orgId != null) {
+                // 前端也选了 orgId → 取交集（取更小的范围）
+                List<Long> frontendIds = ehrOrgClient.accountIds(orgId);
+                scopeIds.retainAll(frontendIds);
+            }
+            w.in(SsoAccount::getId, scopeIds);
+        } else if (orgId != null) {
+            // 没 scopeCode 但前端选了 orgId
             List<Long> ids = ehrOrgClient.accountIds(orgId);
             if (ids.isEmpty()) {
-                // 空组织 = 没有账号，绝不能退化成「不过滤显示全部」
                 return PageResult.of(List.of(), 0, page, size);
             }
             w.in(SsoAccount::getId, ids);
         }
+
         w.orderByDesc(SsoAccount::getCreatedAt);
         IPage<SsoAccount> ip = accountMapper.selectPage(new Page<>(page, size), w);
         List<AccountVO> records = ip.getRecords().stream().map(this::toVO).collect(Collectors.toList());
@@ -620,6 +638,25 @@ public class AccountServiceImpl implements AccountService {
         vo.setLastLoginAt(a.getLastLoginAt());
         vo.setCreatedAt(a.getCreatedAt());
         vo.setRoles(getRoleCodes(a.getId()));
+        vo.setDataScopeOrgCode(a.getDataScopeOrgCode());
         return vo;
+    }
+
+    @Override
+    public String dataScopeCode(Long accountId) {
+        return scopeCodeCache.get(accountId);
+    }
+
+    @Override
+    @Transactional
+    public void setDataScope(Long accountId, String dataScopeOrgCode) {
+        SsoAccount acc = accountMapper.selectById(accountId);
+        if (acc == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "账号不存在");
+        }
+        acc.setDataScopeOrgCode(dataScopeOrgCode);
+        accountMapper.updateById(acc);
+        // 主动删 Redis 缓存，所有节点下次查就走 DB/Feign 拉最新
+        scopeCodeCache.invalidate(accountId);
     }
 }

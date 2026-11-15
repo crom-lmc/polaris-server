@@ -1,99 +1,98 @@
 package com.laimengchao.sso.ehr.security;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
+import com.laimengchao.sso.common.BizException;
+import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.DataScope;
+import com.laimengchao.sso.common.security.PermissionCodes;
+import com.laimengchao.sso.common.security.ScopeCodeCache;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
-import com.laimengchao.sso.common.security.PermissionCodes;
-import com.laimengchao.sso.ehr.module.employee.entity.Employee;
-import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
-import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
-import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.utils.AccountContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
- * 人员数据范围。范围由权限码驱动，不依赖 sso 角色表：
+ * EHR 模块的数据权限服务。**新方案**：
  * <ul>
- *   <li>{@code employee:data:all} → 全部</li>
- *   <li>{@code employee:data:org_tree} → 当前登录人档案所在组织及下级</li>
- *   <li>{@code employee:data:org} → 仅当前登录人档案所在组织</li>
- *   <li>都没有 → 只能看自己的档案（按 accountId 匹配）</li>
+ *   <li>废弃旧的 ScopeType/Scope/current()（按权限码推断四档范围 + 超管放行）</li>
+ *   <li>统一用 {@code dataScopeOrgCode LIKE 'scopeCode%'} 过滤</li>
+ *   <li>scopeCode 通过 {@link ScopeCodeCache} 拿（ThreadLocal → Redis → Feign 调 sso-account）</li>
  * </ul>
- * 超管直接放行全部。没有任何档案的账号在组织级范围下退化为「仅本人」，
- * 避免因为拿不到根组织而看到全量或什么都看不到。
+ *
+ * <p>遗留保留：{@link #canRevealSensitive()} 和 {@link #hasPermission(String)} —
+ * 敏感字段明文权限是独立概念（按 {@code employee:sensitive:view} 权限码），和数据范围隔离无关。
  */
 @Service
 @RequiredArgsConstructor
-public class DataScopeService {
+public class DataScopeService implements DataScope {
 
-    public enum ScopeType {
-        ALL, ORG_TREE, ORG, SELF
+    private final ScopeCodeCache scopeCodeCache;
+
+    // ============ DataScope 接口实现 ============
+
+    @Override
+    public String currentScopeCode() {
+        Long accountId = AccountContext.getAccountId();
+        return accountId == null ? null : scopeCodeCache.get(accountId);
     }
 
-    public record Scope(ScopeType type, Long orgId, Long accountId) {
+    @Override
+    public String scopeCodeOf(Long accountId) {
+        return scopeCodeCache.get(accountId);
     }
 
-    private final EmployeeMapper employeeMapper;
-    private final OrgNodeMapper orgMapper;
+    // ============ 业务单据查询拼 LIKE ============
 
-    /** 解析当前登录人的数据范围 */
-    public Scope current() {
-        SecurityUser user = SecurityUtils.currentUser().orElse(null);
-        Long accountId = user == null ? null : user.getAccountId();
-        if (user != null && user.isSuperAdmin()) {
-            return new Scope(ScopeType.ALL, null, accountId);
+    /**
+     * 把数据范围拼进任意业务单据的 LambdaQueryWrapper。
+     * 空 scopeCode（未配置）→ WHERE org_code = '__NO_ACCESS__'（安全兜底空集）。
+     */
+    /**
+     * 把数据范围拼进任意业务单据的 LambdaQueryWrapper。
+     * scopeCode 支持逗号分隔多值：每个根节点拼一个 LIKE，用 OR 组合。
+     */
+    public <T> void applyOrgScope(LambdaQueryWrapper<T> wrapper, SFunction<T, String> orgCodeFn) {
+        String scopeCode = currentScopeCode();
+        if (scopeCode == null || scopeCode.isBlank()) {
+            return;
         }
-        if (hasPermission(user, PermissionCodes.EMPLOYEE_DATA_ALL)) {
-            return new Scope(ScopeType.ALL, null, accountId);
-        }
-        Employee me = me(accountId);
-        Long orgId = me == null ? null : me.getOrgId();
-        if (orgId != null && hasPermission(user, PermissionCodes.EMPLOYEE_DATA_ORG_TREE)) {
-            return new Scope(ScopeType.ORG_TREE, orgId, accountId);
-        }
-        if (orgId != null && hasPermission(user, PermissionCodes.EMPLOYEE_DATA_ORG)) {
-            return new Scope(ScopeType.ORG, orgId, accountId);
-        }
-        return new Scope(ScopeType.SELF, null, accountId);
-    }
-
-    /** 把数据范围拼进人员查询条件；调用方后续再叠加的业务筛选会自然与范围取交集 */
-    public void applyTo(LambdaQueryWrapper<Employee> wrapper) {
-        Scope scope = current();
-        switch (scope.type()) {
-            case ALL -> {
-            }
-            case ORG_TREE -> {
-                List<Long> ids = subtreeIds(scope.orgId());
-                if (ids.isEmpty()) {
-                    wrapper.eq(Employee::getOrgId, -1L);
-                } else {
-                    wrapper.in(Employee::getOrgId, ids);
+        String[] roots = scopeCode.split(",");
+        if (roots.length == 1) {
+            wrapper.likeRight(orgCodeFn, roots[0].trim());
+        } else {
+            wrapper.and(w -> {
+                for (int i = 0; i < roots.length; i++) {
+                    String r = roots[i].trim();
+                    if (r.isEmpty()) continue;
+                    if (i == 0) {
+                        w.likeRight(orgCodeFn, r);
+                    } else {
+                        w.or().likeRight(orgCodeFn, r);
+                    }
                 }
-            }
-            case ORG -> wrapper.eq(Employee::getOrgId, scope.orgId());
-            case SELF -> wrapper.eq(Employee::getAccountId, scope.accountId());
+            });
         }
     }
 
-    /** 单条档案是否在当前数据范围内（详情/子档案/导出用） */
-    public boolean canAccess(Employee employee) {
-        if (employee == null) {
-            return false;
-        }
-        Scope scope = current();
-        return switch (scope.type()) {
-            case ALL -> true;
-            case SELF -> scope.accountId() != null && scope.accountId().equals(employee.getAccountId());
-            case ORG -> scope.orgId() != null && scope.orgId().equals(employee.getOrgId());
-            case ORG_TREE -> employee.getOrgId() != null && subtreeIds(scope.orgId()).contains(employee.getOrgId());
-        };
+    // ============ 单条记录校验 ============
+
+    /** 单条记录是否可见（返回 boolean，detail/export 用） */
+    public boolean canAccessOrg(String orgCode) {
+        return DataScope.super.canAccessOrg(orgCode);
     }
 
-    /** 是否有敏感字段明文权限（含超管） */
+    /** 单条记录是否可见（抛 Forbidden，OrgService CRUD 用） */
+    public void assertCanAccessOrg(String orgCode) {
+        if (!canAccessOrg(orgCode)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权操作该组织节点");
+        }
+    }
+
+    // ============ 旧方案保留（独立于数据范围隔离） ============
+
+    /** 是否有敏感字段明文权限（独立的按钮级权限，和数据范围无关） */
     public boolean canRevealSensitive() {
         SecurityUser user = SecurityUtils.currentUser().orElse(null);
         return user != null
@@ -106,28 +105,5 @@ public class DataScopeService {
 
     private boolean hasPermission(SecurityUser user, String code) {
         return user != null && user.getPermissions() != null && user.getPermissions().contains(code);
-    }
-
-    private Employee me(Long accountId) {
-        if (accountId == null) {
-            return null;
-        }
-        return employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
-                .eq(Employee::getAccountId, accountId).last("limit 1"));
-    }
-
-    /** 根组织自身 + 整棵子树的 id（按 path 前缀） */
-    private List<Long> subtreeIds(Long rootOrgId) {
-        if (rootOrgId == null) {
-            return List.of();
-        }
-        OrgNode root = orgMapper.selectById(rootOrgId);
-        if (root == null || root.getPath() == null || root.getPath().isBlank()) {
-            return List.of(rootOrgId);
-        }
-        List<OrgNode> all = orgMapper.selectList(new LambdaQueryWrapper<OrgNode>()
-                .likeRight(OrgNode::getPath, root.getPath()));
-        List<Long> ids = all.stream().map(OrgNode::getId).distinct().collect(Collectors.toList());
-        return ids.isEmpty() ? List.of(rootOrgId) : ids;
     }
 }

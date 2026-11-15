@@ -11,6 +11,7 @@ import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.ehr.integration.EmbedPointReader;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.approval.dto.HandoverConfirmRequest;
 import com.laimengchao.sso.ehr.module.approval.dto.ResignApplyRequest;
 import com.laimengchao.sso.ehr.module.approval.entity.ResignApply;
@@ -110,6 +111,7 @@ public class ResignApplyService {
     /** 配置中心待办/消息接口：审批通过后发「关闭账号」待办 */
     private final NoticeApi noticeApi;
     private final EmbedPointReader embedPointReader;
+    private final DataScopeService dataScopeService;
 
     /** 配置中心埋点：HR 部门组织节点（含子部门），离职通过后群发待办给该部门全员 */
     private static final String EMBED_HR_ORG_NAME = "ehr.notice.hr-org-name";
@@ -187,6 +189,7 @@ public class ResignApplyService {
         apply.setApplyNo(nextApplyNo(TABLE_RESIGN));
         apply.setEmployeeName(emp.getName());
         apply.setOrgId(emp.getOrgId());
+        apply.setOrgCode(emp.getOrgCode());
         apply.setOrgName(orgName(org));
         apply.setSource(source);
         apply.setApplicantAccountId(user.getAccountId());
@@ -602,7 +605,9 @@ public class ResignApplyService {
     /** 单据详情：审批弹窗要展开交接清单，单独取一次比列表里塞全量更省 */
     public ResignApplyVO detail(Long id) {
         SecurityUser user = currentUser();
-        return toVO(require(id), user);
+        ResignApply detail = require(id);
+        dataScopeService.assertCanAccessOrg(detail.getOrgCode());
+        return toVO(detail, user);
     }
 
     /** 待我确认交接的单子（交接人视角）；includeFinished=true 时连已确认完的一起返回 */
@@ -645,6 +650,9 @@ public class ResignApplyService {
         } else {
             // 已撤销只留档，不在列表展示
             w.ne(ResignApply::getStatus, 3);
+        }
+        if (all) {
+            dataScopeService.applyOrgScope(w, ResignApply::getOrgCode);
         }
         w.orderByDesc(ResignApply::getCreatedAt);
         IPage<ResignApply> ip = mapper.selectPage(new Page<>(page, size), w);

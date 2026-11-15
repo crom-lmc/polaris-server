@@ -14,6 +14,7 @@ import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.employee.service.EmployeeService;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.recruit.dto.CandidateRequest;
 import com.laimengchao.sso.ehr.module.recruit.dto.OfferRequest;
 import com.laimengchao.sso.ehr.module.recruit.entity.Candidate;
@@ -91,6 +92,7 @@ public class RecruitService {
     private final InterviewService interviewService;
     private final RecruitCommService recruitCommService;
     private final BizNoService bizNoService;
+    private final DataScopeService dataScopeService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -112,6 +114,7 @@ public class RecruitService {
                     .or().like(Candidate::getMobile, kw)
                     .or().like(Candidate::getPosition, kw));
         }
+        dataScopeService.applyOrgScope(w, Candidate::getOrgCode);
         w.orderByDesc(Candidate::getCreatedAt);
         IPage<Candidate> p = candidateMapper.selectPage(new Page<>(page, size), w);
         if (p.getRecords().isEmpty()) {
@@ -183,6 +186,12 @@ public class RecruitService {
         applyCandidate(c, req, STAGE_RESUME);
         c.setOwnerId(user.getAccountId());
         c.setOwnerName(nvl(user.getUsername()));
+        if (c.getOrgId() != null) {
+            OrgNode org = orgMapper.selectById(c.getOrgId());
+            if (org != null) {
+                c.setOrgCode(org.getCode());
+            }
+        }
         candidateMapper.insert(c);
         return toCandidateVO(c, null, orgMap());
     }
@@ -243,6 +252,7 @@ public class RecruitService {
         }
         // 一位候选人只展示最近一张 Offer：同一人「撤回/驳回 → 重新提交」历史遗留的重复行不再重复列出
         w.inSql(Offer::getId, "select max(id) from ehr_offer group by candidate_id");
+        dataScopeService.applyOrgScope(w, Offer::getOrgCode);
         w.orderByDesc(Offer::getId);
         IPage<Offer> p = offerMapper.selectPage(new Page<>(page, size), w);
         if (p.getRecords().isEmpty()) {
@@ -307,6 +317,7 @@ public class RecruitService {
         o.setSalary(req.getSalary());
         o.setExpectedOnboardDate(onboardDate);
         o.setOrgId(req.getOrgId());
+        o.setOrgCode(org.getCode());
         o.setStatus(STATUS_APPROVING);
         o.setRemark(nvl(req.getRemark()));
 

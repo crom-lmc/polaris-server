@@ -185,4 +185,10 @@ public class InternalAccountController {
         accountService.setEnabled(id, req.getEnabled());
         return R.ok();
     }
+
+    /** 按 accountId 取数据权限根组织编码（其他模块 Feign 调用）；未配置返回 null */
+    @GetMapping("/{id}/data-scope-code")
+    public R<String> dataScopeCode(@PathVariable Long id) {
+        return R.ok(accountService.dataScopeCode(id));
+    }
 }

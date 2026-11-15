@@ -14,6 +14,9 @@ import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaLogMapper;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaMapper;
 import com.laimengchao.sso.ehr.module.leave.vo.LeaveQuotaVO;
 import com.laimengchao.sso.ehr.module.leave.vo.QuotaLogVO;
+import com.laimengchao.sso.ehr.module.employee.entity.Employee;
+import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -48,6 +51,8 @@ public class LeaveQuotaService {
     private final LeaveCarryoverWaiverMapper waiverMapper;
     private final LeaveTypeRuleService ruleService;
     private final AnnualLeaveService annualLeaveService;
+    private final EmployeeMapper employeeMapper;
+    private final DataScopeService dataScopeService;
 
     public LeaveQuota getById(Long quotaId) {
         return quotaMapper.selectById(quotaId);
@@ -78,6 +83,8 @@ public class LeaveQuotaService {
         }
         LeaveQuota n = new LeaveQuota();
         n.setEmployeeId(employeeId);
+        Employee emp = employeeMapper.selectById(employeeId);
+        n.setOrgCode(emp != null ? emp.getOrgCode() : null);
         n.setLeaveType(leaveType);
         n.setYear(year);
         n.setPeriodStart(LocalDate.of(year, 1, 1));

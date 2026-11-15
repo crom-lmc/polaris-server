@@ -23,6 +23,8 @@ public class Candidate extends BaseEntity {
     private String source;
     private String position;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     /** RESUME / INTERVIEW / OFFER / REJECTED */
     private String stage;
     private Long ownerId;

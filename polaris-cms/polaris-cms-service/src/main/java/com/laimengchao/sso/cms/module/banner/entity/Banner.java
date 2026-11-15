@@ -23,6 +23,10 @@ public class Banner {
     private Integer sort;
     private Integer status;
     private String remark;
+
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableLogic
     private Integer deleted;
     @TableField(fill = FieldFill.INSERT)

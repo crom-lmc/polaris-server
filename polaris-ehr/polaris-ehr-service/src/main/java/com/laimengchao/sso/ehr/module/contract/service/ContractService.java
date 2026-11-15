@@ -105,6 +105,7 @@ public class ContractService {
         Contract c = new Contract();
         c.setEmployeeId(employeeId);
         fill(c, req);
+        c.setOrgCode(emp.getOrgCode());
         c.setStatus(STATUS_ACTIVE);
         contractMapper.insert(c);
         if (file != null) {
@@ -159,6 +160,7 @@ public class ContractService {
 
         Contract pending = new Contract();
         pending.setEmployeeId(old.getEmployeeId());
+        pending.setOrgCode(emp.getOrgCode());
         pending.setContractNo(req.getContractNo() == null ? old.getContractNo() : req.getContractNo());
         pending.setContractType(old.getContractType());
         pending.setStartDate(req.getStartDate());
@@ -343,7 +345,7 @@ public class ContractService {
         if (emp == null) {
             throw new BizException(EhrErrorCode.EMP_NOT_FOUND, "员工不存在");
         }
-        if (!dataScopeService.canAccess(emp)) {
+        if (!dataScopeService.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权查看该员工的合同");
         }
         return emp;

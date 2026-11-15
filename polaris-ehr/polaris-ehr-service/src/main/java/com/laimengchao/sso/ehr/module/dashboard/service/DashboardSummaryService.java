@@ -191,7 +191,7 @@ public class DashboardSummaryService {
     /** 数据范围 + 可选组织（含下级）过滤 */
     private List<Employee> scopedEmployees(Long orgId) {
         LambdaQueryWrapper<Employee> w = Wrappers.lambdaQuery();
-        dataScope.applyTo(w);
+        dataScope.applyOrgScope(w, Employee::getOrgCode);
         if (orgId != null) {
             List<Long> ids = subtreeIds(orgId);
             if (ids.isEmpty()) {

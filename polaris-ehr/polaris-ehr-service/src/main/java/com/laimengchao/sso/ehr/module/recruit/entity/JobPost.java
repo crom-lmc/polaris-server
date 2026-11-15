@@ -18,6 +18,8 @@ public class JobPost extends BaseEntity {
     private String jobNo;
     private String title;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     /** FULL_TIME / INTERN / PART_TIME */
     private String jobType;
     private String workCity;

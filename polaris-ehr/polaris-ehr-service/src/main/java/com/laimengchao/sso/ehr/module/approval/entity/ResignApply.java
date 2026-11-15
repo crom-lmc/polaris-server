@@ -26,6 +26,8 @@ public class ResignApply extends BaseEntity {
     private String empNo;
     private String employeeName;
     private Long orgId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String orgName;
     /** SELF 员工申请 / HR 减员 */
     private String source;

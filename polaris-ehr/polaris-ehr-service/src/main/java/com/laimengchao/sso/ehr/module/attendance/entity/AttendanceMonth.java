@@ -16,6 +16,8 @@ public class AttendanceMonth {
     @TableId(type = IdType.INPUT)
     private Long id;
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     /** yyyy-MM */
     private String month;
     private BigDecimal shouldDays;

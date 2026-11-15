@@ -20,6 +20,7 @@ import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
@@ -84,6 +85,7 @@ public class RegularizeApplyService {
     private final ApprovalLauncher approvalLauncher;
     /** 配置中心取号接口：生成申请单号 */
     private final CodeRuleApi codeRuleApi;
+    private final DataScopeService dataScopeService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -145,6 +147,7 @@ public class RegularizeApplyService {
         apply.setApplyNo(nextApplyNo(TABLE_REGULARIZE));
         apply.setEmployeeName(emp.getName());
         apply.setOrgId(emp.getOrgId());
+        apply.setOrgCode(emp.getOrgCode());
         apply.setOrgName(org == null ? "" : nvl(org.getName()));
         apply.setOrgPath(orgPathOf(emp.getOrgId()));
         apply.setPosition(nvl(emp.getPosition()));
@@ -405,7 +408,9 @@ public class RegularizeApplyService {
     /* ---------------- 查询 ---------------- */
 
     public RegularizeApplyVO detail(Long id) {
-        return toVO(require(id), currentUserOrNull());
+        RegularizeApply detail = require(id);
+        dataScopeService.assertCanAccessOrg(detail.getOrgCode());
+        return toVO(detail, currentUserOrNull());
     }
 
     /** scope=mine 我提交的；scope=all 全部（需审批权限） */
@@ -426,6 +431,9 @@ public class RegularizeApplyService {
         } else {
             // 已撤销只留档，不在列表展示
             w.ne(RegularizeApply::getStatus, 3);
+        }
+        if ("all".equalsIgnoreCase(scope)) {
+            dataScopeService.applyOrgScope(w, RegularizeApply::getOrgCode);
         }
         w.orderByDesc(RegularizeApply::getCreatedAt);
         IPage<RegularizeApply> ip = mapper.selectPage(new Page<>(page, size), w);

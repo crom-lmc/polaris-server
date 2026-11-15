@@ -262,7 +262,7 @@ public class EmployeeProfileService {
 
     private Employee requireAccessible(Long employeeId) {
         Employee emp = requireEmployeeExists(employeeId);
-        if (!dataScope.canAccess(emp)) {
+        if (!dataScope.canAccessOrg(emp.getOrgCode())) {
             throw new BizException(ErrorCode.FORBIDDEN, "无权维护该员工子档案");
         }
         return emp;

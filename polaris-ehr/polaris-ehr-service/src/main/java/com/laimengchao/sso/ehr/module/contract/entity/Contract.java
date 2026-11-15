@@ -14,6 +14,8 @@ import java.time.LocalDate;
 public class Contract extends BaseEntity {
 
     private Long employeeId;
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
     private String contractNo;
     /** FIXED 固定期限 / UNFIXED 无固定期限 / INTERN 实习 / LABOR 劳务 */
     private String contractType;

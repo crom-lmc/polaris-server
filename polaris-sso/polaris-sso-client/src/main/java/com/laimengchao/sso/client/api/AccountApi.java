@@ -82,4 +82,8 @@ public interface AccountApi {
     /** 应用凭据校验 */
     @PostMapping("/internal/apps/verify")
     R<AppInfo> verifyApp(@RequestBody AppVerifyRequest request);
+
+    /** 按 accountId 取数据权限根组织编码（数据权限引擎用）；未配置返回 null */
+    @GetMapping("/internal/accounts/{id}/data-scope-code")
+    R<String> dataScopeCode(@PathVariable("id") Long accountId);
 }

@@ -23,6 +23,10 @@ public class Media {
     private Long size;
     private Long uploadedBy;
     private String uploadedName;
+
+    /** 所属组织编码（数据权限冗余字段） */
+    private String orgCode;
+
     @TableLogic
     private Integer deleted;
     @TableField(fill = FieldFill.INSERT)

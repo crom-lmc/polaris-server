@@ -15,6 +15,7 @@ import com.laimengchao.sso.ehr.module.leave.entity.LeaveQuotaAdjust;
 import com.laimengchao.sso.ehr.module.leave.mapper.LeaveQuotaAdjustMapper;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class LeaveQuotaAdjustService {
     private final EmployeeMapper employeeMapper;
     private final ApprovalLauncher approvalLauncher;
     private final BizNoService bizNoService;
+    private final DataScopeService dataScopeService;
 
     @Value("${ehr.self-base-url:http://127.0.0.1:9006}")
     private String selfBaseUrl;
@@ -65,6 +67,7 @@ public class LeaveQuotaAdjustService {
         adjust.setAdjustNo(bizNoService.next("ehr_leave_quota_adjust"));
         adjust.setQuotaId(quota.getId());
         adjust.setEmployeeId(quota.getEmployeeId());
+        adjust.setOrgCode(emp != null ? emp.getOrgCode() : null);
         adjust.setLeaveType(quota.getLeaveType());
         adjust.setYear(quota.getYear());
         adjust.setDelta(delta);

@@ -22,7 +22,9 @@ import com.laimengchao.sso.cms.module.content.mapper.CategoryMapper;
 import com.laimengchao.sso.cms.module.content.mapper.TagMapper;
 import com.laimengchao.sso.common.security.HtmlSanitizer;
 import com.laimengchao.sso.common.security.SecurityUtils;
+import com.laimengchao.sso.cms.security.DataScopeService;
 import com.laimengchao.sso.settings.client.api.ApprovalApi;
+import com.laimengchao.sso.utils.AccountContext;
 import com.laimengchao.sso.settings.client.dto.ApprovalActionDTO;
 import com.laimengchao.sso.settings.client.dto.ApprovalInstanceDTO;
 import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
@@ -68,6 +70,7 @@ public class ArticleService {
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
     private final ApprovalApi approvalApi;
+    private final DataScopeService dataScopeService;
     /** 终审回调地址：settings 直连 CMS，不经网关 */
     @Value("${cms.self-base-url:http://127.0.0.1:9004}")
     private String selfBaseUrl;
@@ -82,12 +85,14 @@ public class ArticleService {
             article.setStatus(Article.STATUS_DRAFT);
             article.setAuthorId(requireUserId());
             article.setAuthorName(SecurityUtils.currentUsername().orElse("unknown"));
+            article.setOrgCode(AccountContext.getDataScopeOrgCode());
             applyContent(article, req);
             applyTag(article, req.getTagId());
             decideSchedule(article, req);
             articleMapper.insert(article);
         } else {
             article = requireArticle(req.getId());
+            dataScopeService.assertCanAccessOrg(article.getOrgCode());
             // 已发布内容先快照：改坏了可以一键回滚
             if (article.published()) {
                 snapshot(article, "编辑前自动快照", SecurityUtils.currentUsername().orElse(""));
@@ -152,6 +157,7 @@ public class ArticleService {
 
     public ArticleVO detail(Long id) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         return toVO(article, true);
     }
 
@@ -163,6 +169,7 @@ public class ArticleService {
             return R.Page.of(p.getRecords().stream().map(a -> toVO(a, false)).toList(), p.getTotal());
         }
         LambdaQueryWrapper<Article> w = new LambdaQueryWrapper<>();
+        dataScopeService.applyOrgScope(w, Article::getOrgCode);
         if (StringUtils.hasText(q.getKeyword())) {
             w.and(x -> x.like(Article::getTitle, q.getKeyword())
                     .or().like(Article::getSummary, q.getKeyword()));
@@ -199,6 +206,7 @@ public class ArticleService {
      */
     public void submit(Long id, String note) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         requireOwnerOrSuper(article);
         if (article.getStatus() != Article.STATUS_DRAFT
                 && article.getStatus() != Article.STATUS_REJECTED) {
@@ -341,6 +349,7 @@ public class ArticleService {
      */
     public void withdraw(Long id) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         requireOwnerOrSuper(article);
         if (article.getStatus() == null || article.getStatus() != Article.STATUS_APPROVING) {
             throw new BizException(CmsErrorCode.ILLEGAL_STATE, "只有审批中的稿件可以撤回");
@@ -389,6 +398,7 @@ public class ArticleService {
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long id, String note) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         if (article.getStatus() == Article.STATUS_APPROVING) {
             throw new BizException(CmsErrorCode.ILLEGAL_STATE,
                     "该稿件正在审批中心走「内容发布审批」，请到审批中心处理");
@@ -402,6 +412,7 @@ public class ArticleService {
     /** 驳回：退回给作者改后再提审（历史本地审核单据） */
     public void reject(Long id, String note) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         if (article.getStatus() == Article.STATUS_APPROVING) {
             throw new BizException(CmsErrorCode.ILLEGAL_STATE,
                     "该稿件正在审批中心走「内容发布审批」，请到审批中心驳回");
@@ -423,6 +434,7 @@ public class ArticleService {
     @Transactional(rollbackFor = Exception.class)
     public void publishNow(Long id) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         if (article.getStatus() != Article.STATUS_SCHEDULED) {
             throw new BizException(CmsErrorCode.ILLEGAL_STATE,
                     "只有审批通过、处于待发布的文章可以发布；请先提交审批");
@@ -433,6 +445,7 @@ public class ArticleService {
     /** 下线：从前台撤下，不进回收站 */
     public void offline(Long id) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         if (article.getStatus() != Article.STATUS_PUBLISHED
                 && article.getStatus() != Article.STATUS_SCHEDULED) {
             throw new BizException(CmsErrorCode.ILLEGAL_STATE, "只有已发布/待发布的文章可以下线");
@@ -444,6 +457,7 @@ public class ArticleService {
     /** 置顶/取消置顶；推荐位同理 */
     public void setFlag(Long id, String flag, boolean on) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         switch (flag) {
             case "pin" -> article.setPinned(on ? 1 : 0);
             case "recommend" -> article.setRecommended(on ? 1 : 0);
@@ -456,6 +470,7 @@ public class ArticleService {
 
     public void toRecycle(Long id) {
         Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         if (article.published()) {
             throw new BizException(ErrorCode.BIZ_ERROR, "已发布的文章请先下线再删除");
         }
@@ -466,6 +481,8 @@ public class ArticleService {
     }
 
     public void restore(Long id) {
+        Article article = requireArticle(id);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         articleMapper.restore(id);
     }
 
@@ -475,6 +492,7 @@ public class ArticleService {
         if (article == null) {
             throw new BizException(CmsErrorCode.DATA_NOT_FOUND);
         }
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         versionMapper.delete(new LambdaQueryWrapper<ArticleVersion>()
                 .eq(ArticleVersion::getArticleId, id));
         articleMapper.deleteForever(id);
@@ -483,7 +501,8 @@ public class ArticleService {
     // ---------------- 版本与回滚 ----------------
 
     public List<VersionVO> versions(Long articleId) {
-        requireArticle(articleId);
+        Article article = requireArticle(articleId);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         return versionMapper.selectList(new LambdaQueryWrapper<ArticleVersion>()
                         .eq(ArticleVersion::getArticleId, articleId)
                         .orderByDesc(ArticleVersion::getId))
@@ -502,6 +521,7 @@ public class ArticleService {
     @Transactional(rollbackFor = Exception.class)
     public void rollback(Long articleId, Long versionId) {
         Article article = requireArticle(articleId);
+        dataScopeService.assertCanAccessOrg(article.getOrgCode());
         ArticleVersion v = versionMapper.selectById(versionId);
         if (v == null || !Objects.equals(v.getArticleId(), articleId)) {
             throw new BizException(CmsErrorCode.DATA_NOT_FOUND, "版本不存在");
