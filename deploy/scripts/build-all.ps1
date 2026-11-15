@@ -16,6 +16,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # 前端登录跳转地址是构建期写死进 dist 的（import.meta.env.VITE_SSO_ORIGIN），必须在这里注入
+
 $env:VITE_SSO_ORIGIN = "https://polaris-sso.$Domain"
 $env:VITE_WEB_ORIGIN = "https://portal-blog-web.$Domain"
 Write-Host "构建期环境：VITE_SSO_ORIGIN=$env:VITE_SSO_ORIGIN  VITE_WEB_ORIGIN=$env:VITE_WEB_ORIGIN"
