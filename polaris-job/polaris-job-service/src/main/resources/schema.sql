@@ -1,7 +1,64 @@
--- ------------------------------------------------------------
--- Table DDL (idempotent CREATE TABLE IF NOT EXISTS, re-runnable on service start)
--- ------------------------------------------------------------
+-- JOB 全量结构基线（MySQL 5.7）
+-- 2026-11-16 从本地 polaris_job 数据库导出；不含过程备份表。
+-- 可重复执行，不包含 DROP/ALTER，不用于存量库升级。
 
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `job_alarm` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `ame` varchar(64) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `scope_type` varchar(16) NOT NULL DEFAULT 'JOB' COMMENT 'JOB/APP/ALL',
+  `scope_value` varchar(64) DEFAULT '' COMMENT '任务ID或应用编码',
+  `trigger_condition` varchar(32) NOT NULL DEFAULT 'FAIL' COMMENT 'FAIL/TIMEOUT/CONSECUTIVE_FAIL',
+  `threshold` int(11) NOT NULL DEFAULT '1' COMMENT '连续失败阈值',
+  `channels` varchar(128) NOT NULL DEFAULT 'SITE' COMMENT '通知渠道，逗号分隔',
+  `org_ids` varchar(500) DEFAULT '' COMMENT '接收组织ID，逗号分隔',
+  `account_ids` varchar(500) DEFAULT '' COMMENT '接收人账号ID，逗号分隔',
+  `silence_minutes` int(11) NOT NULL DEFAULT '60' COMMENT '静默期分钟',
+  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '0 停用 / 1 启用',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_job_alarm_scope` (`scope_type`,`scope_value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警规则';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `job_alarm_channel` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `channel` varchar(16) NOT NULL COMMENT 'SITE/EMAIL',
+  `enabled` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0 停用 / 1 启用',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_job_alarm_channel` (`channel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警全局通知渠道开关';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `job_alarm_log` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `job_id` bigint(20) DEFAULT NULL,
+  `log_id` bigint(20) DEFAULT NULL,
+  `rule_id` bigint(20) DEFAULT NULL,
+  `event` varchar(16) NOT NULL DEFAULT 'FAIL' COMMENT 'FAIL/RECOVER',
+  `channel` varchar(32) DEFAULT '' COMMENT '渠道',
+  `receivers` varchar(500) DEFAULT '' COMMENT '接收人快照',
+  `content` varchar(1000) DEFAULT '' COMMENT '报警内容快照',
+  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0 待发 / 1 成功 / 2 失败',
+  `sent_at` datetime DEFAULT NULL,
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_job_alarm_log_job` (`job_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警流水';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `job_info` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `app_code` varchar(32) NOT NULL COMMENT '所属应用：ehr/settings/gateway/cms/blog',
@@ -28,24 +85,22 @@ CREATE TABLE IF NOT EXISTS `job_info` (
   KEY `idx_job_info_handler` (`app_code`,`handler`),
   KEY `idx_job_info_fire` (`status`,`next_fire_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务定义';
-
-CREATE TABLE IF NOT EXISTS `job_registry` (
-  `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `app_code` varchar(32) NOT NULL COMMENT '应用编码',
-  `address` varchar(64) NOT NULL COMMENT '实例地址 host:port',
-  `handlers` mediumtext COMMENT '上报的 Handler 清单 JSON',
-  `version` varchar(64) DEFAULT '' COMMENT '应用版本',
-  `job_count` int(11) NOT NULL DEFAULT '0' COMMENT 'Handler 数量',
-  `online` tinyint(4) NOT NULL DEFAULT '1' COMMENT '最近一次上报状态',
-  `last_heartbeat` datetime DEFAULT NULL COMMENT '最后心跳时间',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `job_lock` (
+  `id` bigint(20) NOT NULL,
+  `lock_name` varchar(64) NOT NULL COMMENT '锁名，调度中心固定 scheduler',
+  `owner` varchar(128) NOT NULL DEFAULT '' COMMENT '持有者实例标识 host:port:pid',
+  `expire_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_job_registry` (`app_code`,`address`),
-  KEY `idx_job_registry_hb` (`last_heartbeat`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='执行器注册表';
-
+  UNIQUE KEY `uk_job_lock_name` (`lock_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='调度选主租约';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `job_log` (
   `id` bigint(20) NOT NULL COMMENT '执行ID（雪花）',
   `job_id` bigint(20) NOT NULL COMMENT '任务ID',
@@ -66,62 +121,23 @@ CREATE TABLE IF NOT EXISTS `job_log` (
   KEY `idx_job_log_job` (`job_id`,`created_at`),
   KEY `idx_job_log_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务执行日志';
-
-CREATE TABLE IF NOT EXISTS `job_alarm` (
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `job_registry` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '规则名称',
-  `scope_type` varchar(16) NOT NULL DEFAULT 'JOB' COMMENT 'JOB/APP/ALL',
-  `scope_value` varchar(64) DEFAULT '' COMMENT '任务ID或应用编码',
-  `trigger_condition` varchar(32) NOT NULL DEFAULT 'FAIL' COMMENT 'FAIL/TIMEOUT/CONSECUTIVE_FAIL',
-  `threshold` int(11) NOT NULL DEFAULT '1' COMMENT '连续失败阈值',
-  `channels` varchar(128) NOT NULL DEFAULT 'SITE' COMMENT '通知渠道，逗号分隔',
-  `org_ids` varchar(500) DEFAULT '' COMMENT '接收组织ID，逗号分隔',
-  `account_ids` varchar(500) DEFAULT '' COMMENT '接收人账号ID，逗号分隔',
-  `silence_minutes` int(11) NOT NULL DEFAULT '60' COMMENT '静默期分钟',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '0 停用 / 1 启用',
+  `app_code` varchar(32) NOT NULL COMMENT '应用编码',
+  `address` varchar(64) NOT NULL COMMENT '实例地址 host:port',
+  `handlers` mediumtext COMMENT '上报的 Handler 清单 JSON',
+  `version` varchar(64) DEFAULT '' COMMENT '应用版本',
+  `job_count` int(11) NOT NULL DEFAULT '0' COMMENT 'Handler 数量',
+  `online` tinyint(4) NOT NULL DEFAULT '1' COMMENT '最近一次上报状态',
+  `last_heartbeat` datetime DEFAULT NULL COMMENT '最后心跳时间',
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_job_alarm_scope` (`scope_type`,`scope_value`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警规则';
-
-CREATE TABLE IF NOT EXISTS `job_lock` (
-  `id` bigint(20) NOT NULL,
-  `lock_name` varchar(64) NOT NULL COMMENT '锁名，调度中心固定 scheduler',
-  `owner` varchar(128) NOT NULL DEFAULT '' COMMENT '持有者实例标识 host:port:pid',
-  `expire_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_job_lock_name` (`lock_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='调度选主租约';
-
-CREATE TABLE IF NOT EXISTS `job_alarm_log` (
-  `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `job_id` bigint(20) DEFAULT NULL,
-  `log_id` bigint(20) DEFAULT NULL,
-  `rule_id` bigint(20) DEFAULT NULL,
-  `event` varchar(16) NOT NULL DEFAULT 'FAIL' COMMENT 'FAIL/RECOVER',
-  `channel` varchar(32) DEFAULT '' COMMENT '渠道',
-  `receivers` varchar(500) DEFAULT '' COMMENT '接收人快照',
-  `content` varchar(1000) DEFAULT '' COMMENT '报警内容快照',
-  `status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0 待发 / 1 成功 / 2 失败',
-  `sent_at` datetime DEFAULT NULL,
-  `deleted` tinyint(4) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_job_alarm_log_job` (`job_id`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警流水';
-
-CREATE TABLE IF NOT EXISTS `job_alarm_channel` (
-  `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `channel` varchar(16) NOT NULL COMMENT 'SITE/EMAIL',
-  `enabled` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0 停用 / 1 启用',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_job_alarm_channel` (`channel`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警全局通知渠道开关';
+  UNIQUE KEY `uk_job_registry` (`app_code`,`address`),
+  KEY `idx_job_registry_hb` (`last_heartbeat`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='执行器注册表';
+/*!40101 SET character_set_client = @saved_cs_client */;

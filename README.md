@@ -162,7 +162,7 @@ EHR 同时应用“功能权限 + 组织数据权限”。没有数据范围时�
 - 提供博客文章、分类、标签及后台管理接口。
 - 读者端内容可公开访问，管理端通过统一 SSO 登录。
 - 支持博客相关附件上传。
-- 使用独立 `blog` 数据库；**不会默认自动执行建表脚本**，首次启动前必须手工迁移。
+- 使用独立 `blog` 数据库；**不会默认自动执行建表脚本**，首次启动前必须手工初始化。
 
 ### 4.8 Job：调度中心
 
@@ -238,21 +238,30 @@ CREATE DATABASE IF NOT EXISTS polaris_job DEFAULT CHARACTER SET utf8mb4 COLLATE 
 
 只启动 SSO + EHR 时，先建 `sso_ms`、`ehr`、`settings` 即可。使用独立低权限数据库账号时，应提前授予对应库的权限。
 
-### 6.4 初始化 account 与 blog
+### 6.4 初始化六个业务库
 
-Account 和 Blog 默认都是 `sql.init.mode=never`，不要直接对空库启动后期待自动建表。
+六个服务统一使用各自 `src/main/resources/` 下的 `schema.sql` 和 `data.sql`。全新空库必须先执行 `schema.sql`，再执行同目录的 `data.sql`；建议按 Account → Settings → EHR → CMS → Blog → Job 的顺序初始化。未启动的服务可以暂不初始化对应库。
 
-**Account 二选一：**
+在仓库根目录使用 MySQL 客户端执行（以下为重定向命令，适用于 Bash、Git Bash 或 cmd）：
 
-1. 首次本地启动时显式设置 `SSO_SQL_INIT_MODE=always`，让服务执行自带 `schema.sql` 和 `data.sql`；初始化完成后可改回 `never`。
-2. 或在 MySQL 中按顺序手工执行 `polaris-sso/polaris-sso-account/src/main/resources/schema.sql`、`data.sql`。
+```bash
+mysql -uroot -p --default-character-set=utf8mb4 sso_ms < polaris-sso/polaris-sso-account/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 sso_ms < polaris-sso/polaris-sso-account/src/main/resources/data.sql
+mysql -uroot -p --default-character-set=utf8mb4 settings < polaris-settings/polaris-settings-service/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 settings < polaris-settings/polaris-settings-service/src/main/resources/data.sql
+mysql -uroot -p --default-character-set=utf8mb4 ehr < polaris-ehr/polaris-ehr-service/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 ehr < polaris-ehr/polaris-ehr-service/src/main/resources/data.sql
+mysql -uroot -p --default-character-set=utf8mb4 cms < polaris-cms/polaris-cms-service/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 cms < polaris-cms/polaris-cms-service/src/main/resources/data.sql
+mysql -uroot -p --default-character-set=utf8mb4 blog < polaris-blog/polaris-blog-service/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 blog < polaris-blog/polaris-blog-service/src/main/resources/data.sql
+mysql -uroot -p --default-character-set=utf8mb4 polaris_job < polaris-job/polaris-job-service/src/main/resources/schema.sql
+mysql -uroot -p --default-character-set=utf8mb4 polaris_job < polaris-job/polaris-job-service/src/main/resources/data.sql
+```
 
-**Blog 需要手工执行：**
+这些基线只用于全新库，不承担存量库升级；已有数据的库不要重复导入全量 `data.sql`。完成首次初始化后再启动服务。Account、Blog 默认 `sql.init.mode=never`，其余四个服务本地默认 `always`；`always` 会在启动时执行相同基线，生产环境应统一设为 `never`。
 
-- 查看 `polaris-blog/polaris-blog-service/src/main/resources/db/` 下的迁移脚本，按文件顺序在 `blog` 库执行。
-- 不启动 Blog 时无需执行这一步。
-
-EHR、settings、CMS、Job 本地默认自动初始化，可通过各自的 `*_SQL_INIT_MODE` 覆盖。
+Account 首次启动时可通过 `SSO_ADMIN_USERNAME`、`SSO_ADMIN_PASSWORD`、`SSO_ADMIN_EMAIL` 创建内置管理员。若管理员已存在，启动不会重置其密码；未提供 `SSO_ADMIN_PASSWORD` 时只跳过自动建号，不影响执行 SQL 中已有账号和权限数据。
 
 ### 6.5 准备 RSA 密钥
 
@@ -281,11 +290,11 @@ auth 必须配置私钥，Gateway 必须配置与之匹配的公钥。其他服�
 $env:SSO_NACOS_ENABLED = "false"
 $env:SSO_NACOS_DISCOVERY = "false"
 
-# Account 数据库；首次空库初始化时才使用 always
+# Account 数据库；已按 6.4 手工初始化，保持 never
 $env:SSO_DB_URL = "jdbc:mysql://127.0.0.1:3306/sso_ms?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false"
 $env:SSO_DB_USER = "your_db_user"
 $env:SSO_DB_PASSWORD = "your_db_password"
-$env:SSO_SQL_INIT_MODE = "always"
+$env:SSO_SQL_INIT_MODE = "never"
 
 # EHR / Settings 数据库
 $env:EHR_DB_URL = "jdbc:mysql://127.0.0.1:3306/ehr?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false"
@@ -445,7 +454,7 @@ local 配置通常使用命名空间 `sso-ms-local`、Group `SSO`，以实际导
 
 `deploy/` 提供 Docker Compose、Nginx 和初始化 SQL，`scripts/` 统一存放构建、发布、备份等可执行脚本。使用前先逐文件核对域名、路径、端口和环境变量，不要直接套用本机开发配置。
 
-- 所有业务库执行经过审核的迁移 SQL，生产 `sql.init.mode` 必须设为 `never`。
+- 全新业务库按 6.4 执行统一基线；存量库升级使用单独审核的迁移流程。生产 `sql.init.mode` 必须设为 `never`。
 - 私钥、配置主密钥、内部令牌、appSecret 使用密钥管理系统或受限密钥文件注入。
 - auth 与 Gateway 使用匹配的 RSA 密钥对；所有内部调用方使用一致的 `SSO_INTERNAL_TOKEN`。
 - 多实例 auth 使用 Redis 吊销存储，避免某个实例退出后其他实例仍接受令牌。
@@ -488,7 +497,7 @@ Account 默认 `SSO_SQL_INIT_MODE=never`。全新本地库需要显式改为 `al
 
 ### 11.2 Blog 启动报表不存在
 
-Blog 同样默认不自动初始化。确认 JDBC 指向 `blog` 库，并已按顺序执行 `resources/db/` 中的迁移 SQL。
+Blog 同样默认不自动初始化。确认 JDBC 指向 `blog` 库，并已按 6.4 依次执行 `polaris-blog/polaris-blog-service/src/main/resources/schema.sql` 和 `data.sql`。
 
 ### 11.3 登录成功但请求立即 401
 

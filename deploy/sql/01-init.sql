@@ -22,24 +22,12 @@ GRANT ALL PRIVILEGES ON polaris_job.* TO 'polaris'@'127.0.0.1';
 -- 若服务后续以容器 127.0.0.1 之外的地址连库，再按需增加 'polaris'@'%'
 FLUSH PRIVILEGES;
 
--- 3) 表结构
--- 首次启动时各服务的 *_SQL_INIT_MODE=always 会自动建表（job/settings/ehr/cms/blog/account 的 schema.sql 均幂等）；
--- 建表完成后把 .env 中这些变量改回 never，避免每次启动跑 DDL。
--- 注意：blog 的历史结构来自 tools/blog-migrate.sql，如果库里已有数据，不要用 always 覆盖。
+-- 3) 表结构和种子数据
+-- 本脚本只建库、建业务账号和授权，不依赖任何业务表。
+-- 全新库请按根目录 README 的“初始化六个业务库”章节，逐库执行 schema.sql 后再执行 data.sql。
+-- 初始化完成后保持 .env 中各服务的 *_SQL_INIT_MODE=never。
 
--- 4) SSO 应用回调地址改成正式域名
---    sso-center 是登录页本身，只需要 base_url
-UPDATE sso_application SET base_url = 'https://polaris-sso.laimengchao.site' WHERE code = 'sso-center';
-UPDATE sso_application SET base_url = 'https://polaris-ehr.laimengchao.site',      redirect_uri = 'https://polaris-ehr.laimengchao.site/callback'      WHERE code = 'ehr';
-UPDATE sso_application SET base_url = 'https://polaris-cms.laimengchao.site',      redirect_uri = 'https://polaris-cms.laimengchao.site/callback'      WHERE code = 'cms';
-UPDATE sso_application SET base_url = 'https://portal-blog-admin.laimengchao.site', redirect_uri = 'https://portal-blog-admin.laimengchao.site/#/sso/callback' WHERE code = 'blog';
-UPDATE sso_application SET base_url = 'https://polaris-portal.laimengchao.site',   redirect_uri = 'https://polaris-portal.laimengchao.site/callback'   WHERE code = 'portal';
-UPDATE sso_application SET base_url = 'https://polaris-settings.laimengchao.site', redirect_uri = 'https://polaris-settings.laimengchao.site/callback' WHERE code = 'settings';
-UPDATE sso_application SET base_url = 'https://polaris-job.laimengchao.site',      redirect_uri = 'https://polaris-job.laimengchao.site/callback'      WHERE code = 'job';
-
--- 5) 核对 app_secret（.env 里的 EHR/CMS/BLOG/SETTINGS/JOB_APP_SECRET 必须与这里一致）
-SELECT code, name, base_url, redirect_uri, app_secret FROM sso_application ORDER BY code;
-
--- 6) 管理员账号：全新库没有账号时需要插入一条（本地已有数据的话跳过）
---    本地导出：mysqldump -uroot -p sso_ms sso_account sso_account_app sso_account_role sso_role sso_permission sso_role_permission sso_application > sso-init-data.sql
---    密码为加盐哈希，直接沿用本地库里的哈希值即可，不要明文写入。
+-- 4) 正式域名和应用密钥
+-- 必须先完成 sso_ms 的 schema.sql/data.sql，再按实际部署域名调整 sso_application 的
+-- base_url、redirect_uri，并核对各应用 app_secret 与 .env 中对应 *_APP_SECRET 一致。
+-- 回调配置不属于本建库脚本，避免在表尚未创建时执行 UPDATE 失败。

@@ -36,7 +36,7 @@ spring:
       connection-timeout: 30000
   sql:
     init:
-      # 默认不自动建表：库结构用 tools/blog-migrate.sql 手工执行（有历史数据，不能靠 DDL 覆盖）
+      # 默认不自动初始化；全新库先手工执行 resources/schema.sql 和 data.sql
       mode: ${BLOG_SQL_INIT_MODE:never}
   data:
     redis:

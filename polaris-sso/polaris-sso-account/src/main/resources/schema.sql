@@ -1,42 +1,53 @@
--- ------------------------------------------------------------
--- Table DDL (idempotent CREATE TABLE IF NOT EXISTS, re-runnable on service start)
--- ------------------------------------------------------------
+-- ACCOUNT 全量结构基线（MySQL 5.7）
+-- 2026-11-16 从本地 sso_ms 数据库导出；不含过程备份表。
+-- 可重复执行，不包含 DROP/ALTER，不用于存量库升级。
 
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_account` (
-  `id` bigint(20) NOT NULL COMMENT '闆姳ID',
-  `username` varchar(64) NOT NULL COMMENT '鐧诲綍鍚�',
-  `nickname` varchar(64) DEFAULT '' COMMENT '昵称\r',
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `username` varchar(64) NOT NULL COMMENT '登录名',
+  `nickname` varchar(64) DEFAULT '' COMMENT '昵称',
   `email` varchar(128) DEFAULT NULL COMMENT '邮箱（为空存 NULL，uk_email 允许多个 NULL）',
-  `phone` varchar(32) DEFAULT '' COMMENT '鎵嬫満鍙�',
-  `password_hash` varchar(128) NOT NULL COMMENT 'BCrypt 密码哈希\r',
-  `avatar_url` varchar(255) DEFAULT '' COMMENT '头像\r',
-  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1姝ｅ父 2绂佺敤 3閿佸畾 4鏈縺娲�',
-  `source` varchar(32) DEFAULT 'local' COMMENT '鏉ユ簮锛歭ocal/email/wx 绛�',
-  `pwd_reset_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '1=涓嬫鐧诲綍寮哄埗鏀瑰瘑',
-  `login_fail_count` int(11) NOT NULL DEFAULT '0' COMMENT '连续登录失败次数\r',
-  `locked_until` datetime DEFAULT NULL COMMENT '锁定到期时间\r',
-  `last_login_at` datetime DEFAULT NULL COMMENT '鏈�杩戠櫥褰曟椂闂�',
-  `user_id` bigint(20) DEFAULT NULL COMMENT '鍏宠仈 HR 鐢ㄦ埛ID锛堜汉锛夛紝璐︽埛褰掑睘浜�',
-  `data_scope_org_code` text DEFAULT NULL COMMENT '数据权限根组织编码，多个编码使用英文逗号分隔',
+  `data_scope_org_code` text COMMENT '数据权限根组织编码，多个编码使用英文逗号分隔',
+  `phone` varchar(32) DEFAULT '' COMMENT '手机号',
+  `password_hash` varchar(128) NOT NULL COMMENT 'BCrypt 密码哈希',
+  `avatar_url` varchar(255) DEFAULT '' COMMENT '头像',
+  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1正常 2禁用 3锁定 4未激活',
+  `source` varchar(32) DEFAULT 'local' COMMENT '来源：local/email/wx 等',
+  `pwd_reset_required` tinyint(4) NOT NULL DEFAULT '0' COMMENT '1=下次登录强制改密',
+  `login_fail_count` int(11) NOT NULL DEFAULT '0' COMMENT '连续登录失败次数',
+  `locked_until` datetime DEFAULT NULL COMMENT '锁定到期时间',
+  `last_login_at` datetime DEFAULT NULL COMMENT '最近登录时间',
+  `user_id` bigint(20) DEFAULT NULL COMMENT '关联 HR 用户ID（人员），账号归属人',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除\r',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_username` (`username`),
   UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='账号表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_account_app` (
   `account_id` bigint(20) NOT NULL,
   `app_id` bigint(20) NOT NULL,
   PRIMARY KEY (`account_id`,`app_id`),
   KEY `idx_app` (`app_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='账号-应用授权';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_account_role` (
   `account_id` bigint(20) NOT NULL,
   `role_id` bigint(20) NOT NULL,
   PRIMARY KEY (`account_id`,`role_id`),
   KEY `idx_role` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='账号-角色关联';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_application` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `code` varchar(64) NOT NULL COMMENT '应用编码，如 blog-admin / fishing-admin',
@@ -50,39 +61,13 @@ CREATE TABLE IF NOT EXISTS `sso_application` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
-  `redirect_uri` varchar(512) NOT NULL DEFAULT '' COMMENT 'OAuth2 回调地址\r',
+  `redirect_uri` varchar(512) NOT NULL DEFAULT '' COMMENT 'OAuth2 回调地址',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_app_code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='应用注册表';
-CREATE TABLE IF NOT EXISTS `sso_email_code` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `email` varchar(128) NOT NULL,
-  `code_hash` varchar(64) NOT NULL COMMENT '验证码 BCrypt 哈希，禁止明文',
-  `scene` varchar(20) NOT NULL DEFAULT 'login' COMMENT 'login=邮箱登录验证码',
-  `ip` varchar(45) DEFAULT NULL,
-  `expires_at` datetime NOT NULL COMMENT '过期时间',
-  `used` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0=未使用 1=已使用',
-  `try_count` int(11) NOT NULL DEFAULT '0' COMMENT '校验尝试次数',
-  `created_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_email_scene` (`email`,`scene`),
-  KEY `idx_created` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='邮箱验证码（含哈希与过期）';
-CREATE TABLE IF NOT EXISTS `sso_login_log` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `account_id` bigint(20) DEFAULT NULL COMMENT '成功时填账户ID，用户不存在等失败场景为 NULL',
-  `username` varchar(64) NOT NULL COMMENT '尝试登录的用户名（即使不存在也记录，便于排查撞库）',
-  `login_type` varchar(20) NOT NULL DEFAULT 'password' COMMENT 'password/email/wechat',
-  `result` varchar(10) NOT NULL COMMENT 'success / fail',
-  `fail_reason` varchar(100) DEFAULT NULL COMMENT '失败原因（密码错误/账户锁定/未配置等）',
-  `client_ip` varchar(45) DEFAULT NULL,
-  `user_agent` varchar(512) DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_account_time` (`account_id`,`created_at`),
-  KEY `idx_username_time` (`username`,`created_at`),
-  KEY `idx_created` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='登录审计日志';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_audit_log` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `operator_id` bigint(20) NOT NULL COMMENT '操作人账号ID',
@@ -99,13 +84,51 @@ CREATE TABLE IF NOT EXISTS `sso_audit_log` (
   KEY `idx_audit_target` (`target_type`,`target_id`,`created_at`),
   KEY `idx_audit_action_time` (`action`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='SSO敏感操作审计日志';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `sso_email_code` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `email` varchar(128) NOT NULL,
+  `code_hash` varchar(64) NOT NULL COMMENT '楠岃瘉鐮� BCrypt 鍝堝笇锛岀姝㈡槑鏂�',
+  `scene` varchar(20) NOT NULL DEFAULT 'login' COMMENT 'login=閭鐧诲綍楠岃瘉鐮�',
+  `ip` varchar(45) DEFAULT NULL,
+  `expires_at` datetime NOT NULL COMMENT '杩囨湡鏃堕棿',
+  `used` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0=鏈娇鐢� 1=宸蹭娇鐢�',
+  `try_count` int(11) NOT NULL DEFAULT '0' COMMENT '鏍￠獙灏濊瘯娆℃暟',
+  `created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_email_scene` (`email`,`scene`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='邮箱验证码（含哈希与过期）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `sso_login_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `account_id` bigint(20) DEFAULT NULL COMMENT '鎴愬姛鏃跺～璐︽埛ID锛岀敤鎴蜂笉瀛樺湪绛夊け璐ュ満鏅负 NULL',
+  `username` varchar(64) NOT NULL COMMENT '灏濊瘯鐧诲綍鐨勭敤鎴峰悕锛堝嵆浣夸笉瀛樺湪涔熻褰曪紝渚夸簬鎺掓煡鎾炲簱锛�',
+  `login_type` varchar(20) NOT NULL DEFAULT 'password' COMMENT 'password/email/wechat',
+  `result` varchar(10) NOT NULL COMMENT 'success / fail',
+  `fail_reason` varchar(100) DEFAULT NULL COMMENT '澶辫触鍘熷洜锛堝瘑鐮侀敊璇�/璐︽埛閿佸畾/鏈厤缃瓑锛�',
+  `client_ip` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(512) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_account_time` (`account_id`,`created_at`),
+  KEY `idx_username_time` (`username`,`created_at`),
+  KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='登录审计日志';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_permission` (
   `id` bigint(20) NOT NULL,
-  `code` varchar(128) NOT NULL COMMENT '鏉冮檺鐮侊紝濡� account:create锛堟寜閽骇锛�',
-  `name` varchar(64) NOT NULL COMMENT '权限名称\r',
-  `type` tinyint(4) NOT NULL DEFAULT '2' COMMENT '1=菜单 2=按钮\r',
-  `parent_id` bigint(20) DEFAULT '0' COMMENT '涓婄骇鏉冮檺ID锛堣彍鍗曟爲锛�',
-  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序\r',
+  `code` varchar(128) NOT NULL COMMENT '权限码，如 account:create（按钮级）',
+  `name` varchar(64) NOT NULL COMMENT '权限名称',
+  `type` tinyint(4) NOT NULL DEFAULT '2' COMMENT '1=菜单 2=按钮',
+  `parent_id` bigint(20) DEFAULT '0' COMMENT '上级权限ID（菜单树）',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
   `remark` varchar(255) DEFAULT '' COMMENT '备注\r',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -115,11 +138,14 @@ CREATE TABLE IF NOT EXISTS `sso_permission` (
   UNIQUE KEY `uk_perm_app_code` (`app_code`,`code`),
   KEY `idx_perm_app` (`app_code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='权限表（菜单+按钮）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_role` (
   `id` bigint(20) NOT NULL,
-  `code` varchar(64) NOT NULL COMMENT '瑙掕壊缂栫爜锛屽 SUPER_ADMIN',
+  `code` varchar(64) NOT NULL COMMENT '角色编码，如 SUPER_ADMIN',
   `app_code` varchar(32) NOT NULL DEFAULT 'sso' COMMENT '所属应用编码',
-  `name` varchar(64) NOT NULL COMMENT '角色名称\r',
+  `name` varchar(64) NOT NULL COMMENT '角色名称',
   `remark` varchar(255) DEFAULT '' COMMENT '备注\r',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
@@ -128,23 +154,30 @@ CREATE TABLE IF NOT EXISTS `sso_role` (
   UNIQUE KEY `uk_role_code` (`code`),
   KEY `idx_role_app` (`app_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='角色表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_role_permission` (
   `role_id` bigint(20) NOT NULL,
   `permission_id` bigint(20) NOT NULL,
   PRIMARY KEY (`role_id`,`permission_id`),
   KEY `idx_perm` (`permission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='角色-权限关联';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `sso_wechat_bind` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `account_id` bigint(20) NOT NULL COMMENT '关联账户ID',
-  `openid` varchar(64) NOT NULL COMMENT '微信 openid（同一 app_type 唯一）',
-  `unionid` varchar(64) DEFAULT NULL COMMENT '开放平台 unionid（跨公众号/小程序同人）',
-  `app_type` varchar(20) NOT NULL DEFAULT 'open' COMMENT 'open=开放平台扫码 mp=小程序',
-  `nickname` varchar(64) DEFAULT NULL COMMENT '微信昵称快照',
-  `avatar_url` varchar(255) DEFAULT NULL COMMENT '微信头像快照',
+  `openid` varchar(64) NOT NULL COMMENT '寰俊 openid锛堝悓涓� app_type 鍞竴锛�',
+  `unionid` varchar(64) DEFAULT NULL COMMENT '寮�鏀惧钩鍙� unionid锛堣法鍏紬鍙�/灏忕▼搴忓悓浜猴級',
+  `app_type` varchar(20) NOT NULL DEFAULT 'open' COMMENT 'open=寮�鏀惧钩鍙版壂鐮� mp=灏忕▼搴�',
+  `nickname` varchar(64) DEFAULT NULL COMMENT '寰俊鏄电О蹇収',
+  `avatar_url` varchar(255) DEFAULT NULL COMMENT '寰俊澶村儚蹇収',
   `bind_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_openid_app` (`openid`,`app_type`),
   KEY `idx_account` (`account_id`),
   KEY `idx_unionid` (`unionid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='微信绑定关系';
+/*!40101 SET character_set_client = @saved_cs_client */;

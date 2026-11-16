@@ -1,7 +1,9 @@
--- ------------------------------------------------------------
--- Table DDL (idempotent CREATE TABLE IF NOT EXISTS, re-runnable on service start)
--- ------------------------------------------------------------
+-- SETTINGS 全量结构基线（MySQL 5.7）
+-- 2026-11-16 从本地 settings 数据库导出；不含过程备份表。
+-- 可重复执行，不包含 DROP/ALTER，不用于存量库升级。
 
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `appr_action` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `instance_id` bigint(20) NOT NULL,
@@ -21,6 +23,9 @@ CREATE TABLE IF NOT EXISTS `appr_action` (
   PRIMARY KEY (`id`),
   KEY `idx_appr_act_inst` (`instance_id`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批流水';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `appr_callback` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `instance_id` bigint(20) NOT NULL,
@@ -39,6 +44,9 @@ CREATE TABLE IF NOT EXISTS `appr_callback` (
   PRIMARY KEY (`id`),
   KEY `idx_appr_cb_retry` (`status`,`next_retry_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务回调补偿（终审结果异步通知业务方）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `appr_delegate` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `owner_id` bigint(20) NOT NULL COMMENT '委托人账号ID',
@@ -57,6 +65,9 @@ CREATE TABLE IF NOT EXISTS `appr_delegate` (
   KEY `idx_appr_dele_owner` (`owner_id`,`enabled`),
   KEY `idx_appr_dele_target` (`delegate_id`,`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批委托（一段时间全量代收）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `appr_instance` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `template_id` bigint(20) NOT NULL,
@@ -84,17 +95,20 @@ CREATE TABLE IF NOT EXISTS `appr_instance` (
   `callback_status` tinyint(4) NOT NULL DEFAULT '0' COMMENT '业务回调：0不需要 1待回调 2成功 3失败',
   `callback_url` varchar(255) DEFAULT '' COMMENT '终审回调地址',
   `finished_at` datetime DEFAULT NULL,
-  `urge_count` int(11) NOT NULL DEFAULT '0' COMMENT '被催办次数',
-  `last_urge_at` datetime DEFAULT NULL COMMENT '最近一次催办时间',
   `deleted` tinyint(4) NOT NULL DEFAULT '0',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `urge_count` int(11) NOT NULL DEFAULT '0' COMMENT '被催办次数',
+  `last_urge_at` datetime DEFAULT NULL COMMENT '最近一次催办时间',
   PRIMARY KEY (`id`),
   KEY `idx_appr_inst_biz` (`biz_type`,`biz_id`,`status`),
   KEY `idx_appr_inst_applicant` (`applicant_id`,`created_at`),
   KEY `idx_appr_inst_status` (`status`,`current_step`),
   KEY `idx_appr_inst_subject` (`biz_type`,`subject_id`,`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批实例（在途单据）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `appr_task` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `instance_id` bigint(20) NOT NULL,
@@ -126,6 +140,9 @@ CREATE TABLE IF NOT EXISTS `appr_task` (
   KEY `idx_appr_task_approver` (`approver_id`,`status`,`created_at`),
   KEY `idx_appr_task_path` (`instance_id`,`branch_path`(128),`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批任务（每人每条）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_bank` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -140,6 +157,9 @@ CREATE TABLE IF NOT EXISTS `biz_bank` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：银行';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_education` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -154,6 +174,9 @@ CREATE TABLE IF NOT EXISTS `biz_education` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：学历';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_family_relation` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -168,6 +191,9 @@ CREATE TABLE IF NOT EXISTS `biz_family_relation` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：家庭成员关系';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_leave_type` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -182,6 +208,9 @@ CREATE TABLE IF NOT EXISTS `biz_leave_type` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：请假类型';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_position` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -202,6 +231,9 @@ CREATE TABLE IF NOT EXISTS `biz_position` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：职位';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `biz_resign_reason` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（迁移数据保留原字典项ID）',
   `code` varchar(64) NOT NULL COMMENT '取值编码；业务表里存的就是它，如 icbc',
@@ -216,6 +248,9 @@ CREATE TABLE IF NOT EXISTS `biz_resign_reason` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_biz_bank_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主数据：离职/减员原因';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_approval_node` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `template_id` bigint(20) NOT NULL COMMENT '所属模板（冗余，免联表）',
@@ -238,11 +273,14 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_node` (
   PRIMARY KEY (`id`),
   KEY `idx_appr_node_step` (`step_id`,`seq`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批分支（步骤内并行）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_approval_page` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `template_id` bigint(20) NOT NULL,
   `view` varchar(16) NOT NULL DEFAULT 'APPROVAL' COMMENT 'APPROVAL审批人 DETAIL发起人回看 AUDIT审计',
-  `render_mode` varchar(16) NOT NULL DEFAULT 'SECTIONS' COMMENT 'SECTIONS/ROUTE',
+  `render_mode` varchar(16) NOT NULL DEFAULT 'SECTIONS' COMMENT 'GRID/SECTIONS/TEMPLATE/COMPONENT',
   `config` mediumtext COMMENT '字段与布局JSON',
   `route_path` varchar(255) DEFAULT '' COMMENT 'render_mode=ROUTE 的自定义页面地址（应用内路由或完整URL）',
   `version` int(11) NOT NULL DEFAULT '1',
@@ -252,6 +290,9 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_page` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_appr_page_view` (`template_id`,`view`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批页面配置';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_approval_step` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `template_id` bigint(20) NOT NULL COMMENT '所属模板',
@@ -272,6 +313,9 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_step` (
   UNIQUE KEY `uk_appr_step_seq` (`template_id`,`seq`,`deleted`),
   KEY `idx_appr_step_parent` (`template_id`,`parent_node_id`,`seq`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批步骤（串行单元）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_approval_template` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `code` varchar(64) NOT NULL COMMENT '模板编码，如 ehr_onboard_default',
@@ -289,6 +333,9 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_template` (
   UNIQUE KEY `uk_appr_tpl_code` (`code`,`deleted`),
   UNIQUE KEY `uk_appr_tpl_biz` (`app_code`,`biz_type`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批模板';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_biz_scene` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `app_code` varchar(32) NOT NULL,
@@ -308,6 +355,9 @@ CREATE TABLE IF NOT EXISTS `cfg_biz_scene` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_appr_scene` (`app_code`,`biz_type`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审批业务场景';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_code_rule` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `app_code` varchar(64) NOT NULL DEFAULT '' COMMENT '归属应用编码，仅用于分组展示',
@@ -328,6 +378,9 @@ CREATE TABLE IF NOT EXISTS `cfg_code_rule` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_code_rule_target` (`table_name`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='业务单号规则';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_dict_item` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `type_code` varchar(64) NOT NULL COMMENT '所属类型编码（冗余，免联表）',
@@ -344,6 +397,9 @@ CREATE TABLE IF NOT EXISTS `cfg_dict_item` (
   UNIQUE KEY `uk_dict_item_value` (`type_code`,`value`,`deleted`),
   KEY `idx_dict_item_type` (`type_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='字典项';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_dict_type` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID（种子数据用固定小ID）',
   `code` varchar(64) NOT NULL COMMENT '类型编码，唯一；如 ehr.leave_type',
@@ -359,6 +415,44 @@ CREATE TABLE IF NOT EXISTS `cfg_dict_type` (
   UNIQUE KEY `uk_dict_type_code` (`code`,`deleted`),
   KEY `idx_dict_type_app` (`app_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='字典类型';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cfg_embed_point` (
+  `id` bigint(20) NOT NULL COMMENT '雪花ID',
+  `code` varchar(128) NOT NULL COMMENT '埋点 key',
+  `app_code` varchar(64) NOT NULL DEFAULT '' COMMENT '所属应用编码，空=通用',
+  `module` varchar(32) NOT NULL DEFAULT '' COMMENT '模块（左侧树分组）',
+  `name` varchar(128) NOT NULL COMMENT '描述',
+  `value` text NOT NULL COMMENT '埋点值（JSON 文本）',
+  `built_in` tinyint(4) NOT NULL DEFAULT '0' COMMENT '1内置（种子数据）',
+  `sort` int(11) NOT NULL DEFAULT '0',
+  `deleted` tinyint(4) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_embed_point_code` (`code`,`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `cfg_embed_point_history` (
+  `id` bigint(20) NOT NULL,
+  `point_id` bigint(20) NOT NULL COMMENT '埋点ID',
+  `code` varchar(128) NOT NULL,
+  `app_code` varchar(64) NOT NULL DEFAULT '',
+  `module` varchar(32) NOT NULL DEFAULT '',
+  `name` varchar(128) NOT NULL DEFAULT '',
+  `value` text NOT NULL COMMENT '本次保存后的 value 快照',
+  `operated_by` bigint(20) DEFAULT NULL COMMENT '操作人账号ID',
+  `operated_name` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人名称',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_embed_history_point` (`point_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置历史';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_notice_rule` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `code` varchar(64) NOT NULL COMMENT '事件编码',
@@ -380,10 +474,13 @@ CREATE TABLE IF NOT EXISTS `cfg_notice_rule` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_notice_rule_code` (`code`,`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='待办/消息推送配置';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `cfg_security_config` (
   `id` bigint(20) NOT NULL COMMENT '固定 1（单行配置）',
-  `initial_password_mode` varchar(16) NOT NULL DEFAULT 'RANDOM' COMMENT '初始密码规则 RANDOM 随机 / FIXED 固定',
-  `default_password` varchar(64) NOT NULL DEFAULT '' COMMENT '固定初始密码（仅 FIXED 模式使用；默认随机生成，不落固定值）',
+  `initial_password_mode` varchar(16) NOT NULL DEFAULT 'FIXED' COMMENT '初始密码规则 RANDOM 随机 / FIXED 固定',
+  `default_password` varchar(64) NOT NULL DEFAULT 'G#191975' COMMENT '固定初始密码',
   `password_rules` varchar(64) NOT NULL DEFAULT 'DIGIT,UPPER,LOWER,SPECIAL' COMMENT '密码必须包含的字符类型，逗号分隔：DIGIT 数字 / UPPER 大写 / LOWER 小写 / SPECIAL 特殊字符',
   `password_min_length` int(11) NOT NULL DEFAULT '6' COMMENT '密码最小长度',
   `password_max_length` int(11) NOT NULL DEFAULT '15' COMMENT '密码最大长度',
@@ -402,6 +499,9 @@ CREATE TABLE IF NOT EXISTS `cfg_security_config` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='安全配置（单行，id=1）';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `notice_message` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `account_id` bigint(20) NOT NULL COMMENT '接收人账号ID',
@@ -422,32 +522,4 @@ CREATE TABLE IF NOT EXISTS `notice_message` (
   PRIMARY KEY (`id`),
   KEY `idx_notice_acc` (`account_id`,`read_at`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内待办/消息';
-CREATE TABLE IF NOT EXISTS `cfg_embed_point` (
-  `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `code` varchar(128) NOT NULL COMMENT '埋点 key',
-  `app_code` varchar(64) NOT NULL DEFAULT '' COMMENT '所属应用编码，空=通用',
-  `module` varchar(32) NOT NULL DEFAULT '' COMMENT '模块（左侧树分组）',
-  `name` varchar(128) NOT NULL COMMENT '描述',
-  `value` text NOT NULL COMMENT '埋点值（JSON 文本）',
-  `built_in` tinyint(4) NOT NULL DEFAULT '0' COMMENT '1内置（种子数据）',
-  `sort` int(11) NOT NULL DEFAULT '0',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_embed_point_code` (`code`,`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置';
-CREATE TABLE IF NOT EXISTS `cfg_embed_point_history` (
-  `id` bigint(20) NOT NULL,
-  `point_id` bigint(20) NOT NULL COMMENT '埋点ID',
-  `code` varchar(128) NOT NULL,
-  `app_code` varchar(64) NOT NULL DEFAULT '',
-  `module` varchar(32) NOT NULL DEFAULT '',
-  `name` varchar(128) NOT NULL DEFAULT '',
-  `value` text NOT NULL COMMENT '本次保存后的 value 快照',
-  `operated_by` bigint(20) DEFAULT NULL COMMENT '操作人账号ID',
-  `operated_name` varchar(64) NOT NULL DEFAULT '' COMMENT '操作人名称',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_embed_history_point` (`point_id`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='埋点配置历史';
+/*!40101 SET character_set_client = @saved_cs_client */;
