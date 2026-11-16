@@ -25,12 +25,14 @@ public class AttendanceCorrectionController {
     private final AttendanceCorrectionService correctionService;
 
     @PostMapping("/corrections")
+    @Permit(PermissionCodes.ATTENDANCE_MY_CORRECTION_APPLY)
     public R<AttendanceCorrectionVO> apply(@RequestBody AttendanceCorrectionRequest req) {
         return R.ok(correctionService.apply(req));
     }
 
     /** HR 看全部，员工只看本人。 */
     @GetMapping("/corrections")
+    @Permit({PermissionCodes.ATTENDANCE_MY, PermissionCodes.ATTENDANCE_CORRECTIONS})
     public R<R.Page<AttendanceCorrectionVO>> page(@RequestParam(required = false) Integer status,
                                                   @RequestParam(required = false) String month,
                                                   @RequestParam(defaultValue = "1") int page,
@@ -39,20 +41,21 @@ public class AttendanceCorrectionController {
     }
 
     @PostMapping("/corrections/{id}/approve")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_CORRECTIONS_APPROVE)
     public R<AttendanceCorrectionVO> approve(@PathVariable Long id,
                                              @RequestBody(required = false) AttendanceCorrectionApproveRequest req) {
         return R.ok(correctionService.approve(id, req));
     }
 
     @PostMapping("/corrections/{id}/reject")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_CORRECTIONS_REJECT)
     public R<AttendanceCorrectionVO> reject(@PathVariable Long id,
                                             @RequestBody(required = false) AttendanceCorrectionApproveRequest req) {
         return R.ok(correctionService.reject(id, req));
     }
 
     @PostMapping("/corrections/{id}/cancel")
+    @Permit(PermissionCodes.ATTENDANCE_MY_CORRECTION_CANCEL)
     public R<Void> cancel(@PathVariable Long id) {
         correctionService.cancel(id);
         return R.ok();

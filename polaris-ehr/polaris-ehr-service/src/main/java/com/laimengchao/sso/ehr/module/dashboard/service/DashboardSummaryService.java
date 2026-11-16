@@ -2,6 +2,11 @@ package com.laimengchao.sso.ehr.module.dashboard.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.laimengchao.sso.common.security.PermissionCodes;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
+import com.laimengchao.sso.ehr.module.contract.entity.Contract;
+import com.laimengchao.sso.ehr.module.contract.mapper.ContractMapper;
 import com.laimengchao.sso.ehr.module.dashboard.vo.DashboardSummaryVO;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
@@ -44,6 +49,7 @@ public class DashboardSummaryService {
     private static final int STATUS_RESIGNED = 60;
 
     private final EmployeeMapper employeeMapper;
+    private final ContractMapper contractMapper;
     private final OrgNodeMapper orgMapper;
     private final LeaveMapper leaveMapper;
     private final DataScopeService dataScope;
@@ -88,6 +94,20 @@ public class DashboardSummaryService {
                     && inRange(e.getExpectedRegularizeDate(), monthStart, monthEnd)) {
                 ov.setRegularizedThisMonth(ov.getRegularizedThisMonth() + 1);
             }
+        }
+
+        // ---------- 合同到期：仅合同查看权限可见，组织范围与员工集合一致 ----------
+        List<Long> employeeIds = employees.stream().map(Employee::getId)
+                .filter(x -> x != null).distinct().collect(Collectors.toList());
+        SecurityUser user = SecurityUtils.currentUser().orElse(null);
+        if (user != null && (user.isSuperAdmin() || dataScope.hasPermission(PermissionCodes.CONTRACT_VIEW))) {
+            LambdaQueryWrapper<Contract> cw = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(cw, Contract::getOrgCode);
+            cw.in(Contract::getEmployeeId, employeeIds)
+                    .eq(Contract::getStatus, "ACTIVE")
+                    .ge(Contract::getEndDate, today)
+                    .le(Contract::getEndDate, today.plusDays(30));
+            ov.setContractExpiring30Days(contractMapper.selectCount(cw));
         }
 
         // ---------- 组织名称 / 编制 ----------
@@ -155,8 +175,6 @@ public class DashboardSummaryService {
             trendFrom = trendTo;
             trendTo = tmp;
         }
-        List<Long> employeeIds = employees.stream().map(Employee::getId)
-                .filter(x -> x != null).distinct().collect(Collectors.toList());
         Map<String, String> typeNames = leaveService.typeNames();
         LambdaQueryWrapper<LeaveRequest> lw = Wrappers.<LeaveRequest>lambdaQuery()
                 .in(LeaveRequest::getEmployeeId, employeeIds)

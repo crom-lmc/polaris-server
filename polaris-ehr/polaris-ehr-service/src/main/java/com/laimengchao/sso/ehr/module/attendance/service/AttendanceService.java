@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.common.BizNoService;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.ehr.module.approval.support.ApprovalLauncher;
@@ -419,16 +420,48 @@ public class AttendanceService {
                 .set(Overtime::getStatus, 3));
     }
 
-    /** 我的 / 团队（全部）列表；数据范围始终生效，避免越权 */
+    /** 我的 / 团队 / 全部列表；功能权限与数据范围同时生效，避免越权。 */
     public R.Page<OvertimeVO> list(String scope, Long employeeId, String month, int page, int size) {
         SecurityUser user = currentUser();
+        String actualScope = scope == null || scope.isBlank() ? "mine" : scope.trim().toLowerCase();
+        String requiredPermission = switch (actualScope) {
+            case "mine" -> PermissionCodes.ATTENDANCE_OVERTIME_MINE;
+            case "team" -> PermissionCodes.ATTENDANCE_OVERTIME_TEAM;
+            case "all" -> PermissionCodes.ATTENDANCE_OVERTIME_ALL;
+            default -> throw new BizException(ErrorCode.PARAM_ERROR, "scope 仅支持 mine、team、all");
+        };
+        requirePermission(requiredPermission);
+
         LambdaQueryWrapper<Overtime> w = new LambdaQueryWrapper<>();
-        boolean mine = employeeId == null && "mine".equalsIgnoreCase(scope == null ? "mine" : scope);
-        if (employeeId != null) {
+        if ("mine".equals(actualScope)) {
+            if (employeeId != null) {
+                Employee emp = employeeMapper.selectById(employeeId);
+                if (emp == null) {
+                    throw new BizException(EhrErrorCode.EMP_NOT_FOUND, "员工不存在");
+                }
+                if (!user.getAccountId().equals(emp.getAccountId())) {
+                    throw new BizException(ErrorCode.FORBIDDEN, "只能查看自己的加班申请");
+                }
+            }
+            w.eq(Overtime::getAccountId, user.getAccountId());
+        } else if ("team".equals(actualScope)) {
+            // 团队视图只看本人所在组织及下级组织；即使拥有集团数据权限，也不能扩大为全部加班。
+            String teamOrgCode = currentEmployee().getOrgCode();
+            if (teamOrgCode == null || teamOrgCode.isBlank()) {
+                throw new BizException(ErrorCode.FORBIDDEN, "当前账号未关联组织，无法查看团队加班");
+            }
+            w.likeRight(Overtime::getOrgCode, teamOrgCode);
+            dataScopeService.applyOrgScope(w, Overtime::getOrgCode);
+            if (employeeId != null) {
+                Employee emp = requireAccessible(employeeId);
+                if (emp.getOrgCode() == null || !emp.getOrgCode().startsWith(teamOrgCode)) {
+                    throw new BizException(ErrorCode.FORBIDDEN, "只能查看自己组织范围内的团队加班");
+                }
+                w.eq(Overtime::getEmployeeId, emp.getId());
+            }
+        } else if (employeeId != null) {
             Employee emp = requireAccessible(employeeId);
             w.eq(Overtime::getEmployeeId, emp.getId());
-        } else if (mine) {
-            w.eq(Overtime::getAccountId, user.getAccountId());
         } else {
             List<Long> ids = accessibleEmployees().stream().map(Employee::getId).toList();
             if (ids.isEmpty()) {
@@ -847,6 +880,14 @@ public class AttendanceService {
             return YearMonth.parse(month);
         } catch (Exception e) {
             throw new BizException(ErrorCode.PARAM_ERROR, "月份格式应为 yyyy-MM");
+        }
+    }
+
+    private void requirePermission(String code) {
+        SecurityUser user = currentUser();
+        if (!user.isSuperAdmin()
+                && (user.getPermissions() == null || !user.getPermissions().contains(code))) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权限：" + code);
         }
     }
 

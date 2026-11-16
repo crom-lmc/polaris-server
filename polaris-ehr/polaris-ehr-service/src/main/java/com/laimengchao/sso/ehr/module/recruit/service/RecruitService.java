@@ -33,6 +33,7 @@ import com.laimengchao.sso.settings.client.dto.ApprovalStartDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -206,6 +207,19 @@ public class RecruitService {
         applyCandidate(c, req, targetStage);
         candidateMapper.updateById(c);
         return toCandidateVO(c, activeOffer(id), orgMap());
+    }
+
+    public ResumeDownload downloadResume(Long id) {
+        Candidate candidate = requireCandidate(id);
+        if (candidate.getResumeFileId() == null) {
+            throw new BizException(ErrorCode.NOT_FOUND, "候选人未上传简历");
+        }
+        Resource resource = attachmentService.download(
+                candidate.getResumeFileId(), currentUser().getAccountId(), true);
+        return new ResumeDownload(resource, attachmentService.fileName(candidate.getResumeFileId()));
+    }
+
+    public record ResumeDownload(Resource resource, String fileName) {
     }
 
     /** 淘汰：有审批中/已通过的 Offer 时不允许 */

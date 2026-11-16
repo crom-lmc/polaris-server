@@ -29,13 +29,13 @@ public class WorkCalendarController {
     private final AttendanceCalendarService calendarService;
 
     @GetMapping
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_CALENDAR)
     public R<List<WorkCalendarVO>> month(@RequestParam String month) {
         return R.ok(calendarService.month(month));
     }
 
     @PostMapping
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_CALENDAR_SAVE)
     public R<Void> save(@RequestBody List<WorkCalendarItem> items) {
         calendarService.save(items);
         return R.ok();
@@ -43,21 +43,21 @@ public class WorkCalendarController {
 
     /** CSV 导入：日期,是否工作日,节假日名称 */
     @PostMapping("/import")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_CALENDAR_IMPORT)
     public R<Integer> importCsv(@RequestParam("file") MultipartFile file) {
         return R.ok(calendarService.importCsv(file));
     }
 
     /** 下一年工作日历状态：11 月起未更新时前端展示「更新下一年工作日历」按钮 */
     @GetMapping("/next-year-status")
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_CALENDAR)
     public R<Map<String, Object>> nextYearStatus() {
         return R.ok(calendarService.nextYearStatus());
     }
 
     /** 一键更新下一年工作日历：写入法定节假日与调休上班日预设并关闭维护待办 */
     @PostMapping("/apply-next-year")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_CALENDAR_APPLY_NEXT_YEAR)
     public R<Map<String, Object>> applyNextYear() {
         String operator = SecurityUtils.currentUser().map(SecurityUser::getDisplayName).orElse("");
         return R.ok(calendarService.applyNextYear(operator));

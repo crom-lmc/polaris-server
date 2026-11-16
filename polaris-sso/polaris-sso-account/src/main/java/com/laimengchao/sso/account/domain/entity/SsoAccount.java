@@ -63,6 +63,6 @@ public class SsoAccount extends BaseEntity {
     /** 关联 HR 用户ID（人）。一个人可有多个账户。 */
     private Long userId;
 
-    /** 数据权限根组织编码（该组织+所有下级可见；NULL=未配置，引擎返回空集） */
+    /** 数据权限根组织编码，多个编码使用英文逗号分隔（各组织及其下级可见） */
     private String dataScopeOrgCode;
 }

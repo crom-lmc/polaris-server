@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS `sso_account` (
   `locked_until` datetime DEFAULT NULL COMMENT '锁定到期时间\r',
   `last_login_at` datetime DEFAULT NULL COMMENT '鏈�杩戠櫥褰曟椂闂�',
   `user_id` bigint(20) DEFAULT NULL COMMENT '鍏宠仈 HR 鐢ㄦ埛ID锛堜汉锛夛紝璐︽埛褰掑睘浜�',
+  `data_scope_org_code` text DEFAULT NULL COMMENT '数据权限根组织编码，多个编码使用英文逗号分隔',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '逻辑删除\r',

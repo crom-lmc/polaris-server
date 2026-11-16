@@ -11,6 +11,7 @@ import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.ehr.common.EhrErrorCode;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.employee.dto.SeniorityConfirmRequest;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
 import com.laimengchao.sso.ehr.module.employee.entity.EmployeeSeniorityRecord;
@@ -56,6 +57,7 @@ public class SeniorityService {
     private final EmployeeSeniorityRecordMapper recordMapper;
     private final EmployeeSenioritySegmentMapper segmentMapper;
     private final OrgNodeMapper orgMapper;
+    private final DataScopeService dataScopeService;
 
     /** 司龄列表：keyword 匹配姓名/工号；employeeId 可选精确筛选 */
     public R.Page<SeniorityVO> page(String keyword, Long employeeId, int page, int size) {
@@ -69,6 +71,7 @@ public class SeniorityService {
         }
         // 已离职人员不再维护司龄
         w.ne(Employee::getStatus, EmployeeStatus.LEFT.getCode());
+        dataScopeService.applyOrgScope(w, Employee::getOrgCode);
         w.orderByAsc(Employee::getEmpNo);
         IPage<Employee> ip = employeeMapper.selectPage(new Page<>(page, size), w);
         if (ip.getRecords().isEmpty()) {
@@ -105,6 +108,7 @@ public class SeniorityService {
 
     /** 某员工最近一次核定的「前司工作段」（用于核定弹窗回显、可继续增删） */
     public List<EmployeeSenioritySegment> latestSegments(Long employeeId) {
+        requireEmployee(employeeId);
         EmployeeSeniorityRecord latest = latestRecord(employeeId);
         if (latest == null) {
             return List.of();
@@ -273,6 +277,9 @@ public class SeniorityService {
         Employee emp = employeeId == null ? null : employeeMapper.selectById(employeeId);
         if (emp == null) {
             throw new BizException(EhrErrorCode.EMP_NOT_FOUND, "员工不存在");
+        }
+        if (!dataScopeService.canAccessOrg(emp.getOrgCode())) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权访问该员工的司龄信息");
         }
         return emp;
     }

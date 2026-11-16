@@ -35,7 +35,7 @@ public class AttendanceMonth {
     private BigDecimal workHours;
     /** 0 未确认 / 1 已确认 */
     private Integer confirmed;
-    /** 最近一次解锁原因（解锁需 attendance:month:unlock） */
+    /** 最近一次解锁原因（解锁需 attendance:monthly:unlock） */
     private String unlockReason;
     private LocalDateTime unlockedAt;
     private Long unlockedBy;

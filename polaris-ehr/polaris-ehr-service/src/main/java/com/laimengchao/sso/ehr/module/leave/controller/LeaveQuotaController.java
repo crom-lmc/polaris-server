@@ -42,8 +42,9 @@ public class LeaveQuotaController {
     private final LeaveService leaveService;
     private final EmployeeMapper employeeMapper;
 
-    /** 我的额度：登录即可，前端请假弹窗展示余额 */
+    /** 我的额度：前端请假弹窗展示余额 */
     @GetMapping("/me")
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<List<LeaveQuotaVO>> mine(@RequestParam(required = false) Integer year) {
         Long employeeId = leaveService.myEmployeeId();
         return R.ok(fillNames(quotaService.listForEmployee(employeeId, year == null ? LocalDate.now().getYear() : year)));
@@ -83,8 +84,9 @@ public class LeaveQuotaController {
         return R.ok(adjustService.apply(quotaId, req));
     }
 
-    /** 自动放弃上年结转剩余年假（12 月待办入口，登录即可，幂等） */
+    /** 自动放弃上年结转剩余年假（12 月待办入口，幂等） */
     @PostMapping("/me/annual-carryover/waive")
+    @Permit(PermissionCodes.LEAVE_MINE_WAIVE_CARRYOVER)
     public R<java.math.BigDecimal> waiveCarryover() {
         Long employeeId = leaveService.myEmployeeId();
         int year = LocalDate.now().getYear();

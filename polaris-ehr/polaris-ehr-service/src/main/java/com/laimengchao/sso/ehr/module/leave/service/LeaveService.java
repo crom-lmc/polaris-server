@@ -201,13 +201,20 @@ public class LeaveService {
     public R.Page<LeaveVO> page(String scope, Integer status, int page, int size) {
         SecurityUser user = currentUser();
         LambdaQueryWrapper<LeaveRequest> w = new LambdaQueryWrapper<>();
-        boolean all = "all".equalsIgnoreCase(scope);
+        String actualScope = scope == null || scope.isBlank() ? "mine" : scope.trim().toLowerCase();
+        if (!"mine".equals(actualScope) && !"all".equals(actualScope)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "scope 仅支持 mine、all");
+        }
+        boolean all = "all".equals(actualScope);
         if (all) {
-            if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.LEAVE_APPROVE)) {
-                throw new BizException(ErrorCode.FORBIDDEN, "没有审批权限，只能查看自己的请假");
+            if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.LEAVE_ALL)) {
+                throw new BizException(ErrorCode.FORBIDDEN, "没有审批列表权限，只能查看自己的请假");
             }
             dataScopeService.applyOrgScope(w, LeaveRequest::getOrgCode);
         } else {
+            if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.LEAVE_MINE)) {
+                throw new BizException(ErrorCode.FORBIDDEN, "没有查看我的请假的权限");
+            }
             w.eq(LeaveRequest::getAccountId, user.getAccountId());
         }
         if (status != null) {
@@ -717,12 +724,12 @@ public class LeaveService {
 
     /**
      * 团队请假视图：按组织子树 + 日期区间查询待审批 / 已通过记录。
-     * 有审批权或超管可查任意组织；普通主管只能查自己组织范围内。
+     * 有审批列表权限或超管可查任意组织；普通主管只能查自己组织范围内。
      */
     public List<LeaveVO> team(Long orgId, String fromRaw, String toRaw) {
         SecurityUser user = currentUser();
-        boolean canAll = user.isSuperAdmin() || user.getPermissions().contains(PermissionCodes.LEAVE_APPROVE);
-        if (!canAll && !user.getPermissions().contains(PermissionCodes.LEAVE_VIEW_TEAM)) {
+        boolean canAll = user.isSuperAdmin() || user.getPermissions().contains(PermissionCodes.LEAVE_ALL);
+        if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.LEAVE_TEAM)) {
             throw new BizException(ErrorCode.FORBIDDEN, "没有查看团队请假的权限");
         }
         Employee me = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()

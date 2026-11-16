@@ -26,7 +26,7 @@ public class AttendanceRuleController {
     private final AttendanceRuleService ruleService;
 
     @GetMapping("/rules")
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_RULES)
     public R<R.Page<AttendanceRuleVO>> page(@RequestParam(required = false) String keyword,
                                             @RequestParam(defaultValue = "1") int page,
                                             @RequestParam(defaultValue = "20") int size) {
@@ -34,32 +34,32 @@ public class AttendanceRuleController {
     }
 
     @GetMapping("/rules/{id}")
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_RULES)
     public R<AttendanceRuleVO> detail(@PathVariable Long id) {
         return R.ok(ruleService.detail(id));
     }
 
     @PostMapping("/rules")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_RULES_CREATE)
     public R<AttendanceRuleVO> create(@RequestBody AttendanceRuleRequest req) {
         return R.ok(ruleService.save(null, req));
     }
 
     @PutMapping("/rules/{id}")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_RULES_UPDATE)
     public R<AttendanceRuleVO> update(@PathVariable Long id, @RequestBody AttendanceRuleRequest req) {
         return R.ok(ruleService.save(id, req));
     }
 
     @DeleteMapping("/rules/{id}")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_RULES_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         ruleService.delete(id);
         return R.ok();
     }
 
     @PostMapping("/rules/{id}/toggle")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_RULES_TOGGLE)
     public R<AttendanceRuleVO> toggle(@PathVariable Long id) {
         return R.ok(ruleService.toggle(id));
     }

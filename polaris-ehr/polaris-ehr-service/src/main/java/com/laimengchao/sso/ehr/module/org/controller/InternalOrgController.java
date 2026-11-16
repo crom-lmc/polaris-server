@@ -205,6 +205,7 @@ public class InternalOrgController {
             m.put("id", String.valueOf(n.getId()));
             m.put("parentId", n.getParentId() == null || n.getParentId() == 0L ? null : String.valueOf(n.getParentId()));
             m.put("name", n.getName());
+            m.put("code", n.getCode());
             m.put("type", n.getType());
             m.put("typeName", n.typeEnum() == null ? n.getType() : n.typeEnum().getLabel());
             m.put("status", n.getStatus());

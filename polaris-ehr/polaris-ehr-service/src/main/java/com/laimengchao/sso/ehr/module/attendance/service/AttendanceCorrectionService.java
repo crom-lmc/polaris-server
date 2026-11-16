@@ -207,7 +207,7 @@ public class AttendanceCorrectionService {
     private boolean canManage(SecurityUser user) {
         return user.isSuperAdmin()
                 || (user.getPermissions() != null
-                && user.getPermissions().contains(PermissionCodes.ATTENDANCE_MANAGE));
+                && user.getPermissions().contains(PermissionCodes.ATTENDANCE_CORRECTIONS));
     }
 
     private Employee currentEmployee() {

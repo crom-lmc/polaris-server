@@ -1,5 +1,7 @@
 package com.laimengchao.sso.ehr.module.employee.controller;
 
+import com.laimengchao.sso.common.BizException;
+import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.approval.dto.RehireApplyRequest;
@@ -193,10 +195,16 @@ public class AdminEmployeeController {
 
     /** 入职审批：通过/驳回当前步骤（用人部门 → 人事主管） */
     @PostMapping("/{id}/onboard-approve")
-    @Permit(PermissionCodes.APPROVAL_APPROVE)
+    @Permit({PermissionCodes.APPROVAL_TODO_APPROVE, PermissionCodes.APPROVAL_TODO_REJECT})
     public R<EmployeeVO> onboardApprove(@PathVariable Long id,
                                        @RequestBody(required = false) ApprovalActionRequest req) {
         boolean pass = req == null || req.getPass() == null || req.getPass();
+        String requiredPermission = pass
+                ? PermissionCodes.APPROVAL_TODO_APPROVE : PermissionCodes.APPROVAL_TODO_REJECT;
+        var user = SecurityUtils.currentUser().orElseThrow();
+        if (!user.isSuperAdmin() && !user.getPermissions().contains(requiredPermission)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "无权限：" + requiredPermission);
+        }
         String note = req == null ? null : req.getNote();
         return R.ok(employeeService.approveOnboard(id, pass, note));
     }

@@ -39,6 +39,8 @@ public class DashboardSummaryVO {
         private long resignThisMonth;
         /** 本月转正：预计转正日期落在本月且已转正式 */
         private long regularizedThisMonth;
+        /** 未来 30 天内到期的生效合同 */
+        private long contractExpiring30Days;
     }
 
     @Data

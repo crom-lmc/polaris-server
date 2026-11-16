@@ -1157,10 +1157,15 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900519600128,'employee:edit','编辑人员',2,375175900481851392,3,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900527988736,'employee:delete','删除人员档案',2,375175900481851392,4,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900532183040,'employee:account','补开账号',2,375175900481851392,5,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900540571648,'leave:view','查看请假记录',2,375175900486045696,1,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900544765952,'leave:apply','提交/撤销请假',2,375175900486045696,2,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375175900548960256,'leave:approve','审批请假（旧码，兼容保留）',2,375175900486045696,3,'','2026-11-01 14:55:05','2026-11-01 14:55:05',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000001,'leave:view:team','查看团队请假',2,375175900486045696,4,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+-- EHR 多页签权限：页面菜单 -> 页签/数据视图 -> 操作按钮
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES
+(2026111500000001001,'leave:mine','我的请假',1,375175900486045696,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001002,'leave:all','审批列表',1,375175900486045696,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001003,'leave:team','团队请假',1,375175900486045696,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001011,'leave:mine:apply','提交请假',2,2026111500000001001,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001012,'leave:mine:cancel','撤销请假',2,2026111500000001001,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001013,'leave:mine:early-return','提前返岗',2,2026111500000001001,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001014,'leave:mine:waive-carryover','放弃结转',2,2026111500000001001,4,'',NULL,NULL,0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000002,'leave:quota:view','查看员工假期额度',2,375175900486045696,5,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000003,'leave:quota:adjust','发起额度调整审批',2,375175900486045696,6,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000004,'leave:quota:manage','初始化员工额度',2,375175900486045696,7,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
@@ -1175,22 +1180,76 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000013,'contract:view','查看员工合同与档案附件',2,375175900481851392,12,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000014,'contract:manage','新增/编辑/续签/终止合同与附件',2,375175900481851392,13,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000017,'attendance','考勤管理',1,0,7,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000015,'overtime:view','查看加班/调休/月度考勤（含本人提交）',2,375182598000000017,14,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000016,'overtime:approve','加班终审与月度考勤确认',2,375182598000000017,15,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000025,'attendance:view','查看考勤规则/日结果/打卡/补卡',2,375182598000000017,16,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000026,'attendance:manage','维护考勤规则/日历/补卡审批/生成日结果',2,375182598000000017,17,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000027,'attendance:month:unlock','解锁已确认的月度考勤',2,375182598000000017,18,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES
+(2026111500000001201,'attendance:overtime','加班',1,375182598000000017,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001209,'attendance:monthly','员工考勤汇总',1,375182598000000017,2,'仅 HR；仍受组织数据范围限制',NULL,NULL,0,'ehr'),
+(2026111500000001202,'attendance:my','我的考勤',1,375182598000000017,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001203,'attendance:daily','日结果',1,375182598000000017,4,'仅 HR；仍受组织数据范围限制',NULL,NULL,0,'ehr'),
+(2026111500000001204,'attendance:punches','打卡记录',1,375182598000000017,5,'',NULL,NULL,0,'ehr'),
+(2026111500000001205,'attendance:corrections','补卡审批',1,375182598000000017,6,'',NULL,NULL,0,'ehr'),
+(2026111500000001206,'attendance:rules','考勤规则',1,375182598000000017,7,'仅 HR',NULL,NULL,0,'ehr'),
+(2026111500000001207,'attendance:calendar','工作日历',1,375182598000000017,8,'仅 HR',NULL,NULL,0,'ehr'),
+(2026111500000001208,'attendance:annual','年假策略',1,375182598000000017,9,'仅 HR',NULL,NULL,0,'ehr'),
+(2026111500000001211,'attendance:overtime:mine','我的加班',1,2026111500000001201,1,'数据视图',NULL,NULL,0,'ehr'),
+(2026111500000001212,'attendance:overtime:team','团队加班',1,2026111500000001201,2,'部门负责人及相关 HR；仍受组织数据范围限制',NULL,NULL,0,'ehr'),
+(2026111500000001213,'attendance:overtime:all','全部加班',1,2026111500000001201,3,'相关 HR；仍受组织数据范围限制',NULL,NULL,0,'ehr'),
+(2026111500000001221,'attendance:overtime:preview','加班试算',2,2026111500000001201,11,'',NULL,NULL,0,'ehr'),
+(2026111500000001222,'attendance:overtime:submit','提交加班',2,2026111500000001201,12,'',NULL,NULL,0,'ehr'),
+(2026111500000001223,'attendance:overtime:cancel','撤销加班',2,2026111500000001201,13,'',NULL,NULL,0,'ehr'),
+(2026111500000001224,'attendance:monthly:confirm','确认月度考勤',2,2026111500000001209,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001225,'attendance:monthly:unlock','解锁月度考勤',2,2026111500000001209,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001226,'attendance:monthly:export','导出月度考勤',2,2026111500000001209,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001231,'attendance:my:correction:apply','申请补卡',2,2026111500000001202,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001232,'attendance:my:correction:cancel','撤销补卡',2,2026111500000001202,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001241,'attendance:daily:generate','生成日结果',2,2026111500000001203,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001242,'attendance:daily:mock','生成模拟数据',2,2026111500000001203,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001251,'attendance:punches:create','补录打卡',2,2026111500000001204,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001261,'attendance:corrections:approve','补卡通过',2,2026111500000001205,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001262,'attendance:corrections:reject','补卡驳回',2,2026111500000001205,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001271,'attendance:rules:create','新增考勤规则',2,2026111500000001206,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001272,'attendance:rules:update','编辑考勤规则',2,2026111500000001206,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001273,'attendance:rules:delete','删除考勤规则',2,2026111500000001206,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001274,'attendance:rules:toggle','启停考勤规则',2,2026111500000001206,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001281,'attendance:calendar:save','保存工作日历',2,2026111500000001207,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001282,'attendance:calendar:import','导入工作日历',2,2026111500000001207,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001283,'attendance:calendar:apply-next-year','应用到下一年度',2,2026111500000001207,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001291,'attendance:annual:create','新增年假策略',2,2026111500000001208,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001292,'attendance:annual:update','编辑年假策略',2,2026111500000001208,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001293,'attendance:annual:enable','启停年假策略',2,2026111500000001208,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001294,'attendance:annual:generate','生成年度额度',2,2026111500000001208,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001295,'attendance:annual:recalculate','重算年度额度',2,2026111500000001208,5,'',NULL,NULL,0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182597246029824,'employee:resign','减员申请/复职（HR）',2,375175900481851392,6,'','2026-11-01 15:21:42','2026-11-01 15:21:42',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000020,'recruit','招聘管理',1,0,4,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000021,'recruit:view','查看招聘候选人看板与 Offer',2,375182598000000020,1,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000022,'recruit:manage','维护候选人/发起与撤销录用Offer',2,375182598000000020,2,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES
+(2026111500000001101,'recruit:board','候选人看板',1,375182598000000020,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001102,'recruit:offers','Offer 列表',1,375182598000000020,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001103,'recruit:jobs','职位管理',1,375182598000000020,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001104,'recruit:interviews','我的面试',1,375182598000000020,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001111,'recruit:board:candidate:create','新增候选人',2,2026111500000001101,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001112,'recruit:board:candidate:edit','编辑候选人',2,2026111500000001101,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001113,'recruit:board:candidate:eliminate','淘汰候选人',2,2026111500000001101,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001114,'recruit:board:candidate:restore','恢复候选人',2,2026111500000001101,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001115,'recruit:board:interview:schedule','安排面试',2,2026111500000001101,5,'',NULL,NULL,0,'ehr'),
+(2026111500000001116,'recruit:board:interview:cancel','取消面试',2,2026111500000001101,6,'',NULL,NULL,0,'ehr'),
+(2026111500000001117,'recruit:board:communication:add','新增沟通记录',2,2026111500000001101,7,'',NULL,NULL,0,'ehr'),
+(2026111500000001118,'recruit:board:offer:create','看板发起 Offer',2,2026111500000001101,8,'',NULL,NULL,0,'ehr'),
+(2026111500000001119,'recruit:board:resume:download','下载简历',2,2026111500000001101,9,'',NULL,NULL,0,'ehr'),
+(2026111500000001121,'recruit:offers:create','发起 Offer',2,2026111500000001102,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001122,'recruit:offers:cancel','撤销 Offer',2,2026111500000001102,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001123,'recruit:offers:confirm','确认入职',2,2026111500000001102,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001124,'recruit:offers:decline','拒绝 Offer',2,2026111500000001102,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001125,'recruit:offers:onboard','办理入职',2,2026111500000001102,5,'',NULL,NULL,0,'ehr'),
+(2026111500000001131,'recruit:jobs:create','新增职位',2,2026111500000001103,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001132,'recruit:jobs:update','编辑职位',2,2026111500000001103,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001133,'recruit:jobs:publish','发布职位',2,2026111500000001103,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001134,'recruit:jobs:close','关闭职位',2,2026111500000001103,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001135,'recruit:jobs:delete','删除职位',2,2026111500000001103,5,'',NULL,NULL,0,'ehr'),
+(2026111500000001141,'recruit:interviews:feedback','提交面试反馈',2,2026111500000001104,1,'',NULL,NULL,0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000023,'employee:import','批量导入员工（上传预览→确认入库）',2,375175900481851392,16,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375182598000000024,'system:session:manage','强制下线账号（作废全部中心会话）',2,2116193763304861697,99,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'sso');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196740542464,'approval','审批中心',1,0,6,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196757319680,'resign:apply','提交离职申请（员工自助）',2,8563807562621573408,1,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196765708288,'approval:view','查看审批中心待办',2,375194196740542464,1,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196765708289,'approval:ops','审批运营（时效统计/积压/催办/导出）',2,375194196740542464,3,'','2026-11-09 10:00:00','2026-11-09 10:00:00',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375194196769902592,'approval:approve','审批请假/离职/减员（部门负责人）',2,375194196740542464,2,'','2026-11-01 16:07:47','2026-11-01 16:07:47',0,'ehr');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375239951907950592,'dict','字典配置',1,0,2,'','2026-11-01 19:09:36','2026-11-01 19:09:36',0,'settings');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375239951907950601,'biz','主数据',1,0,1,'银行/学历/职位等业务主数据（真表）','2026-11-01 20:45:55','2026-11-01 20:45:55',0,'settings');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (375239951907950602,'biz:view','查看主数据',2,375239951907950601,1,'','2026-11-01 20:45:55','2026-11-01 20:45:55',0,'settings');
@@ -1265,13 +1324,23 @@ INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, 
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573417,'approval:started','我发起的',2,8563807562621573414,3,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'sso');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573418,'approval:cc','抄送我',2,8563807562621573414,4,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'sso');
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573419,'approval:delegated','我委托的',2,8563807562621573414,5,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'sso');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573420,'approval:todo','待我审批',2,375194196740542464,3,'基本权限，所有角色默认拥有','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573421,'approval:done','已审批',2,375194196740542464,4,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573422,'approval:started','我发起的',2,375194196740542464,5,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573423,'approval:cc','抄送我',2,375194196740542464,6,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573424,'approval:delegated','我委托的',2,375194196740542464,7,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573425,'approval:handover','待我交接',2,375194196740542464,8,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
-INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (8563807562621573426,'approval:resign','离职 / 减员申请',2,375194196740542464,9,'','2026-11-08 00:42:35','2026-11-08 00:42:35',0,'ehr');
+INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES
+(2026111500000001301,'approval:todo','待我审批',1,375194196740542464,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001302,'approval:approved','已审批',1,375194196740542464,2,'',NULL,NULL,0,'ehr'),
+(2026111500000001303,'approval:started','我发起的',1,375194196740542464,3,'',NULL,NULL,0,'ehr'),
+(2026111500000001304,'approval:cc','抄送我',1,375194196740542464,4,'',NULL,NULL,0,'ehr'),
+(2026111500000001305,'approval:delegated','我委托的',1,375194196740542464,5,'',NULL,NULL,0,'ehr'),
+(2026111500000001306,'approval:handover','待我交接',1,375194196740542464,6,'',NULL,NULL,0,'ehr'),
+(2026111500000001307,'approval:resign','离职/减员申请',1,375194196740542464,7,'',NULL,NULL,0,'ehr'),
+(2026111500000001311,'approval:todo:approve','审批通过',2,2026111500000001301,1,'仍需本人待办任务',NULL,NULL,0,'ehr'),
+(2026111500000001312,'approval:todo:reject','审批驳回',2,2026111500000001301,2,'仍需本人待办任务',NULL,NULL,0,'ehr'),
+(2026111500000001313,'approval:todo:transfer','审批转办',2,2026111500000001301,3,'仍需本人待办任务',NULL,NULL,0,'ehr'),
+(2026111500000001314,'approval:todo:add-sign','审批加签',2,2026111500000001301,4,'仍需本人待办任务',NULL,NULL,0,'ehr'),
+(2026111500000001321,'approval:started:withdraw','撤回申请',2,2026111500000001303,1,'仍需本人发起',NULL,NULL,0,'ehr'),
+(2026111500000001331,'approval:handover:confirm','确认交接',2,2026111500000001306,1,'仍需指定交接人',NULL,NULL,0,'ehr'),
+(2026111500000001341,'approval:resign:apply','提交离职申请',2,2026111500000001307,1,'',NULL,NULL,0,'ehr'),
+(2026111500000001342,'approval:resign:cancel','撤销离职申请',2,2026111500000001307,2,'仍需本人申请',NULL,NULL,0,'ehr'),
+(2026111500000001343,'approval:resign:view-all','查看全部离职申请',2,2026111500000001307,3,'仍受组织数据范围限制',NULL,NULL,0,'ehr');
 
 -- ==== polaris-job 权限（调度中心） ====
 INSERT IGNORE INTO `sso_permission` (`id`, `code`, `name`, `type`, `parent_id`, `sort`, `remark`, `created_at`, `updated_at`, `deleted`, `app_code`) VALUES (2117000000000000001,'job','调度中心',1,0,100,'','2026-11-11 15:00:00','2026-11-11 15:00:00',0,'job');
@@ -1491,11 +1560,6 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375175900481851392);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,375175900481851392);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,375175900481851392);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375175900486045696);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375175900486045696);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900486045696);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375175900486045696);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375175900486045696);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375175900494434304);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900494434304);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375175900494434304);
@@ -1530,51 +1594,19 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900532183040);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375175900532183040);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375175900532183040);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375175900540571648);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375175900544765952);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375175900544765952);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900544765952);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375175900548960256);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375175900548960256);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375175900548960256);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375182597246029824);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375182597246029824);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375182597246029824);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375194196740542464);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,375194196740542464);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375194196757319680);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375194196757319680);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375194196757319680);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375194196757319680);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375194196757319680);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375194196765708288);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375194196765708288);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375194196765708289);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375194196765708289);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,375194196765708289);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,375194196765708289);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375194196765708289);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375194196769902592);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375194196769902592);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,375194196769902592);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,375194196769902592);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,375239951907950592);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,375239951907950592);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,375239951907950592);
@@ -1837,132 +1869,27 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573419);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573419);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573419);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573420);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573421);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573422);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573423);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573424);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573425);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519941,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519942,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519943,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519944,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519945,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519946,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519947,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519953,8563807562621573426);
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519954,8563807562621573426);
--- P0：假期额度 / 团队请假 / 敏感字段 / 审计 权限授予
+-- P0：假期额度 / 敏感字段 / 审计权限授予（独立权限保留）
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
-(2116193763556519940,375182598000000001),(2116193763556519940,375182598000000002),
+(2116193763556519940,375182598000000002),
 (2116193763556519940,375182598000000003),(2116193763556519940,375182598000000004),
 (2116193763556519940,375182598000000005),(2116193763556519940,375182598000000006),
 (2116193763556519940,375182598000000007),(2116193763556519940,375182598000000008),
 (2116193763556519940,375182598000000009),
-(2116193763556519942,375182598000000001),(2116193763556519942,375182598000000002),
+(2116193763556519942,375182598000000002),
 (2116193763556519942,375182598000000003),(2116193763556519942,375182598000000004),
 (2116193763556519942,375182598000000005),(2116193763556519942,375182598000000006),
 (2116193763556519942,375182598000000007),(2116193763556519942,375182598000000009),
-(2116193763556519943,375182598000000001),(2116193763556519943,375182598000000002),
+(2116193763556519943,375182598000000002),
 (2116193763556519943,375182598000000006),(2116193763556519943,375182598000000007),
 (2116193763556519944,375182598000000002),(2116193763556519944,375182598000000003),
 (2116193763556519944,375182598000000004),(2116193763556519944,375182598000000006),
 (2116193763556519944,375182598000000007),
-(2116193763556519945,375182598000000001),(2116193763556519945,375182598000000002),
+(2116193763556519945,375182598000000002),
 (2116193763556519945,375182598000000003),(2116193763556519945,375182598000000005),
 (2116193763556519945,375182598000000006),(2116193763556519945,375182598000000007),
 (2116193763556519945,375182598000000009),
-(2116193763556519946,375182598000000001),(2116193763556519946,375182598000000002),
+(2116193763556519946,375182598000000002),
 (2116193763556519953,375182598000000009);
 -- P1-1：合同与档案附件授权（HR 可维护；员工本人、部门负责人、数据分析师只读）
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
@@ -1974,16 +1901,6 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519945,375182598000000013),(2116193763556519945,375182598000000014),
 (2116193763556519946,375182598000000013),
 (2116193763556519952,375182598000000013);
--- P1-2：轻量考勤授权（全员可提交/查看本人；主管与 HR 可终审、确认月度汇总）
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
-(2116193763556519940,375182598000000017),(2116193763556519940,375182598000000015),(2116193763556519940,375182598000000016),
-(2116193763556519941,375182598000000017),(2116193763556519941,375182598000000015),
-(2116193763556519942,375182598000000017),(2116193763556519942,375182598000000015),(2116193763556519942,375182598000000016),
-(2116193763556519943,375182598000000017),(2116193763556519943,375182598000000015),(2116193763556519943,375182598000000016),
-(2116193763556519944,375182598000000017),(2116193763556519944,375182598000000015),(2116193763556519944,375182598000000016),
-(2116193763556519945,375182598000000017),(2116193763556519945,375182598000000015),(2116193763556519945,375182598000000016),
-(2116193763556519946,375182598000000017),(2116193763556519946,375182598000000015),(2116193763556519946,375182598000000016),
-(2116193763556519952,375182598000000017),(2116193763556519952,375182598000000015);
 -- P0-2：人员数据范围授权（HR 全量；部门负责人本组织及下级）
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519940,375182598000000010),(2116193763556519940,375182598000000011),
@@ -1991,15 +1908,6 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519942,375182598000000010),(2116193763556519943,375182598000000010),
 (2116193763556519944,375182598000000010),(2116193763556519945,375182598000000010),
 (2116193763556519946,375182598000000011);
--- P2-1：招聘管道授权（HR 全流程；部门负责人/其他管理角色只读）
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
-(2116193763556519940,375182598000000020),(2116193763556519940,375182598000000021),(2116193763556519940,375182598000000022),
-(2116193763556519942,375182598000000020),(2116193763556519942,375182598000000021),(2116193763556519942,375182598000000022),
-(2116193763556519943,375182598000000020),(2116193763556519943,375182598000000021),(2116193763556519943,375182598000000022),
-(2116193763556519944,375182598000000020),(2116193763556519944,375182598000000021),
-(2116193763556519945,375182598000000020),(2116193763556519945,375182598000000021),
-(2116193763556519946,375182598000000020),(2116193763556519946,375182598000000021),
-(2116193763556519952,375182598000000020),(2116193763556519952,375182598000000021);
 -- P2-2：批量导入授权（HR 全流程）
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519940,375182598000000023),
@@ -2009,14 +1917,86 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
 (2116193763556519940,375182598000000024);
 
--- P4：考勤查看/维护（HR 专员、员工关系；部门负责人只读）
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
-(2116193763556519942,375182598000000025),
-(2116193763556519945,375182598000000025),
-(2116193763556519946,375182598000000025),
-(2116193763556519942,375182598000000026),
-(2116193763556519945,375182598000000026);
--- P4-5：解锁已确认月度考勤（HR 专员、员工关系）
-INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES
-(2116193763556519942,375182598000000027),
-(2116193763556519945,375182598000000027);
+-- EHR 多页签角色矩阵：六个业务角色共同的组织/人员只读及自助权限
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `sso_role` r
+INNER JOIN `sso_permission` p ON p.app_code = 'ehr' AND p.deleted = 0 AND p.code IN (
+  'org','org:view','employee','employee:view',
+  'leave','leave:mine','leave:mine:apply','leave:mine:cancel','leave:mine:early-return','leave:mine:waive-carryover',
+  'attendance','attendance:overtime','attendance:overtime:mine',
+  'attendance:overtime:preview','attendance:overtime:submit','attendance:overtime:cancel',
+  'attendance:my','attendance:my:correction:apply','attendance:my:correction:cancel',
+  'recruit','recruit:interviews','recruit:interviews:feedback',
+  'approval','approval:todo','approval:approved','approval:started','approval:cc','approval:delegated',
+  'approval:started:withdraw','approval:resign','approval:resign:apply','approval:resign:cancel'
+)
+WHERE r.id IN (2116193763556519941,2116193763556519942,2116193763556519943,
+               2116193763556519944,2116193763556519945,2116193763556519946)
+  AND r.deleted = 0;
+
+-- 部门负责人：团队视图和审批处理
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519946, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND p.code IN (
+  'leave:team','attendance:overtime:team',
+  'approval:todo:approve','approval:todo:reject','approval:todo:transfer','approval:todo:add-sign'
+);
+
+-- 招聘专员：候选人、Offer、职位全量管理
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519943, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND p.code IN (
+  'recruit:board','recruit:board:candidate:create','recruit:board:candidate:edit',
+  'recruit:board:candidate:eliminate','recruit:board:candidate:restore',
+  'recruit:board:interview:schedule','recruit:board:interview:cancel',
+  'recruit:board:communication:add','recruit:board:offer:create','recruit:board:resume:download',
+  'recruit:offers','recruit:offers:create','recruit:offers:cancel','recruit:offers:confirm',
+  'recruit:offers:decline','recruit:offers:onboard',
+  'recruit:jobs','recruit:jobs:create','recruit:jobs:update','recruit:jobs:publish',
+  'recruit:jobs:close','recruit:jobs:delete'
+);
+
+-- 人事专员：请假和考勤全部页签、数据视图及按钮
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519942, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND (
+  p.id BETWEEN 2026111500000001001 AND 2026111500000001014
+  OR p.id BETWEEN 2026111500000001201 AND 2026111500000001295
+);
+
+-- 薪酬绩效专员：全部加班、员工考勤汇总、日结果、打卡、规则、日历和年假策略
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519944, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND p.code IN (
+  'attendance:overtime:all',
+  'attendance:monthly','attendance:monthly:confirm','attendance:monthly:unlock','attendance:monthly:export',
+  'attendance:daily','attendance:daily:generate','attendance:daily:mock',
+  'attendance:punches','attendance:punches:create',
+  'attendance:rules','attendance:rules:create','attendance:rules:update',
+  'attendance:rules:delete','attendance:rules:toggle',
+  'attendance:calendar','attendance:calendar:save','attendance:calendar:import','attendance:calendar:apply-next-year',
+  'attendance:annual','attendance:annual:create','attendance:annual:update',
+  'attendance:annual:enable','attendance:annual:generate','attendance:annual:recalculate'
+);
+
+-- 员工关系专员：全部离职申请和交接确认
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519945, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND p.code IN (
+  'approval:handover','approval:handover:confirm','approval:resign:view-all'
+);
+
+-- 超级管理员：本次重建的全部菜单、页签、数据视图和按钮
+INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`)
+SELECT 2116193763556519940, p.id
+FROM `sso_permission` p
+WHERE p.app_code = 'ehr' AND p.deleted = 0 AND (
+  p.id IN (375175900486045696,375182598000000017,375182598000000020,375194196740542464)
+  OR p.id BETWEEN 2026111500000001001 AND 2026111500000001343
+);

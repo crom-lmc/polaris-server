@@ -56,6 +56,7 @@ public class DataScopeService implements DataScope {
     public <T> void applyOrgScope(LambdaQueryWrapper<T> wrapper, SFunction<T, String> orgCodeFn) {
         String scopeCode = currentScopeCode();
         if (scopeCode == null || scopeCode.isBlank()) {
+            wrapper.eq(orgCodeFn, "__NO_ACCESS__");
             return;
         }
         String[] roots = scopeCode.split(",");

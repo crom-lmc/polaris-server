@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 请假：申请与审批分离成两个权限码（leave:apply / leave:approve），
- * 默认角色里基本功能只给申请，请假审批角色才给 approve。
+ * 请假：我的请假、审批列表与团队请假分别鉴权，操作按钮使用独立权限码。
  */
 @RestController
 @RequestMapping("/api/ehr/leaves")
@@ -34,9 +33,9 @@ public class AdminLeaveController {
 
     private final LeaveService leaveService;
 
-    /** scope=mine 我的记录；scope=all 全部记录（需 leave:approve） */
+    /** scope=mine 我的记录；scope=all 审批列表，服务端按实际 scope 精确鉴权 */
     @GetMapping
-    @Permit(PermissionCodes.LEAVE_VIEW)
+    @Permit({PermissionCodes.LEAVE_MINE, PermissionCodes.LEAVE_ALL})
     public R<R.Page<LeaveVO>> page(
             @RequestParam(defaultValue = "mine") String scope,
             @RequestParam(required = false) Integer status,
@@ -46,20 +45,20 @@ public class AdminLeaveController {
     }
 
     @PostMapping
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<LeaveVO> apply(@Valid @RequestBody LeaveApplyRequest req) {
         return R.ok(leaveService.apply(req));
     }
 
     @PostMapping("/{id}/cancel")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_CANCEL)
     public R<LeaveVO> cancel(@PathVariable Long id) {
         return R.ok(leaveService.cancel(id));
     }
 
     /** 提前返岗销假：按实际返岗日期重算天数并退回额度 */
     @PostMapping("/{id}/early-return")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_EARLY_RETURN)
     public R<LeaveVO> earlyReturn(@PathVariable Long id,
                                   @Valid @RequestBody EarlyReturnRequest req) {
         return R.ok(leaveService.earlyReturn(id, req));
@@ -67,7 +66,7 @@ public class AdminLeaveController {
 
     /** 提交前的时段冲突提示（只查本人） */
     @GetMapping("/conflicts")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<List<LeaveVO>> conflicts(@RequestParam String startDate,
                                       @RequestParam String endDate) {
         return R.ok(leaveService.conflicts(startDate, endDate));
@@ -75,15 +74,16 @@ public class AdminLeaveController {
 
     /** 团队请假视图：按组织子树 + 日期区间 */
     @GetMapping("/team")
-    @Permit(PermissionCodes.LEAVE_VIEW_TEAM)
+    @Permit(PermissionCodes.LEAVE_TEAM)
     public R<List<LeaveVO>> team(@RequestParam(required = false) Long orgId,
                                  @RequestParam(required = false) String from,
                                  @RequestParam(required = false) String to) {
         return R.ok(leaveService.team(orgId, from, to));
     }
 
-    /** 请假类型下拉（配置中心 biz_leave_type 主数据；登录即可，提交请假的人都要用） */
+    /** 请假类型下拉（配置中心 biz_leave_type 主数据，提交请假的人都要用） */
     @GetMapping("/type-options")
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<List<TypeOption>> typeOptions() {
         return R.ok(leaveService.typeNames().entrySet().stream()
                 .map(e -> new TypeOption(e.getKey(), e.getValue()))
@@ -92,21 +92,21 @@ public class AdminLeaveController {
 
     /** 审批转办选项：部门负责人请假时该字段必填，候选人=在职且已开户的其他员工 */
     @GetMapping("/delegate-options")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<LeaveDelegateOptionsVO> delegateOptions() {
         return R.ok(leaveService.delegateOptions());
     }
 
     /** 当前员工所在城市的婚假 / 产假 / 陪产假天数与计算方式 */
     @GetMapping("/city-policy")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<LeavePolicyVO> cityPolicy() {
         return R.ok(leaveService.cityPolicy());
     }
 
     /** 按开始日期试算结束日期（城市政策类假期天数固定） */
     @GetMapping("/plan")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<LeavePolicyVO> plan(@RequestParam String leaveType,
                                  @RequestParam String startDate) {
         return R.ok(leaveService.plan(leaveType, startDate));
@@ -114,7 +114,7 @@ public class AdminLeaveController {
 
     /** 申请弹窗「本次请假时长」试算：与提交共用同一套天数计算口径 */
     @GetMapping("/preview")
-    @Permit(PermissionCodes.LEAVE_APPLY)
+    @Permit(PermissionCodes.LEAVE_MINE_APPLY)
     public R<LeavePreviewVO> preview(@RequestParam String leaveType,
                                      @RequestParam String startDate,
                                      @RequestParam String endDate,

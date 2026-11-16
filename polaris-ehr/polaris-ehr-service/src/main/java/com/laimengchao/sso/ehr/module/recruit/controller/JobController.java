@@ -27,7 +27,7 @@ public class JobController {
     private final JobService jobService;
 
     @GetMapping
-    @Permit(PermissionCodes.RECRUIT_VIEW)
+    @Permit(PermissionCodes.RECRUIT_JOBS)
     public R<R.Page<JobPostVO>> page(@RequestParam(required = false) String status,
                                      @RequestParam(required = false) String keyword,
                                      @RequestParam(defaultValue = "1") int page,
@@ -36,39 +36,39 @@ public class JobController {
     }
 
     @GetMapping("/{id}")
-    @Permit(PermissionCodes.RECRUIT_VIEW)
+    @Permit(PermissionCodes.RECRUIT_JOBS)
     public R<JobPostVO> detail(@PathVariable Long id) {
         return R.ok(jobService.detail(id));
     }
 
     @PostMapping
-    @Permit(PermissionCodes.RECRUIT_MANAGE)
+    @Permit(PermissionCodes.RECRUIT_JOBS_CREATE)
     public R<JobPostVO> create(@Valid @RequestBody JobPostRequest req) {
         return R.ok(jobService.create(req));
     }
 
     @PutMapping("/{id}")
-    @Permit(PermissionCodes.RECRUIT_MANAGE)
+    @Permit(PermissionCodes.RECRUIT_JOBS_UPDATE)
     public R<JobPostVO> update(@PathVariable Long id, @Valid @RequestBody JobPostRequest req) {
         return R.ok(jobService.update(id, req));
     }
 
     @PostMapping("/{id}/publish")
-    @Permit(PermissionCodes.RECRUIT_MANAGE)
+    @Permit(PermissionCodes.RECRUIT_JOBS_PUBLISH)
     public R<Void> publish(@PathVariable Long id) {
         jobService.publish(id);
         return R.ok();
     }
 
     @PostMapping("/{id}/close")
-    @Permit(PermissionCodes.RECRUIT_MANAGE)
+    @Permit(PermissionCodes.RECRUIT_JOBS_CLOSE)
     public R<Void> close(@PathVariable Long id) {
         jobService.close(id);
         return R.ok();
     }
 
     @DeleteMapping("/{id}")
-    @Permit(PermissionCodes.RECRUIT_MANAGE)
+    @Permit(PermissionCodes.RECRUIT_JOBS_DELETE)
     public R<Void> delete(@PathVariable Long id) {
         jobService.delete(id);
         return R.ok();

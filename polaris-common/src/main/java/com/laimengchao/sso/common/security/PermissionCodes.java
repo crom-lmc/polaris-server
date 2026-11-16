@@ -97,15 +97,46 @@ public final class PermissionCodes {
     public static final String EMPLOYEE_IMPORT = "employee:import";
     public static final String EMPLOYEE_EXPORT = "employee:export";
 
-    /* 招聘 */
-    public static final String RECRUIT_VIEW = "recruit:view";
-    public static final String RECRUIT_MANAGE = "recruit:manage";
+    /* 招聘：页签 */
+    public static final String RECRUIT_MENU = "recruit";
+    public static final String RECRUIT_BOARD = "recruit:board";
+    public static final String RECRUIT_OFFERS = "recruit:offers";
+    public static final String RECRUIT_JOBS = "recruit:jobs";
+    public static final String RECRUIT_INTERVIEWS = "recruit:interviews";
+    /* 招聘：候选人看板按钮 */
+    public static final String RECRUIT_BOARD_CANDIDATE_CREATE = "recruit:board:candidate:create";
+    public static final String RECRUIT_BOARD_CANDIDATE_EDIT = "recruit:board:candidate:edit";
+    public static final String RECRUIT_BOARD_CANDIDATE_ELIMINATE = "recruit:board:candidate:eliminate";
+    public static final String RECRUIT_BOARD_CANDIDATE_RESTORE = "recruit:board:candidate:restore";
+    public static final String RECRUIT_BOARD_INTERVIEW_SCHEDULE = "recruit:board:interview:schedule";
+    public static final String RECRUIT_BOARD_INTERVIEW_CANCEL = "recruit:board:interview:cancel";
+    public static final String RECRUIT_BOARD_COMMUNICATION_ADD = "recruit:board:communication:add";
+    public static final String RECRUIT_BOARD_OFFER_CREATE = "recruit:board:offer:create";
+    public static final String RECRUIT_BOARD_RESUME_DOWNLOAD = "recruit:board:resume:download";
+    /* 招聘：Offer 按钮 */
+    public static final String RECRUIT_OFFERS_CREATE = "recruit:offers:create";
+    public static final String RECRUIT_OFFERS_CANCEL = "recruit:offers:cancel";
+    public static final String RECRUIT_OFFERS_CONFIRM = "recruit:offers:confirm";
+    public static final String RECRUIT_OFFERS_DECLINE = "recruit:offers:decline";
+    public static final String RECRUIT_OFFERS_ONBOARD = "recruit:offers:onboard";
+    /* 招聘：职位按钮 */
+    public static final String RECRUIT_JOBS_CREATE = "recruit:jobs:create";
+    public static final String RECRUIT_JOBS_UPDATE = "recruit:jobs:update";
+    public static final String RECRUIT_JOBS_PUBLISH = "recruit:jobs:publish";
+    public static final String RECRUIT_JOBS_CLOSE = "recruit:jobs:close";
+    public static final String RECRUIT_JOBS_DELETE = "recruit:jobs:delete";
+    /* 招聘：我的面试按钮 */
+    public static final String RECRUIT_INTERVIEWS_FEEDBACK = "recruit:interviews:feedback";
 
-    /* 请假 */
-    public static final String LEAVE_VIEW = "leave:view";
-    public static final String LEAVE_APPLY = "leave:apply";
-    public static final String LEAVE_APPROVE = "leave:approve";
-    public static final String LEAVE_VIEW_TEAM = "leave:view:team";
+    /* 请假：页签 */
+    public static final String LEAVE_MINE = "leave:mine";
+    public static final String LEAVE_ALL = "leave:all";
+    public static final String LEAVE_TEAM = "leave:team";
+    /* 请假：我的请假按钮 */
+    public static final String LEAVE_MINE_APPLY = "leave:mine:apply";
+    public static final String LEAVE_MINE_CANCEL = "leave:mine:cancel";
+    public static final String LEAVE_MINE_EARLY_RETURN = "leave:mine:early-return";
+    public static final String LEAVE_MINE_WAIVE_CARRYOVER = "leave:mine:waive-carryover";
     public static final String LEAVE_QUOTA_VIEW = "leave:quota:view";
     public static final String LEAVE_QUOTA_ADJUST = "leave:quota:adjust";
     public static final String LEAVE_QUOTA_MANAGE = "leave:quota:manage";
@@ -115,14 +146,52 @@ public final class PermissionCodes {
     public static final String CONTRACT_VIEW = "contract:view";
     public static final String CONTRACT_MANAGE = "contract:manage";
 
-    /* 加班 */
-    public static final String OVERTIME_VIEW = "overtime:view";
-    public static final String OVERTIME_APPROVE = "overtime:approve";
-
-    /* 考勤 */
-    public static final String ATTENDANCE_VIEW = "attendance:view";
-    public static final String ATTENDANCE_MANAGE = "attendance:manage";
-    public static final String ATTENDANCE_MONTH_UNLOCK = "attendance:month:unlock";
+    /* 考勤：页签及数据视图 */
+    public static final String ATTENDANCE_MENU = "attendance";
+    public static final String ATTENDANCE_OVERTIME = "attendance:overtime";
+    public static final String ATTENDANCE_OVERTIME_MINE = "attendance:overtime:mine";
+    public static final String ATTENDANCE_OVERTIME_TEAM = "attendance:overtime:team";
+    public static final String ATTENDANCE_OVERTIME_ALL = "attendance:overtime:all";
+    public static final String ATTENDANCE_MONTHLY = "attendance:monthly";
+    public static final String ATTENDANCE_MY = "attendance:my";
+    public static final String ATTENDANCE_DAILY = "attendance:daily";
+    public static final String ATTENDANCE_PUNCHES = "attendance:punches";
+    public static final String ATTENDANCE_CORRECTIONS = "attendance:corrections";
+    public static final String ATTENDANCE_RULES = "attendance:rules";
+    public static final String ATTENDANCE_CALENDAR = "attendance:calendar";
+    public static final String ATTENDANCE_ANNUAL = "attendance:annual";
+    /* 考勤：加班按钮 */
+    public static final String ATTENDANCE_OVERTIME_PREVIEW = "attendance:overtime:preview";
+    public static final String ATTENDANCE_OVERTIME_SUBMIT = "attendance:overtime:submit";
+    public static final String ATTENDANCE_OVERTIME_CANCEL = "attendance:overtime:cancel";
+    /* 考勤：员工考勤汇总按钮 */
+    public static final String ATTENDANCE_MONTH_CONFIRM = "attendance:monthly:confirm";
+    public static final String ATTENDANCE_MONTH_UNLOCK = "attendance:monthly:unlock";
+    public static final String ATTENDANCE_MONTH_EXPORT = "attendance:monthly:export";
+    /* 考勤：我的考勤按钮 */
+    public static final String ATTENDANCE_MY_CORRECTION_APPLY = "attendance:my:correction:apply";
+    public static final String ATTENDANCE_MY_CORRECTION_CANCEL = "attendance:my:correction:cancel";
+    /* 考勤：日结果、打卡、补卡审批按钮 */
+    public static final String ATTENDANCE_DAILY_GENERATE = "attendance:daily:generate";
+    public static final String ATTENDANCE_DAILY_MOCK = "attendance:daily:mock";
+    public static final String ATTENDANCE_PUNCHES_CREATE = "attendance:punches:create";
+    public static final String ATTENDANCE_CORRECTIONS_APPROVE = "attendance:corrections:approve";
+    public static final String ATTENDANCE_CORRECTIONS_REJECT = "attendance:corrections:reject";
+    /* 考勤：规则按钮 */
+    public static final String ATTENDANCE_RULES_CREATE = "attendance:rules:create";
+    public static final String ATTENDANCE_RULES_UPDATE = "attendance:rules:update";
+    public static final String ATTENDANCE_RULES_DELETE = "attendance:rules:delete";
+    public static final String ATTENDANCE_RULES_TOGGLE = "attendance:rules:toggle";
+    /* 考勤：工作日历按钮 */
+    public static final String ATTENDANCE_CALENDAR_SAVE = "attendance:calendar:save";
+    public static final String ATTENDANCE_CALENDAR_IMPORT = "attendance:calendar:import";
+    public static final String ATTENDANCE_CALENDAR_APPLY_NEXT_YEAR = "attendance:calendar:apply-next-year";
+    /* 考勤：年假策略按钮 */
+    public static final String ATTENDANCE_ANNUAL_CREATE = "attendance:annual:create";
+    public static final String ATTENDANCE_ANNUAL_UPDATE = "attendance:annual:update";
+    public static final String ATTENDANCE_ANNUAL_ENABLE = "attendance:annual:enable";
+    public static final String ATTENDANCE_ANNUAL_GENERATE = "attendance:annual:generate";
+    public static final String ATTENDANCE_ANNUAL_RECALCULATE = "attendance:annual:recalculate";
 
     /* 人员数据范围 */
     public static final String EMPLOYEE_DATA_ALL = "employee:data:all";
@@ -140,9 +209,24 @@ public final class PermissionCodes {
     public static final String RESIGN_APPLY = "resign:apply";
     public static final String REGULARIZE_APPLY = "regularize:apply";
 
-    /* 审批通用 */
-    public static final String APPROVAL_VIEW = "approval:view";
-    public static final String APPROVAL_APPROVE = "approval:approve";
+    /* 审批中心：页签 */
+    public static final String APPROVAL_TODO = "approval:todo";
+    public static final String APPROVAL_APPROVED = "approval:approved";
+    public static final String APPROVAL_STARTED = "approval:started";
+    public static final String APPROVAL_CC = "approval:cc";
+    public static final String APPROVAL_DELEGATED = "approval:delegated";
+    public static final String APPROVAL_HANDOVER = "approval:handover";
+    public static final String APPROVAL_RESIGN = "approval:resign";
+    /* 审批中心：按钮 */
+    public static final String APPROVAL_TODO_APPROVE = "approval:todo:approve";
+    public static final String APPROVAL_TODO_REJECT = "approval:todo:reject";
+    public static final String APPROVAL_TODO_TRANSFER = "approval:todo:transfer";
+    public static final String APPROVAL_TODO_ADD_SIGN = "approval:todo:add-sign";
+    public static final String APPROVAL_STARTED_WITHDRAW = "approval:started:withdraw";
+    public static final String APPROVAL_HANDOVER_CONFIRM = "approval:handover:confirm";
+    public static final String APPROVAL_RESIGN_APPLY = "approval:resign:apply";
+    public static final String APPROVAL_RESIGN_CANCEL = "approval:resign:cancel";
+    public static final String APPROVAL_RESIGN_VIEW_ALL = "approval:resign:view-all";
 
     /* 通知管理（人力中心） */
     public static final String ANNOUNCEMENT_MANAGE = "announcement:manage";
@@ -183,8 +267,8 @@ public final class PermissionCodes {
     public static final String SECURITY_VIEW = "security:view";
     public static final String SECURITY_MANAGE = "security:manage";
 
-    /* 审批模板 */
-    /* APPROVAL_VIEW / APPROVAL_MANAGE 已在 EHR 组定义（字符串相同 "approval:view"/"approval:manage"） */
+    /* 审批模板（配置中心独立权限，不属于 EHR 审批中心页签） */
+    public static final String APPROVAL_VIEW = "approval:view";
     public static final String APPROVAL_MANAGE = "approval:manage";
 
     /* 字典 */

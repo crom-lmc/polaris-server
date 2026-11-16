@@ -29,7 +29,7 @@ public class AttendanceDailyController {
     private final AttendanceDailyService dailyService;
 
     @GetMapping("/daily")
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_DAILY)
     public R<R.Page<AttendanceDailyVO>> page(@RequestParam String month,
                                              @RequestParam(required = false) Long employeeId,
                                              @RequestParam(required = false) String status,
@@ -39,19 +39,20 @@ public class AttendanceDailyController {
     }
 
     @PostMapping("/daily/generate")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_DAILY_GENERATE)
     public R<Integer> generate(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
         return R.ok(dailyService.generate(date));
     }
 
-    /** 当前登录员工本人某月考勤（无需 HR 权限）。 */
+    /** 当前登录员工本人某月考勤。 */
     @GetMapping("/my")
+    @Permit(PermissionCodes.ATTENDANCE_MY)
     public R<List<AttendanceDailyVO>> my(@RequestParam String month) {
         return R.ok(dailyService.my(month));
     }
 
     @GetMapping("/punches")
-    @Permit(PermissionCodes.ATTENDANCE_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_PUNCHES)
     public R<R.Page<AttendancePunchVO>> punches(@RequestParam(required = false) Long employeeId,
                                                 @RequestParam(required = false)
                                                 @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
@@ -61,7 +62,7 @@ public class AttendanceDailyController {
     }
 
     @PostMapping("/punches")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_PUNCHES_CREATE)
     public R<AttendancePunch> addPunch(@RequestBody AttendancePunchRequest req) {
         return R.ok(dailyService.addPunch(req));
     }

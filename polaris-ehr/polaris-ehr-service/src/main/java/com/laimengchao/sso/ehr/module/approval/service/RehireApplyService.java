@@ -296,15 +296,13 @@ public class RehireApplyService {
         return toVO(detail, currentUserOrNull());
     }
 
-    /** scope=mine 我提交的；scope=all 全部（需审批权限） */
+    /** scope=mine 我提交的；scope=all 全部（需离职/复职管理权限） */
     public R.Page<RehireApplyVO> page(String scope, Integer status, int page, int size) {
         SecurityUser user = currentUser();
         LambdaQueryWrapper<RehireApply> w = new LambdaQueryWrapper<>();
         if ("all".equalsIgnoreCase(scope)) {
-            if (!user.isSuperAdmin()
-                    && !user.getPermissions().contains(PermissionCodes.APPROVAL_APPROVE)
-                    && !user.getPermissions().contains(PermissionCodes.EMPLOYEE_RESIGN)) {
-                throw new BizException(ErrorCode.FORBIDDEN, "没有审批权限，只能查看自己提交的申请");
+            if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.EMPLOYEE_RESIGN)) {
+                throw new BizException(ErrorCode.FORBIDDEN, "没有复职管理权限，只能查看自己提交的申请");
             }
         } else {
             w.eq(RehireApply::getApplicantAccountId, user.getAccountId());

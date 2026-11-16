@@ -34,7 +34,7 @@ public class CandidateVO {
     private String workYears;
     private String currentCompany;
     private String expectedSalary;
-    /** 证件号：列表/详情默认掩码，详情编辑按 recruit:manage 返回明文 */
+    /** 证件号：列表/详情默认掩码，详情编辑按 recruit:board:candidate:edit 返回明文 */
     private String idCard;
     private String resumeFileId;
     private String resumeFileName;

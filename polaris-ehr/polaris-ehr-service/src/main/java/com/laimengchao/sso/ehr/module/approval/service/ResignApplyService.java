@@ -633,9 +633,8 @@ public class ResignApplyService {
         boolean all = "all".equalsIgnoreCase(scope);
         if (all) {
             if (!user.isSuperAdmin()
-                    && !user.getPermissions().contains(PermissionCodes.APPROVAL_APPROVE)
-                    && !user.getPermissions().contains(PermissionCodes.EMPLOYEE_RESIGN)) {
-                throw new BizException(ErrorCode.FORBIDDEN, "没有审批权限，只能查看自己提交的申请");
+                    && !user.getPermissions().contains(PermissionCodes.APPROVAL_RESIGN_VIEW_ALL)) {
+                throw new BizException(ErrorCode.FORBIDDEN, "没有查看全部离职/减员申请的权限");
             }
         } else {
             Long myEmployeeId = employeeIdOf(user.getAccountId());

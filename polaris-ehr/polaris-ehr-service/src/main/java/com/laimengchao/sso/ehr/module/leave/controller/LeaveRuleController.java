@@ -24,7 +24,7 @@ public class LeaveRuleController {
     private final LeaveTypeRuleService ruleService;
 
     @GetMapping
-    @Permit(PermissionCodes.LEAVE_VIEW)
+    @Permit({PermissionCodes.LEAVE_MINE, PermissionCodes.LEAVE_ALL, PermissionCodes.LEAVE_TEAM})
     public R<List<LeaveTypeRule>> list() {
         return R.ok(ruleService.list());
     }

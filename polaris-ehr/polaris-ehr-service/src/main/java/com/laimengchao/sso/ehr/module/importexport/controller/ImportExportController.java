@@ -74,7 +74,7 @@ public class ImportExportController {
     }
 
     @GetMapping("/export/attendance")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_MONTH_EXPORT)
     public ResponseEntity<byte[]> exportAttendance(@RequestParam(required = false) String month) {
         return xlsx(exportService.attendance(month), "attendance-" + LocalDate.now() + ".xlsx");
     }

@@ -22,7 +22,7 @@ public class AttendanceMockController {
     private final AttendanceMockService mockService;
 
     @PostMapping("/mock/run")
-    @Permit(PermissionCodes.ATTENDANCE_MANAGE)
+    @Permit(PermissionCodes.ATTENDANCE_DAILY_MOCK)
     public R<Integer> run(@RequestParam(required = false)
                           @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
         return R.ok(mockService.run(date));

@@ -413,15 +413,13 @@ public class RegularizeApplyService {
         return toVO(detail, currentUserOrNull());
     }
 
-    /** scope=mine 我提交的；scope=all 全部（需审批权限） */
+    /** scope=mine 我提交的；scope=all 全部（需人员编辑权限） */
     public R.Page<RegularizeApplyVO> page(String scope, Integer status, int page, int size) {
         SecurityUser user = currentUser();
         LambdaQueryWrapper<RegularizeApply> w = new LambdaQueryWrapper<>();
         if ("all".equalsIgnoreCase(scope)) {
-            if (!user.isSuperAdmin()
-                    && !user.getPermissions().contains(PermissionCodes.APPROVAL_APPROVE)
-                    && !user.getPermissions().contains(PermissionCodes.EMPLOYEE_EDIT)) {
-                throw new BizException(ErrorCode.FORBIDDEN, "没有审批权限，只能查看自己提交的申请");
+            if (!user.isSuperAdmin() && !user.getPermissions().contains(PermissionCodes.EMPLOYEE_EDIT)) {
+                throw new BizException(ErrorCode.FORBIDDEN, "没有人员管理权限，只能查看自己提交的申请");
             }
         } else {
             w.eq(RegularizeApply::getApplicantAccountId, user.getAccountId());

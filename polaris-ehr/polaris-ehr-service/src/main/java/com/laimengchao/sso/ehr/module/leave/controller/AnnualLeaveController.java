@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-/** 年假策略与年度额度生成（P4-4）。权限复用额度调整权限。 */
+/** 年假策略与年度额度生成（P4-4）。 */
 @RestController
 @RequestMapping("/api/ehr/admin")
 @RequiredArgsConstructor
@@ -28,20 +28,20 @@ public class AnnualLeaveController {
     private final AnnualLeaveService annualLeaveService;
 
     @GetMapping("/annual-leave-policies")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL)
     public R<List<AnnualLeavePolicy>> policies() {
         return R.ok(annualLeaveService.listPolicies());
     }
 
     @PostMapping("/annual-leave-policies")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL_CREATE)
     public R<AnnualLeavePolicy> create(@RequestBody AnnualLeavePolicy policy) {
         policy.setId(null);
         return R.ok(annualLeaveService.savePolicy(policy));
     }
 
     @PutMapping("/annual-leave-policies/{id}")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL_UPDATE)
     public R<AnnualLeavePolicy> update(@PathVariable Long id,
                                        @RequestBody AnnualLeavePolicy policy) {
         policy.setId(id);
@@ -50,14 +50,14 @@ public class AnnualLeaveController {
 
     /** 启用指定策略，同时停用其他策略 */
     @PostMapping("/annual-leave-policies/{id}/enable")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL_ENABLE)
     public R<AnnualLeavePolicy> enable(@PathVariable Long id) {
         return R.ok(annualLeaveService.enablePolicy(id));
     }
 
     /** 手动生成全员指定年度年假额度（联调用），返回新建数量 */
     @PostMapping("/annual-leave/generate")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL_GENERATE)
     public R<Integer> generate(@RequestParam(required = false) Integer year) {
         int y = year == null ? LocalDate.now().getYear() : year;
         return R.ok(annualLeaveService.generateAll(y));
@@ -65,7 +65,7 @@ public class AnnualLeaveController {
 
     /** 按新规则重算指定年度全员年假额度（含已离职按在册折算），返回新建+有变化的条数 */
     @PostMapping("/annual-leave/recalculate")
-    @Permit(PermissionCodes.LEAVE_QUOTA_ADJUST)
+    @Permit(PermissionCodes.ATTENDANCE_ANNUAL_RECALCULATE)
     public R<Integer> recalculate(@RequestParam(required = false) Integer year) {
         int y = year == null ? LocalDate.now().getYear() : year;
         return R.ok(annualLeaveService.recalculateYear(y, true));

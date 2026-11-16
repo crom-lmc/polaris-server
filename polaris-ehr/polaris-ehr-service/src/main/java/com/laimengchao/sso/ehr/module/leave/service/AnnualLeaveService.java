@@ -9,6 +9,7 @@ import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.ehr.module.leave.vo.AnnualLeaveLedgerVO;
+import com.laimengchao.sso.ehr.security.DataScopeService;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
 import com.laimengchao.sso.ehr.module.employee.constant.EmployeeStatus;
@@ -74,6 +75,7 @@ public class AnnualLeaveService {
     private final LeaveMapper leaveMapper;
     private final EmployeeMapper employeeMapper;
     private final OrgNodeMapper orgMapper;
+    private final DataScopeService dataScopeService;
 
     // ---------------------------------------------------------------- 策略
 
@@ -507,6 +509,7 @@ public class AnnualLeaveService {
             w.and(q -> q.like(Employee::getName, k).or().like(Employee::getEmpNo, k));
         }
         w.ne(Employee::getStatus, EmployeeStatus.LEFT.getCode());
+        dataScopeService.applyOrgScope(w, Employee::getOrgCode);
         w.orderByAsc(Employee::getEmpNo);
         IPage<Employee> ip = employeeMapper.selectPage(new Page<>(page, size), w);
         if (ip.getRecords().isEmpty()) {

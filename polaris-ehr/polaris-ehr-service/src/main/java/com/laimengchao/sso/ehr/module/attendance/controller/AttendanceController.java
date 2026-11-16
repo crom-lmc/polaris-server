@@ -28,7 +28,8 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @GetMapping("/overtimes")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit({PermissionCodes.ATTENDANCE_OVERTIME_MINE, PermissionCodes.ATTENDANCE_OVERTIME_TEAM,
+            PermissionCodes.ATTENDANCE_OVERTIME_ALL})
     public R<R.Page<OvertimeVO>> list(@RequestParam(required = false) String scope,
                                       @RequestParam(required = false) Long employeeId,
                                       @RequestParam(required = false) String month,
@@ -38,34 +39,34 @@ public class AttendanceController {
     }
 
     @PostMapping("/overtimes")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_OVERTIME_SUBMIT)
     public R<OvertimeVO> submit(@RequestBody OvertimeRequest req) {
         return R.ok(attendanceService.submit(req));
     }
 
     /** 加班申请试算（前端实时预览，与 submit 口径完全一致但不入库） */
     @PostMapping("/overtimes/preview")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_OVERTIME_PREVIEW)
     public R<OvertimePreviewVO> preview(@RequestBody OvertimeRequest req) {
         return R.ok(attendanceService.preview(req));
     }
 
     @PostMapping("/overtimes/{id}/cancel")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_OVERTIME_CANCEL)
     public R<Void> cancel(@PathVariable Long id) {
         attendanceService.cancel(id);
         return R.ok();
     }
 
     @GetMapping("/monthly")
-    @Permit(PermissionCodes.OVERTIME_VIEW)
+    @Permit(PermissionCodes.ATTENDANCE_MONTHLY)
     public R<List<AttendanceMonthVO>> monthly(@RequestParam String month,
                                               @RequestParam(required = false) Long employeeId) {
         return R.ok(attendanceService.monthly(month, employeeId));
     }
 
     @PostMapping("/monthly/confirm")
-    @Permit(PermissionCodes.OVERTIME_APPROVE)
+    @Permit(PermissionCodes.ATTENDANCE_MONTH_CONFIRM)
     public R<AttendanceMonthVO> confirm(@RequestParam String month, @RequestParam Long employeeId) {
         return R.ok(attendanceService.confirm(month, employeeId));
     }
