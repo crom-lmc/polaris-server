@@ -389,8 +389,7 @@ public class LeaveService {
                     int n = leaveMapper.update(null, new LambdaUpdateWrapper<LeaveRequest>()
                             .eq(LeaveRequest::getId, leave.getId())
                             .eq(LeaveRequest::getStatus, 0)
-                            .set(LeaveRequest::getStatus, 3)
-                            .set(LeaveRequest::getApproveNote, "发起审批失败，系统自动撤销"));
+                            .set(LeaveRequest::getStatus, 3));
                     if (n > 0) {
                         attachmentMapper.delete(new LambdaQueryWrapper<LeaveAttachment>()
                                 .eq(LeaveAttachment::getLeaveId, leave.getId()));
@@ -475,8 +474,6 @@ public class LeaveService {
                 .eq(LeaveRequest::getId, leaveId)
                 .eq(LeaveRequest::getStatus, 0)
                 .set(LeaveRequest::getStatus, st)
-                .set(LeaveRequest::getApproveNote, req.getResultName() == null ? "" : req.getResultName())
-                .set(LeaveRequest::getApprovedAt, LocalDateTime.now())
                 .set(LeaveRequest::getApprovalInstanceId, null));
         if (updated == 0) {
             log.info("请假审批回调已处理过，忽略 leaveId={} 目标状态={}", leaveId, st);
@@ -1060,13 +1057,9 @@ public class LeaveService {
         }
         vo.setStatus(r.getStatus());
         vo.setStatusName(STATUS_NAMES.getOrDefault(r.getStatus(), "未知"));
-        vo.setApproverAccountId(r.getApproverAccountId());
-        vo.setApproverName(r.getApproverName());
         vo.setDelegateAccountId(r.getDelegateAccountId());
         vo.setDelegateName(r.getDelegateName());
         vo.setApproveNote(r.getApproveNote());
-        vo.setApprovedAt(r.getApprovedAt() == null ? null
-                : r.getApprovedAt().toString().replace('T', ' '));
         vo.setCreatedAt(r.getCreatedAt() == null ? null
                 : r.getCreatedAt().toString().replace('T', ' '));
         Long me = user.getAccountId();

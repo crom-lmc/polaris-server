@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 把 deploy/nginx/nginx-base.inc 幂等合入宿主机 /etc/nginx/nginx.conf
 #
-#   sudo deploy/scripts/apply-nginx-base.sh deploy/nginx/nginx-base.inc
+#   sudo scripts/apply-nginx-base.sh deploy/nginx/nginx-base.inc
 #
 # 合并策略（不整文件覆盖，已有配置不会被冲掉）：
 #   1. 片段里每个 `# polaris-check: <正则>` 描述一组指令是否已存在；

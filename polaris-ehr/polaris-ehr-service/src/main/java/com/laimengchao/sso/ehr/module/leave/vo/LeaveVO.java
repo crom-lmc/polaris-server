@@ -45,17 +45,12 @@ public class LeaveVO {
     private Integer status;
     private String statusName;
 
-    /** 提交时按组织负责人快照下来的审批人账户ID；为空表示没人配负责人，有审批权的人兜底 */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long approverAccountId;
-
-    private String approverName;
     /** 审批转办人（部门负责人请假时指定）：审批通过后其审批任务由该人代收 */
     @JsonSerialize(using = ToStringSerializer.class)
     private Long delegateAccountId;
     private String delegateName;
+    /** 提前返岗销假备注 */
     private String approveNote;
-    private String approvedAt;
     private String createdAt;
     /** 是否是当前登录人提交的（前端据此决定要不要显示「撤销」） */
     private boolean mine;

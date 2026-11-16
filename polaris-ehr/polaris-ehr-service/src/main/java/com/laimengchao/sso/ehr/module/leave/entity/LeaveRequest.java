@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /** 请假申请。申请人记 account_id（网关可信头）与员工档案双份，前者用于「我的」，后者用于统计 */
 @Data
@@ -47,10 +46,8 @@ public class LeaveRequest extends BaseEntity {
     private String delegateName;
     /** 0 待审批 / 1 已通过 / 2 已驳回 / 3 已撤销 / 4 已销假 */
     private Integer status;
-    private Long approverAccountId;
-    private String approverName;
+    /** 提前返岗销假备注，不再保存审批意见 */
     private String approveNote;
-    private LocalDateTime approvedAt;
 
     /** 审批中心实例 ID：统一走审批中心后，撤销要据此撤回在途单、列表要据此点开详情 */
     private Long approvalInstanceId;

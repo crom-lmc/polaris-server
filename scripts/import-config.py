@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-把 nacos/config/<env>/*.yaml 推送到 Nacos 对应命名空间（走官方 OpenAPI，无需 SDK）。
+把 polaris-nacos/config/<env>/*.yaml 推送到 Nacos 对应命名空间（走官方 OpenAPI，无需 SDK）。
 
 环境与命名空间一一对应：
   local  →  sso-ms-local     本地调试用
   prod   →  sso-ms-prod      线上用
 
 常用：
-  python nacos/import-config.py --env local              # 推送本地环境配置
-  python nacos/import-config.py --env prod --dry-run     # 只打印将推送什么
-  python nacos/import-config.py --env local --list       # 看命名空间里现有配置
-  python nacos/import-config.py --env local --addr 127.0.0.1:18848 --user nacos --pwd xxx
+  python scripts/import-config.py --env local              # 推送本地环境配置
+  python scripts/import-config.py --env prod --dry-run     # 只打印将推送什么
+  python scripts/import-config.py --env local --list       # 看命名空间里现有配置
+  python scripts/import-config.py --env local --addr 127.0.0.1:18848 --user nacos --pwd xxx
 
 连接参数的默认值按顺序取自环境变量：
   SSO_NACOS_ADDR / NACOS_SERVER_ADDR      （默认 127.0.0.1:8848）
   SSO_NACOS_USER / NACOS_USERNAME         （默认 nacos）
   SSO_NACOS_PASSWORD / NACOS_PASSWORD     （默认空 → 不登录，适合关闭鉴权的实例）
+  SSO_SECRET_TOOL                         （可选，仓库外兼容 Java 密文校验工具路径）
 
 推送完成后会回读一次并逐字节比对，确认服务真能拉到同样的内容。
 
 敏感项（数据库口令、服务间令牌、JWT 私钥等）在配置文件里是 ENC(...) 密文。
 推送前会用主密钥试解一遍：解不开就不推——避免把「打不开的密文」发上生产，
 那种情况下服务启动会直接失败，而排查方向往往会被误判成 Nacos 的问题。
-主密钥来自环境变量 SSO_CONF_KEY（或 SSO_CONF_KEY_FILE），也可先 `source nacos/.env`。
+主密钥来自环境变量 SSO_CONF_KEY（或 SSO_CONF_KEY_FILE），也可先 `source polaris-nacos/.env`。
 """
 import argparse
 import json
@@ -36,8 +37,9 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CONFIG_ROOT = os.path.join(HERE, "config")
-SECRET_TOOL = os.path.join(os.path.dirname(HERE), "tools", "SecretTool.java")
+REPO_ROOT = os.path.dirname(HERE)
+CONFIG_ROOT = os.path.join(REPO_ROOT, "polaris-nacos", "config")
+SECRET_TOOL = os.environ.get("SSO_SECRET_TOOL", "").strip()
 DATA_IDS = [
     "sso-gateway.yaml", "sso-auth.yaml", "sso-account.yaml",
     "blog-admin.yaml", "cms.yaml", "ehr.yaml", "settings.yaml", "portal.yaml", "job.yaml",
@@ -79,8 +81,8 @@ def verify_sealed(name, content):
               "（部署时缺主密钥会启动失败）" % (name, len(entries)))
         return True
     java = shutil.which("java")
-    if not java or not os.path.exists(SECRET_TOOL):
-        print("[WARN] 找不到 java 或 tools/SecretTool.java，跳过密文校验")
+    if not java or not SECRET_TOOL or not os.path.exists(SECRET_TOOL):
+        print("[WARN] 未配置可用的 SSO_SECRET_TOOL 或找不到 java，跳过密文校验")
         return True
     env = dict(os.environ, SSO_CONF_KEY=key)
     for key_name, value in entries:
@@ -90,7 +92,7 @@ def verify_sealed(name, content):
             err = (result.stderr or b"").decode("utf-8", "ignore").strip().splitlines()
             print("[FAIL] %s 的 %s 解不开：%s" % (name, key_name, err[-1] if err else "未知错误"))
             print("       多半是换过主密钥却没重加密，或这份配置从别处拷来。")
-            print("       重加密：java tools/SecretTool.java encrypt --stdin")
+            print("       请使用与 SecretCipher 兼容的工具重新加密后重试。")
             return False
     print("[OK] %-18s 密文校验通过（%d 项）" % (name, len(entries)))
     return True

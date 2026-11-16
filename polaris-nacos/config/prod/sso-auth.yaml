@@ -1,14 +1,14 @@
 # env    : prod  (namespace sso-ms-prod)
 # dataId : sso-auth.yaml
 # group  : SSO
-# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see polaris-nacos/README.md.
 # The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
 # IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
 #            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
 #            with MalformedInputException and the config silently falls back to the jar.
 
 # note: prod uses service discovery (lb://), requires SSO_NACOS_DISCOVERY=true.
-#       prod has its OWN RSA keypair (nacos/.secrets/prod-jwt-*.pem): a token forged on a
+#       prod has its OWN RSA keypair (polaris-nacos/.secrets/prod-jwt-*.pem): a token forged on a
 #       dev machine is rejected here, and vice versa.
 
 sso:

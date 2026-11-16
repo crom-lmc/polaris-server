@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 服务器侧一键更新：拉代码 → 构建 → 发布产物 → 重启
 #
-#   sudo /opt/polaris/src/polaris-server/deploy/scripts/server-deploy.sh            # 后端+前端
+#   sudo /opt/polaris/src/polaris-server/scripts/server-deploy.sh            # 后端+前端
 #   sudo .../server-deploy.sh --backend                                            # 只更新后端
 #   sudo .../server-deploy.sh --web                                                # 只更新前端
 #   sudo .../server-deploy.sh --sync                                               # 同时用仓库里的 compose / nginx 配置覆盖线上
@@ -102,7 +102,7 @@ if [ "$DO_SYNC" = 1 ]; then
     install -m 644 "$DEPLOY/nginx/zz-realip.conf" /opt/safeline/resources/nginx/conf.d/zz-realip.conf
   fi
   # 宿主机 nginx.conf 只幂等补缺失的限流 zone / bad_bot map / 日志格式，不整文件覆盖
-  bash "$DEPLOY/scripts/apply-nginx-base.sh" "$DEPLOY/nginx/nginx-base.inc"
+  bash "$SRC/polaris-server/scripts/apply-nginx-base.sh" "$DEPLOY/nginx/nginx-base.inc"
   DOMAIN="$DOMAIN" envsubst '${DOMAIN}' < "$DEPLOY/nginx/polaris.conf.tpl" > /tmp/polaris.conf
   install -m 644 /tmp/polaris.conf /etc/nginx/conf.d/polaris.conf
   nginx -t && nginx -s reload

@@ -50,21 +50,6 @@ public class ResignApply extends BaseEntity {
      * 4 是部门负责人通过后的中间态：还要集团人力资源中心负责人终审，通过才真正置离职。
      */
     private Integer status;
-    /** 提交时按「所在组织负责人」解析出来的审批人快照；为空表示没人配负责人，由有审批权的人兜底 */
-    private Long approverAccountId;
-    private String approverName;
-    /** 审批人所在节点：被办理人本身是负责人时这里会是上一级节点，前端据此解释「为什么往上走」 */
-    private String approverOrgName;
-    private String approveNote;
-    private LocalDateTime approvedAt;
-    /**
-     * 第二级审批人：集团人力资源中心负责人（提交时快照，部门通过后才开始审）。
-     * 为空有两种含义——还没走到这一级，或者系统里没有「集团人力资源中心」节点（兜底：跳过二级）。
-     */
-    private Long hrApproverAccountId;
-    private String hrApproverName;
-    private String hrApproveNote;
-    private LocalDateTime hrApprovedAt;
     /**
      * 提交前的员工状态（30 试用 / 40 在职）：
      * 提交时档案先置「离职中」，驳回或撤销要按这个值还原，否则人会永远卡在 50。

@@ -94,7 +94,7 @@ public final class SecretCipher {
     }
 
     /**
-     * 解析主密钥：优先按 Base64 解码（推荐，{@code java tools/SecretTool.java genkey} 生成），
+     * 解析主密钥：优先按 Base64 解码（推荐使用部署方密钥工具生成的 32 字节随机密钥），
      * 解码后长度不是 16/24/32 时回退为原始 UTF-8 字节，两者都不合法则直接报错。
      */
     public static byte[] parseKey(String raw) {

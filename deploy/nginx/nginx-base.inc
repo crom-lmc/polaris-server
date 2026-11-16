@@ -4,7 +4,7 @@
 # 这些指令原先只存在于服务器 /etc/nginx/nginx.conf，重装/换机会丢，
 # 导致 api-proxy.inc 引用未定义的 zone 而 nginx -t 失败。
 #
-# 合入方式：deploy/scripts/apply-nginx-base.sh 幂等合入，不整文件覆盖
+# 合入方式：scripts/apply-nginx-base.sh 幂等合入，不整文件覆盖
 #   - 每个 `# polaris-check:` 后面的正则描述“该指令组是否已存在”
 #   - 已存在则保持原样（视为已满足），缺失才在托管块内补一行
 #   - 托管块用 BEGIN/END 标记包住，重复执行不会产生重复内容

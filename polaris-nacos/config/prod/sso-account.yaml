@@ -1,7 +1,7 @@
 # env    : prod  (namespace sso-ms-prod)
 # dataId : sso-account.yaml
 # group  : SSO
-# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see polaris-nacos/README.md.
 # The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
 # IMPORTANT: keep this file pure ASCII. Spring reads the fetched content with the JVM
 #            default charset (GBK on zh-CN Windows); non-ASCII bytes make snakeyaml fail
@@ -9,7 +9,7 @@
 
 # note: prod DB credentials intentionally stay as env placeholders WITHOUT defaults --
 #       a missing SSO_DB_PASSWORD must abort startup instead of silently using a wrong account.
-#       Once the real password is known, seal it with SecretTool and the env vars disappear.
+#       Once the real password is known, seal it with a compatible encryption tool and the env vars disappear.
 
 spring:
   datasource:
@@ -39,6 +39,6 @@ sso:
     lock-minutes: 30
   bootstrap:
     admin-username: admin
-    # no default: set SSO_ADMIN_PASSWORD on first boot, or seal it with SecretTool
+    # no default: set SSO_ADMIN_PASSWORD on first boot, or seal it with a compatible encryption tool
     admin-password: ${SSO_ADMIN_PASSWORD}
     admin-email: admin@laimengchao.site

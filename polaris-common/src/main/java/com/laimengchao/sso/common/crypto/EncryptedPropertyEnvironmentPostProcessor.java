@@ -114,8 +114,8 @@ public class EncryptedPropertyEnvironmentPostProcessor implements EnvironmentPos
                     请任选一种方式提供：
                       1) 设置环境变量 %s（Base64 字符串）
                       2) 设置环境变量 %s 指向存放密钥的文件
-                    生成新密钥：java tools/SecretTool.java genkey
-                    加密某个明文：java tools/SecretTool.java encrypt '<明文>'
+                    请使用部署方密钥管理工具生成 32 字节随机密钥（Base64），
+                    并使用与 SecretCipher 兼容的 AES-256-GCM 格式加密敏感配置。
                     """.formatted(expectedCount, KEY_PROPERTY, KEY_FILE_PROPERTY));
         }
 

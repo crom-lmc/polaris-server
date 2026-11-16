@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 雷池（SafeLine）与宿主机 nginx 配置备份。恢复步骤见 deploy/SAFELINE-RECOVERY.md。
-#   sudo bash deploy/scripts/safeline-backup.sh [输出目录]
+# 雷池（SafeLine）与宿主机 nginx 配置备份。恢复步骤见仓库外归档的迭代文档。
+#   sudo bash scripts/safeline-backup.sh [输出目录]
 # 默认输出 /opt/polaris/backups/safeline-<时间戳>/，不写任何明文密码到本仓库。
 set -euo pipefail
 
@@ -46,4 +46,4 @@ docker compose -f /opt/safeline/compose.yaml config --images > "$OUT/compose-ima
 tar -C "$(dirname "$OUT")" -czf "$OUT.tgz" "$(basename "$OUT")"
 chmod 600 "$OUT.tgz"
 echo "完成：$OUT.tgz"
-echo "提示：mgt 容器内 /app/mgt 非原版镜像内容，重装前请参考 SAFELINE-RECOVERY.md 的补丁保留步骤。"
+echo "提示：mgt 容器内 /app/mgt 非原版镜像内容，重装前请参考仓库外归档的 SAFELINE-RECOVERY.md。"

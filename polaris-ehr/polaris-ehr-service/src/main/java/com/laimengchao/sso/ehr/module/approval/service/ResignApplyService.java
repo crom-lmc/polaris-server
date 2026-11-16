@@ -792,15 +792,6 @@ public class ResignApplyService {
             vo.setStatusName(STATUS_NAMES.getOrDefault(a.getStatus(), "未知"));
         }
         vo.setApplicantAccountId(a.getApplicantAccountId());
-        vo.setApproverAccountId(a.getApproverAccountId());
-        vo.setApproverName(a.getApproverName());
-        vo.setApproverOrgName(a.getApproverOrgName());
-        vo.setApproveNote(a.getApproveNote());
-        vo.setApprovedAt(a.getApprovedAt() == null ? null : a.getApprovedAt().toString().replace('T', ' '));
-        vo.setHrApproverAccountId(a.getHrApproverAccountId());
-        vo.setHrApproverName(a.getHrApproverName());
-        vo.setHrApproveNote(a.getHrApproveNote());
-        vo.setHrApprovedAt(a.getHrApprovedAt() == null ? null : a.getHrApprovedAt().toString().replace('T', ' '));
         vo.setCreatedAt(a.getCreatedAt() == null ? null : a.getCreatedAt().toString().replace('T', ' '));
         if (user != null) {
             Long me = user.getAccountId();

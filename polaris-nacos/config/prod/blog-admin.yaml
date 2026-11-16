@@ -1,6 +1,6 @@
 # env    : prod  (namespace sso-ms-prod)
 # dataId : blog-admin.yaml   group: SSO
-# Secrets are AES-GCM ciphertext (ENC + base64 payload), see tools/SecretTool.java.
+# Secrets are AES-GCM ciphertext (ENC + base64 payload), see polaris-nacos/README.md.
 # The master key exists ONLY in the SSO_CONF_KEY environment variable / .env file.
 # IMPORTANT: keep this file pure ASCII.
 

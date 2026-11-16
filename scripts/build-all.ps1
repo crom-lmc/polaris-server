@@ -1,12 +1,12 @@
 # 本地构建：打包 9 个后端 jar + 构建 8 个前端站点，产物集中到 deploy\jars 与 deploy\www
-# 用法：powershell -ExecutionPolicy Bypass -File deploy\scripts\build-all.ps1
+# 用法：powershell -ExecutionPolicy Bypass -File scripts\build-all.ps1
 # 说明：服务器只有 2C4G，编译务必在本机/CI 完成，只把产物推上去。
 
 param(
   [string]$Mvn        = 'F:\code\sso\.maven39\apache-maven-3.9.9\bin\mvn.cmd',
-  [string]$ServerRoot = 'F:\code\polaris-server',
-  [string]$WebRoot    = 'F:\code\polaris-web',
-  [string]$DeployRoot = (Split-Path -Parent $PSScriptRoot),
+  [string]$ServerRoot = (Split-Path -Parent $PSScriptRoot),
+  [string]$WebRoot    = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'polaris-web'),
+  [string]$DeployRoot = (Join-Path (Split-Path -Parent $PSScriptRoot) 'deploy'),
   [string]$Domain     = 'laimengchao.site',
   [switch]$SkipBackend,
   [switch]$SkipWeb,

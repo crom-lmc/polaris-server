@@ -1,12 +1,12 @@
 # 发布到服务器：上传 jar / 静态站点 / compose / nginx 配置，然后滚动重启
 # 前置：本机已能免密 ssh <user>@<host>；deploy\keys 下已放好 prod-jwt-private.pem / prod-jwt-public.pem
-# 用法：powershell -ExecutionPolicy Bypass -File deploy\scripts\publish.ps1 -Server 1.2.3.4 -User root
+# 用法：powershell -ExecutionPolicy Bypass -File scripts\publish.ps1 -Server 1.2.3.4 -User root
 
 param(
   [Parameter(Mandatory = $true)][string]$Server,
   [string]$User       = 'root',
   [string]$Remote     = '/opt/polaris',
-  [string]$DeployRoot = (Split-Path -Parent $PSScriptRoot),
+  [string]$DeployRoot = (Join-Path (Split-Path -Parent $PSScriptRoot) 'deploy'),
   [switch]$SkipNginx
 )
 
@@ -31,7 +31,7 @@ scp (Join-Path $DeployRoot 'nginx\00-default-ssl.conf') "${target}:$Remote/00-de
 scp (Join-Path $DeployRoot 'nginx\00-default-ports.conf') "${target}:$Remote/00-default-ports.conf"
 scp (Join-Path $DeployRoot 'nginx\nacos.conf')       "${target}:$Remote/nacos.conf"
 scp (Join-Path $DeployRoot 'nginx\nginx-base.inc')   "${target}:$Remote/nginx-base.inc"
-scp (Join-Path $DeployRoot 'scripts\apply-nginx-base.sh') "${target}:$Remote/apply-nginx-base.sh"
+scp (Join-Path $PSScriptRoot 'apply-nginx-base.sh') "${target}:$Remote/apply-nginx-base.sh"
 scp (Join-Path $DeployRoot 'nginx\polaris-tengine-proxy.inc') "${target}:$Remote/polaris-tengine-proxy.inc"
 scp (Join-Path $DeployRoot 'nginx\polaris-direct.inc')        "${target}:$Remote/polaris-direct.inc"
 scp -r (Join-Path $DeployRoot 'jars') "${target}:$Remote/"

@@ -59,24 +59,6 @@ public class ResignApplyVO {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long applicantAccountId;
 
-    /** 一级（部门负责人）审批人账户ID：前端据此判断「轮到我审了吗」 */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long approverAccountId;
-    private String approverName;
-    /** 审批人所在节点名：被办理人自己是负责人时，这里是上一级节点 */
-    private String approverOrgName;
-    private String approveNote;
-    private String approvedAt;
-
-    /* ---------- 二级：集团人力资源中心负责人 ---------- */
-
-    /** 二级审批人账户ID；null=未走到该环节，或系统无「集团人力资源中心」节点（有权限者兜底） */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long hrApproverAccountId;
-    private String hrApproverName;
-    private String hrApproveNote;
-    private String hrApprovedAt;
-
     private String createdAt;
 
     /** 当前登录人是否就是提交人 */
