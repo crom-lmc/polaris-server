@@ -126,7 +126,7 @@ public class HrLedgerService {
 
     public MovementLedger movement(String fromMonth, String toMonth, Long orgId, String event,
                                    int page, int size) {
-        YearMonth from = parseMonth(fromMonth, YearMonth.now().minusMonths(5));
+        YearMonth from = parseMonth(fromMonth, YearMonth.now().minusMonths(11));
         YearMonth to = parseMonth(toMonth, YearMonth.now());
         if (to.isBefore(from)) {
             YearMonth tmp = from;
