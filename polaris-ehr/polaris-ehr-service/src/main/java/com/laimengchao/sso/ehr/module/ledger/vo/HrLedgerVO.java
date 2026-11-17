@@ -1,11 +1,16 @@
 package com.laimengchao.sso.ehr.module.ledger.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.laimengchao.sso.common.R;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,5 +135,270 @@ public class HrLedgerVO {
         private List<OrgOption> orgs = new ArrayList<>();
         private List<DailyCount> daily = new ArrayList<>();
         private List<CountItem> types = new ArrayList<>();
+    }
+
+    @Data
+    public static class WorkforceRow {
+        private String id;
+        private String employeeId;
+        private String name;
+        private String empNo;
+        private String org;
+        private String position;
+        private Integer status;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate hireDate;
+        private Integer age;
+        private String education;
+        private String educationName;
+        private BigDecimal seniorityYears;
+    }
+
+    @Data
+    public static class WorkforceLedger {
+        private R.Page<WorkforceRow> page;
+        private long active;
+        private long probation;
+        private long pending;
+        private long offboarding;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<CountItem> byOrg = new ArrayList<>();
+        private List<CountItem> educations = new ArrayList<>();
+        private List<CountItem> ageGroups = new ArrayList<>();
+        private List<CountItem> seniorityGroups = new ArrayList<>();
+    }
+
+    @Data
+    public static class RegularizationRow {
+        private String id;
+        private String employeeId;
+        private String name;
+        private String empNo;
+        private String org;
+        private String position;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate hireDate;
+        private Integer probationMonths;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate expectedRegularizeDate;
+        private Long remainingDays;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate lastApplyDate;
+        private Integer approvalStatus;
+    }
+
+    @Data
+    public static class RegularizeOrgStat {
+        private String org;
+        private long overdue;
+        private long due30;
+    }
+
+    @Data
+    public static class RegularizationLedger {
+        private R.Page<RegularizationRow> page;
+        private long current;
+        private long overdue;
+        private long due30;
+        private long approving;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<MonthCount> monthly = new ArrayList<>();
+        private List<RegularizeOrgStat> byOrg = new ArrayList<>();
+        private List<CountItem> approvalStatuses = new ArrayList<>();
+    }
+
+    @Data
+    public static class LeaveRow {
+        private String id;
+        private String employeeId;
+        private String leaveNo;
+        private String name;
+        private String empNo;
+        private String org;
+        private String type;
+        private String typeName;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate startDate;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate endDate;
+        private BigDecimal days;
+        private String dayMode;
+        private Integer status;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate returnDate;
+    }
+
+    @Data
+    public static class LeaveTypeStat {
+        private String key;
+        private String name;
+        private long count;
+        private BigDecimal days = BigDecimal.ZERO;
+    }
+
+    @Data
+    public static class OrgAmount {
+        private String org;
+        private BigDecimal value = BigDecimal.ZERO;
+    }
+
+    @Data
+    public static class AmountMonth {
+        private String month;
+        private BigDecimal value = BigDecimal.ZERO;
+    }
+
+    @Data
+    public static class LeaveLedger {
+        private R.Page<LeaveRow> page;
+        private long effectivePeople;
+        private BigDecimal effectiveDays = BigDecimal.ZERO;
+        private BigDecimal pendingDays = BigDecimal.ZERO;
+        private long pendingCount;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<AmountMonth> monthly = new ArrayList<>();
+        private List<LeaveTypeStat> types = new ArrayList<>();
+        private List<OrgAmount> byOrg = new ArrayList<>();
+    }
+
+    @Data
+    public static class OvertimeRow {
+        private String id;
+        private String employeeId;
+        private String overtimeNo;
+        private String name;
+        private String empNo;
+        private String org;
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        private LocalDate workDate;
+        private LocalTime startTime;
+        private LocalTime endTime;
+        private String type;
+        private BigDecimal hours;
+        private BigDecimal effectiveHours;
+        private Integer status;
+        private Integer settleStatus;
+        private LocalDateTime settledAt;
+    }
+
+    @Data
+    public static class OvertimeOrgStat {
+        private String org;
+        private BigDecimal hours = BigDecimal.ZERO;
+        private BigDecimal unsettledHours = BigDecimal.ZERO;
+    }
+
+    @Data
+    public static class TypeAmount {
+        private String key;
+        private String name;
+        private BigDecimal value = BigDecimal.ZERO;
+    }
+
+    @Data
+    public static class OvertimeLedger {
+        private R.Page<OvertimeRow> page;
+        private BigDecimal approvedHours = BigDecimal.ZERO;
+        private BigDecimal effectiveHours = BigDecimal.ZERO;
+        private BigDecimal unsettledHours = BigDecimal.ZERO;
+        private long pendingCount;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<AmountMonth> monthly = new ArrayList<>();
+        private List<TypeAmount> types = new ArrayList<>();
+        private List<OvertimeOrgStat> byOrg = new ArrayList<>();
+    }
+
+    @Data
+    public static class RecruitmentRow {
+        private String id;
+        private String candidateId;
+        private String candidateNo;
+        private String name;
+        private String org;
+        private String position;
+        private String source;
+        private String stage;
+        private String ownerName;
+        private LocalDateTime appliedAt;
+        private LocalDateTime lastStageAt;
+    }
+
+    @Data
+    public static class RecruitmentPositionStat {
+        private String position;
+        private long candidates;
+        private long confirmedOffers;
+    }
+
+    @Data
+    public static class RecruitmentLedger {
+        private R.Page<RecruitmentRow> page;
+        private long newCandidates;
+        private long interviewedCandidates;
+        private long confirmedOffers;
+        private long recruitedEmployees;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<CountItem> sources = new ArrayList<>();
+        private List<CountItem> stages = new ArrayList<>();
+        private List<RecruitmentPositionStat> positions = new ArrayList<>();
+    }
+
+    @Data
+    public static class ProfileQualityRow {
+        private String id;
+        private String employeeId;
+        private String name;
+        private String empNo;
+        private String org;
+        private Integer status;
+        private List<String> issues = new ArrayList<>();
+    }
+
+    @Data
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ProfileQualityLedger {
+        private R.Page<ProfileQualityRow> page;
+        private long problemPeople;
+        private long problemItems;
+        private long noAccount;
+        private long incomplete;
+        private long noSeniority;
+        private Long noContract;
+        private boolean contractVisible;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<CountItem> issueTypes = new ArrayList<>();
+        private List<CountItem> byOrg = new ArrayList<>();
+    }
+
+    @Data
+    public static class EmployeeChangeRow {
+        private String id;
+        private String employeeId;
+        private String name;
+        private String empNo;
+        private String org;
+        private LocalDateTime appliedAt;
+        private int baseChanges;
+        private int addCount;
+        private int modCount;
+        private int delCount;
+        private Integer status;
+    }
+
+    @Data
+    public static class EmployeeChangeLedger {
+        private R.Page<EmployeeChangeRow> page;
+        private long approving;
+        private long effective;
+        private long rejected;
+        private long canceled;
+        private long baseChanges;
+        private long addCount;
+        private long modCount;
+        private long delCount;
+        private List<OrgOption> orgs = new ArrayList<>();
+        private List<CountItem> topFields = new ArrayList<>();
+        private List<MonthCount> monthly = new ArrayList<>();
+        private List<CountItem> byOrg = new ArrayList<>();
     }
 }

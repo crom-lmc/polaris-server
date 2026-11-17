@@ -5,7 +5,14 @@ import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.ehr.module.ledger.service.HrLedgerService;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.AttendanceLedger;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ContractLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.LeaveLedger;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.MovementLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.EmployeeChangeLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OvertimeLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ProfileQualityLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RecruitmentLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RegularizationLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.WorkforceLedger;
 import com.laimengchao.sso.ehr.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 人力台账：合同到期、人员流动、考勤异常只读报表。 */
+/** 人力台账只读报表。 */
 @RestController
 @RequestMapping("/api/ehr/hr-ledgers")
 @RequiredArgsConstructor
@@ -53,5 +60,89 @@ public class HrLedgerController {
                                           @RequestParam(defaultValue = "1") int page,
                                           @RequestParam(defaultValue = "6") int size) {
         return R.ok(ledgerService.attendance(month, orgId, type, status, keyword, page, size));
+    }
+
+    @GetMapping("/workforce")
+    @Permit(PermissionCodes.EMPLOYEE_VIEW)
+    public R<WorkforceLedger> workforce(@RequestParam(required = false) Long orgId,
+                                        @RequestParam(defaultValue = "ALL") String status,
+                                        @RequestParam(required = false) String position,
+                                        @RequestParam(required = false) String keyword,
+                                        @RequestParam(defaultValue = "1") int page,
+                                        @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.workforce(orgId, status, position, keyword, page, size));
+    }
+
+    @GetMapping("/regularization")
+    @Permit(PermissionCodes.EMPLOYEE_VIEW)
+    public R<RegularizationLedger> regularization(@RequestParam(required = false) Long orgId,
+                                                  @RequestParam(defaultValue = "ALL") String expiry,
+                                                  @RequestParam(defaultValue = "ALL") String approvalStatus,
+                                                  @RequestParam(required = false) String keyword,
+                                                  @RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.regularization(orgId, expiry, approvalStatus, keyword, page, size));
+    }
+
+    @GetMapping("/leaves")
+    @Permit({PermissionCodes.LEAVE_ALL, PermissionCodes.LEAVE_TEAM})
+    public R<LeaveLedger> leaves(@RequestParam(required = false) String from,
+                                 @RequestParam(required = false) String to,
+                                 @RequestParam(required = false) Long orgId,
+                                 @RequestParam(defaultValue = "ALL") String type,
+                                 @RequestParam(defaultValue = "ALL") String status,
+                                 @RequestParam(required = false) String keyword,
+                                 @RequestParam(defaultValue = "1") int page,
+                                 @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.leaves(from, to, orgId, type, status, keyword, page, size));
+    }
+
+    @GetMapping("/overtimes")
+    @Permit({PermissionCodes.ATTENDANCE_OVERTIME_ALL, PermissionCodes.ATTENDANCE_OVERTIME_TEAM})
+    public R<OvertimeLedger> overtimes(@RequestParam(required = false) String from,
+                                       @RequestParam(required = false) String to,
+                                       @RequestParam(required = false) Long orgId,
+                                       @RequestParam(defaultValue = "ALL") String type,
+                                       @RequestParam(defaultValue = "ALL") String status,
+                                       @RequestParam(defaultValue = "ALL") String settleStatus,
+                                       @RequestParam(required = false) String keyword,
+                                       @RequestParam(defaultValue = "1") int page,
+                                       @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.overtimes(from, to, orgId, type, status, settleStatus, keyword, page, size));
+    }
+
+    @GetMapping("/recruitment")
+    @Permit(PermissionCodes.RECRUIT_BOARD)
+    public R<RecruitmentLedger> recruitment(@RequestParam(required = false) String from,
+                                            @RequestParam(required = false) String to,
+                                            @RequestParam(required = false) Long orgId,
+                                            @RequestParam(defaultValue = "ALL") String stage,
+                                            @RequestParam(required = false) String source,
+                                            @RequestParam(required = false) String keyword,
+                                            @RequestParam(defaultValue = "1") int page,
+                                            @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.recruitment(from, to, orgId, stage, source, keyword, page, size));
+    }
+
+    @GetMapping("/profile-quality")
+    @Permit(PermissionCodes.EMPLOYEE_VIEW)
+    public R<ProfileQualityLedger> profileQuality(@RequestParam(required = false) Long orgId,
+                                                  @RequestParam(defaultValue = "ALL") String issue,
+                                                  @RequestParam(required = false) String keyword,
+                                                  @RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.profileQuality(orgId, issue, keyword, page, size));
+    }
+
+    @GetMapping("/employee-changes")
+    @Permit(PermissionCodes.EMPLOYEE_VIEW)
+    public R<EmployeeChangeLedger> employeeChanges(@RequestParam(required = false) String from,
+                                                   @RequestParam(required = false) String to,
+                                                   @RequestParam(required = false) Long orgId,
+                                                   @RequestParam(defaultValue = "ALL") String status,
+                                                   @RequestParam(required = false) String keyword,
+                                                   @RequestParam(defaultValue = "1") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
+        return R.ok(ledgerService.employeeChanges(from, to, orgId, status, keyword, page, size));
     }
 }

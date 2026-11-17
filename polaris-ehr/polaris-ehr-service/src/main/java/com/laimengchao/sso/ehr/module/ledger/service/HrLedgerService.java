@@ -5,44 +5,91 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
+import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
+import com.laimengchao.sso.ehr.module.approval.entity.RegularizeApply;
+import com.laimengchao.sso.ehr.module.approval.mapper.RegularizeApplyMapper;
 import com.laimengchao.sso.ehr.module.attendance.entity.AttendanceDaily;
+import com.laimengchao.sso.ehr.module.attendance.entity.Overtime;
 import com.laimengchao.sso.ehr.module.attendance.mapper.AttendanceDailyMapper;
+import com.laimengchao.sso.ehr.module.attendance.mapper.OvertimeMapper;
 import com.laimengchao.sso.ehr.module.contract.entity.Contract;
 import com.laimengchao.sso.ehr.module.contract.mapper.ContractMapper;
+import com.laimengchao.sso.ehr.module.employee.entity.EmpChange;
+import com.laimengchao.sso.ehr.module.employee.entity.EmpChangeField;
 import com.laimengchao.sso.ehr.module.employee.entity.Employee;
+import com.laimengchao.sso.ehr.module.employee.mapper.EmpChangeFieldMapper;
+import com.laimengchao.sso.ehr.module.employee.mapper.EmpChangeMapper;
 import com.laimengchao.sso.ehr.module.employee.mapper.EmployeeMapper;
+import com.laimengchao.sso.ehr.module.employee.service.SeniorityService;
+import com.laimengchao.sso.ehr.module.leave.entity.LeaveRequest;
+import com.laimengchao.sso.ehr.module.leave.mapper.LeaveMapper;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.AmountMonth;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.AttendanceLedger;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.AttendanceRow;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ContractLedger;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ContractRow;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.CountItem;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.DailyCount;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.EmployeeChangeLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.EmployeeChangeRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.LeaveLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.LeaveRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.LeaveTypeStat;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.MonthCount;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.MovementLedger;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.MovementMonth;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.MovementRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OrgAmount;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OrgNet;
 import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OrgOption;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OvertimeLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OvertimeOrgStat;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.OvertimeRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ProfileQualityLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.ProfileQualityRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RecruitmentLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RecruitmentPositionStat;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RecruitmentRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RegularizationLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RegularizationRow;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.RegularizeOrgStat;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.TypeAmount;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.WorkforceLedger;
+import com.laimengchao.sso.ehr.module.ledger.vo.HrLedgerVO.WorkforceRow;
 import com.laimengchao.sso.ehr.module.org.entity.OrgNode;
 import com.laimengchao.sso.ehr.module.org.mapper.OrgNodeMapper;
+import com.laimengchao.sso.ehr.module.recruit.entity.Candidate;
+import com.laimengchao.sso.ehr.module.recruit.entity.Interview;
+import com.laimengchao.sso.ehr.module.recruit.entity.Offer;
+import com.laimengchao.sso.ehr.module.recruit.mapper.CandidateMapper;
+import com.laimengchao.sso.ehr.module.recruit.mapper.InterviewMapper;
+import com.laimengchao.sso.ehr.module.recruit.mapper.OfferMapper;
 import com.laimengchao.sso.ehr.security.DataScopeService;
+import com.laimengchao.sso.settings.client.support.SettingsClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** 人力台账查询。所有业务查询均先叠加组织数据权限，再做用户筛选。 */
@@ -52,12 +99,25 @@ public class HrLedgerService {
 
     private static final List<String> CONTRACT_TYPES = List.of("FIXED", "UNFIXED", "INTERN", "LABOR");
     private static final List<String> ATTENDANCE_TYPES = List.of("LATE", "EARLY", "MISSING", "ABSENT");
+    private static final List<String> AGE_GROUPS = List.of("<25", "25-29", "30-34", "35-39", "40-44", "45-49", "50+", "UNKNOWN");
+    private static final List<String> SENIORITY_GROUPS = List.of("<1", "1-2", "3-4", "5-9", "10+", "UNKNOWN");
+    private static final List<String> OVERTIME_TYPES = List.of("NORMAL", "RESTDAY", "HOLIDAY");
+    private static final Map<String, String> DEFAULT_LEAVE_TYPES = defaultLeaveTypeNames();
 
     private final ContractMapper contractMapper;
     private final EmployeeMapper employeeMapper;
     private final AttendanceDailyMapper attendanceMapper;
     private final OrgNodeMapper orgMapper;
     private final DataScopeService dataScope;
+    private final SettingsClient settingsClient;
+    private final RegularizeApplyMapper regularizeApplyMapper;
+    private final LeaveMapper leaveMapper;
+    private final OvertimeMapper overtimeMapper;
+    private final CandidateMapper candidateMapper;
+    private final InterviewMapper interviewMapper;
+    private final OfferMapper offerMapper;
+    private final EmpChangeMapper empChangeMapper;
+    private final EmpChangeFieldMapper empChangeFieldMapper;
 
     public ContractLedger contracts(Long orgId, String expiry, String type, String keyword,
                                     int page, int size) {
@@ -270,6 +330,850 @@ public class HrLedgerService {
         return result;
     }
 
+    public WorkforceLedger workforce(Long orgId, String status, String position, String keyword,
+                                     int page, int size) {
+        validatePage(page, size);
+        Integer statusFilter = parseIntFilter(status, Set.of(10, 20, 25, 30, 40, 50, 55, 60), "员工状态");
+        String normalizedPosition = position == null ? "" : position.trim();
+        String normalizedKeyword = keyword(keyword);
+        List<OrgOption> orgs = accessibleOrgs();
+        Map<Long, String> orgNames = orgNames(orgs);
+        Map<String, String> educationNames = settingsClient.bizMap("education");
+        LocalDate today = LocalDate.now();
+        List<WorkforceRow> rows = new ArrayList<>();
+        for (Employee emp : scopedEmployees(orgId)) {
+            if (statusFilter != null && !statusFilter.equals(emp.getStatus())
+                    || !normalizedPosition.isEmpty() && !normalizedPosition.equalsIgnoreCase(nvl(emp.getPosition()).trim())
+                    || !matchesKeyword(emp.getName(), emp.getEmpNo(), "", normalizedKeyword)) {
+                continue;
+            }
+            WorkforceRow row = new WorkforceRow();
+            row.setId(idString(emp.getId()));
+            row.setEmployeeId(idString(emp.getId()));
+            row.setName(nvl(emp.getName()));
+            row.setEmpNo(nvl(emp.getEmpNo()));
+            row.setOrg(orgNames.getOrDefault(emp.getOrgId(), "未知组织"));
+            row.setPosition(nvl(emp.getPosition()));
+            row.setStatus(emp.getStatus());
+            row.setHireDate(emp.getHireDate());
+            row.setAge(age(emp.getBirthday(), today));
+            row.setEducation(nvl(emp.getEducation()).trim());
+            row.setEducationName(educationName(row.getEducation(), educationNames));
+            row.setSeniorityYears(seniorityYears(emp, today));
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(WorkforceRow::getOrg)
+                .thenComparing(WorkforceRow::getEmpNo).thenComparing(WorkforceRow::getId));
+        List<WorkforceRow> activeRows = rows.stream().filter(HrLedgerService::activeEmployee).toList();
+
+        WorkforceLedger result = new WorkforceLedger();
+        result.setOrgs(orgs);
+        result.setActive(activeRows.size());
+        result.setProbation(rows.stream().filter(x -> Integer.valueOf(30).equals(x.getStatus())).count());
+        result.setPending(rows.stream().filter(x -> x.getStatus() != null
+                && (x.getStatus() == 10 || x.getStatus() == 20 || x.getStatus() == 25)).count());
+        result.setOffboarding(rows.stream().filter(x -> Integer.valueOf(50).equals(x.getStatus())).count());
+        activeRows.stream().collect(Collectors.groupingBy(WorkforceRow::getOrg, LinkedHashMap::new, Collectors.counting()))
+                .forEach((org, count) -> result.getByOrg().add(countItem(org, org, count)));
+        result.setEducations(educationCountItems(activeRows, educationNames));
+        result.setAgeGroups(countItems(activeRows, AGE_GROUPS, x -> ageGroup(x.getAge()), HrLedgerService::groupName));
+        result.setSeniorityGroups(countItems(activeRows, SENIORITY_GROUPS,
+                x -> seniorityGroup(x.getSeniorityYears()), HrLedgerService::groupName));
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    public RegularizationLedger regularization(Long orgId, String expiry, String approvalStatus,
+                                               String keyword, int page, int size) {
+        validatePage(page, size);
+        String normalizedExpiry = requireChoice(expiry, Set.of("ALL", "OVERDUE", "30", "60", "LATER"), "到期筛选");
+        Integer approvalFilter = parseIntFilter(approvalStatus, Set.of(-1, 0, 1, 2), "转正审批状态");
+        String normalizedKeyword = keyword(keyword);
+        List<OrgOption> orgs = accessibleOrgs();
+        Map<Long, String> orgNames = orgNames(orgs);
+        List<Employee> employees = scopedEmployees(orgId).stream()
+                .filter(x -> Integer.valueOf(30).equals(x.getStatus())).toList();
+        List<Long> employeeIds = employees.stream().map(Employee::getId).filter(Objects::nonNull).toList();
+        Map<Long, LocalDate> latestApplications = new HashMap<>();
+        if (!employeeIds.isEmpty()) {
+            LambdaQueryWrapper<RegularizeApply> w = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(w, RegularizeApply::getOrgCode);
+            w.in(RegularizeApply::getEmployeeId, employeeIds)
+                    .orderByAsc(RegularizeApply::getCreatedAt).orderByAsc(RegularizeApply::getId);
+            for (RegularizeApply apply : regularizeApplyMapper.selectList(w)) {
+                if (apply.getEmployeeId() != null && apply.getCreatedAt() != null) {
+                    latestApplications.put(apply.getEmployeeId(), apply.getCreatedAt().toLocalDate());
+                }
+            }
+        }
+
+        LocalDate today = LocalDate.now();
+        List<RegularizationRow> rows = new ArrayList<>();
+        for (Employee emp : employees) {
+            LocalDate expected = emp.getExpectedRegularizeDate();
+            Long remaining = expected == null ? null : ChronoUnit.DAYS.between(today, expected);
+            int approval = emp.getRegularizeStatus() == null ? 0 : emp.getRegularizeStatus();
+            if (!matchesRegularizationExpiry(remaining, normalizedExpiry)
+                    || approvalFilter != null && approvalFilter != approval
+                    || !matchesKeyword(emp.getName(), emp.getEmpNo(), "", normalizedKeyword)) {
+                continue;
+            }
+            RegularizationRow row = new RegularizationRow();
+            row.setId(idString(emp.getId()));
+            row.setEmployeeId(idString(emp.getId()));
+            row.setName(nvl(emp.getName()));
+            row.setEmpNo(nvl(emp.getEmpNo()));
+            row.setOrg(orgNames.getOrDefault(emp.getOrgId(), "未知组织"));
+            row.setPosition(nvl(emp.getPosition()));
+            row.setHireDate(emp.getHireDate());
+            row.setProbationMonths(emp.getProbationMonths());
+            row.setExpectedRegularizeDate(expected);
+            row.setRemainingDays(remaining);
+            row.setLastApplyDate(latestApplications.get(emp.getId()));
+            row.setApprovalStatus(approval);
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(RegularizationRow::getExpectedRegularizeDate,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(RegularizationRow::getEmpNo).thenComparing(RegularizationRow::getId));
+
+        RegularizationLedger result = new RegularizationLedger();
+        result.setOrgs(orgs);
+        result.setCurrent(rows.size());
+        result.setOverdue(rows.stream().filter(x -> x.getRemainingDays() != null && x.getRemainingDays() < 0).count());
+        result.setDue30(rows.stream().filter(HrLedgerService::dueWithin30).count());
+        result.setApproving(rows.stream().filter(x -> x.getApprovalStatus() == 1 || x.getApprovalStatus() == 2).count());
+        YearMonth firstMonth = YearMonth.now();
+        LocalDate monthlyEnd = firstMonth.plusMonths(5).atEndOfMonth();
+        for (int i = 0; i < 6; i++) {
+            YearMonth month = firstMonth.plusMonths(i);
+            MonthCount item = new MonthCount();
+            item.setMonth(month.toString());
+            item.setValue(rows.stream().filter(x -> x.getExpectedRegularizeDate() != null
+                    && !x.getExpectedRegularizeDate().isBefore(today)
+                    && !x.getExpectedRegularizeDate().isAfter(monthlyEnd)
+                    && YearMonth.from(x.getExpectedRegularizeDate()).equals(month)).count());
+            result.getMonthly().add(item);
+        }
+        rows.stream().collect(Collectors.groupingBy(RegularizationRow::getOrg, LinkedHashMap::new, Collectors.toList()))
+                .forEach((org, items) -> {
+                    RegularizeOrgStat stat = new RegularizeOrgStat();
+                    stat.setOrg(org);
+                    stat.setOverdue(items.stream().filter(x -> x.getRemainingDays() != null && x.getRemainingDays() < 0).count());
+                    stat.setDue30(items.stream().filter(HrLedgerService::dueWithin30).count());
+                    result.getByOrg().add(stat);
+                });
+        result.setApprovalStatuses(countItems(rows, List.of("-1", "0", "1", "2"),
+                x -> String.valueOf(x.getApprovalStatus()), HrLedgerService::regularizeStatusName));
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    public LeaveLedger leaves(String from, String to, Long orgId, String type, String status,
+                              String keyword, int page, int size) {
+        validatePage(page, size);
+        DateRange range = dateRange(from, to);
+        Integer statusFilter = parseIntFilter(status, Set.of(0, 1, 2, 3, 4), "请假状态");
+        String normalizedType = normalize(type);
+        String normalizedKeyword = keyword(keyword);
+        String teamOrgCode = teamOrgCode(PermissionCodes.LEAVE_ALL, PermissionCodes.LEAVE_TEAM);
+        List<OrgOption> orgs = accessibleOrgs(teamOrgCode);
+        Map<Long, String> orgNames = orgNames(orgs);
+        List<Employee> scopedEmployees = scopedEmployees(orgId, teamOrgCode);
+        Map<Long, Employee> employees = employeeMap(scopedEmployees);
+        List<Long> employeeIds = scopedEmployees.stream().map(Employee::getId).filter(Objects::nonNull).toList();
+        List<LeaveRequest> requests = new ArrayList<>();
+        if (!employeeIds.isEmpty()) {
+            LambdaQueryWrapper<LeaveRequest> w = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(w, LeaveRequest::getOrgCode);
+            if (teamOrgCode != null) {
+                w.likeRight(LeaveRequest::getOrgCode, teamOrgCode);
+            }
+            w.in(LeaveRequest::getEmployeeId, employeeIds)
+                    .ge(LeaveRequest::getStartDate, range.start())
+                    .le(LeaveRequest::getStartDate, range.end());
+            requests = leaveMapper.selectList(w);
+        }
+        Map<String, String> configuredTypes = configuredLeaveTypeNames();
+        Map<String, String> rowTypeNames = new LinkedHashMap<>(configuredTypes);
+        requests.forEach(x -> rowTypeNames.putIfAbsent(canonicalType(x.getLeaveType()),
+                fallbackLeaveTypeName(x.getLeaveType())));
+
+        List<LeaveRow> rows = new ArrayList<>();
+        for (LeaveRequest request : requests) {
+            Employee emp = employees.get(request.getEmployeeId());
+            String rowType = canonicalType(request.getLeaveType());
+            if (!"ALL".equals(normalizedType) && !normalizedType.equals(rowType)
+                    || statusFilter != null && !statusFilter.equals(request.getStatus())
+                    || !matchesKeyword(emp == null ? "" : emp.getName(), emp == null ? "" : emp.getEmpNo(),
+                    request.getLeaveNo(), normalizedKeyword)) {
+                continue;
+            }
+            LeaveRow row = new LeaveRow();
+            row.setId(idString(request.getId()));
+            row.setEmployeeId(idString(request.getEmployeeId()));
+            row.setLeaveNo(nvl(request.getLeaveNo()));
+            row.setName(emp == null ? "" : nvl(emp.getName()));
+            row.setEmpNo(emp == null ? "" : nvl(emp.getEmpNo()));
+            row.setOrg(orgNames.getOrDefault(emp == null ? null : emp.getOrgId(), "未知组织"));
+            row.setType(rowType);
+            row.setTypeName(rowTypeNames.getOrDefault(rowType, rowType));
+            row.setStartDate(request.getStartDate());
+            row.setEndDate(request.getEndDate());
+            row.setDays(amount(request.getDays()));
+            row.setDayMode(request.getDayMode());
+            row.setStatus(request.getStatus());
+            row.setReturnDate(request.getReturnDate());
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(LeaveRow::getStartDate).reversed()
+                .thenComparing(LeaveRow::getEmpNo).thenComparing(LeaveRow::getId));
+        Predicate<LeaveRow> effective = HrLedgerService::effectiveLeave;
+
+        LeaveLedger result = new LeaveLedger();
+        result.setOrgs(orgs);
+        result.setEffectivePeople(rows.stream().filter(effective).map(LeaveRow::getEmployeeId)
+                .filter(Objects::nonNull).distinct().count());
+        result.setEffectiveDays(sumAmount(rows, effective, LeaveRow::getDays));
+        result.setPendingDays(sumAmount(rows, x -> Integer.valueOf(0).equals(x.getStatus()), LeaveRow::getDays));
+        result.setPendingCount(rows.stream().filter(x -> Integer.valueOf(0).equals(x.getStatus())).count());
+        result.setMonthly(monthlyAmounts(rows, range, LeaveRow::getStartDate, effective, LeaveRow::getDays));
+        Map<String, String> chartTypeNames = new LinkedHashMap<>(configuredTypes);
+        rows.forEach(x -> chartTypeNames.putIfAbsent(x.getType(), x.getTypeName()));
+        chartTypeNames.forEach((key, name) -> {
+            LeaveTypeStat stat = new LeaveTypeStat();
+            stat.setKey(key);
+            stat.setName(name);
+            stat.setCount(rows.stream().filter(effective).filter(x -> key.equals(x.getType())).count());
+            stat.setDays(sumAmount(rows, effective.and(x -> key.equals(x.getType())), LeaveRow::getDays));
+            result.getTypes().add(stat);
+        });
+        rows.stream().filter(effective)
+                .collect(Collectors.groupingBy(LeaveRow::getOrg, LinkedHashMap::new, Collectors.toList()))
+                .entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+                    OrgAmount stat = new OrgAmount();
+                    stat.setOrg(entry.getKey());
+                    stat.setValue(sumAmount(entry.getValue(), x -> true, LeaveRow::getDays));
+                    result.getByOrg().add(stat);
+                });
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    public OvertimeLedger overtimes(String from, String to, Long orgId, String type, String status,
+                                    String settleStatus, String keyword, int page, int size) {
+        validatePage(page, size);
+        DateRange range = dateRange(from, to);
+        String normalizedType = requireChoice(type, Set.of("ALL", "NORMAL", "RESTDAY", "HOLIDAY"), "加班类型");
+        Integer statusFilter = parseIntFilter(status, Set.of(0, 1, 2, 3), "加班状态");
+        Integer settleFilter = parseIntFilter(settleStatus, Set.of(0, 1), "结算状态");
+        String normalizedKeyword = keyword(keyword);
+        String teamOrgCode = teamOrgCode(PermissionCodes.ATTENDANCE_OVERTIME_ALL,
+                PermissionCodes.ATTENDANCE_OVERTIME_TEAM);
+        List<OrgOption> orgs = accessibleOrgs(teamOrgCode);
+        Map<Long, String> orgNames = orgNames(orgs);
+        List<Employee> scopedEmployees = scopedEmployees(orgId, teamOrgCode);
+        Map<Long, Employee> employees = employeeMap(scopedEmployees);
+        List<Long> employeeIds = scopedEmployees.stream().map(Employee::getId).filter(Objects::nonNull).toList();
+        List<Overtime> overtimes = new ArrayList<>();
+        if (!employeeIds.isEmpty()) {
+            LambdaQueryWrapper<Overtime> w = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(w, Overtime::getOrgCode);
+            if (teamOrgCode != null) {
+                w.likeRight(Overtime::getOrgCode, teamOrgCode);
+            }
+            w.in(Overtime::getEmployeeId, employeeIds)
+                    .ge(Overtime::getWorkDate, range.start())
+                    .le(Overtime::getWorkDate, range.end());
+            overtimes = overtimeMapper.selectList(w);
+        }
+
+        List<OvertimeRow> rows = new ArrayList<>();
+        for (Overtime overtime : overtimes) {
+            Employee emp = employees.get(overtime.getEmployeeId());
+            String rowType = canonicalType(overtime.getType());
+            if (!"ALL".equals(normalizedType) && !normalizedType.equals(rowType)
+                    || statusFilter != null && !statusFilter.equals(overtime.getStatus())
+                    || settleFilter != null && !settleFilter.equals(overtime.getSettleStatus())
+                    || !matchesKeyword(emp == null ? "" : emp.getName(), emp == null ? "" : emp.getEmpNo(),
+                    overtime.getOvertimeNo(), normalizedKeyword)) {
+                continue;
+            }
+            OvertimeRow row = new OvertimeRow();
+            row.setId(idString(overtime.getId()));
+            row.setEmployeeId(idString(overtime.getEmployeeId()));
+            row.setOvertimeNo(nvl(overtime.getOvertimeNo()));
+            row.setName(emp == null ? "" : nvl(emp.getName()));
+            row.setEmpNo(emp == null ? "" : nvl(emp.getEmpNo()));
+            row.setOrg(orgNames.getOrDefault(emp == null ? null : emp.getOrgId(), "未知组织"));
+            row.setWorkDate(overtime.getWorkDate());
+            row.setStartTime(overtime.getStartTime());
+            row.setEndTime(overtime.getEndTime());
+            row.setType(rowType);
+            row.setHours(overtime.getHours());
+            row.setEffectiveHours(overtime.getEffectiveHours());
+            row.setStatus(overtime.getStatus());
+            row.setSettleStatus(overtime.getSettleStatus());
+            row.setSettledAt(overtime.getSettledAt());
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(OvertimeRow::getWorkDate).reversed()
+                .thenComparing(OvertimeRow::getEmpNo).thenComparing(OvertimeRow::getId));
+        Predicate<OvertimeRow> approved = x -> Integer.valueOf(1).equals(x.getStatus());
+        Predicate<OvertimeRow> unsettled = approved.and(x -> Integer.valueOf(0).equals(x.getSettleStatus()));
+
+        OvertimeLedger result = new OvertimeLedger();
+        result.setOrgs(orgs);
+        result.setApprovedHours(sumAmount(rows, approved, OvertimeRow::getHours));
+        result.setEffectiveHours(sumAmount(rows,
+                approved.and(x -> Integer.valueOf(1).equals(x.getSettleStatus())), OvertimeRow::getEffectiveHours));
+        result.setUnsettledHours(sumAmount(rows, unsettled, OvertimeRow::getHours));
+        result.setPendingCount(rows.stream().filter(x -> Integer.valueOf(0).equals(x.getStatus())).count());
+        result.setMonthly(monthlyAmounts(rows, range, OvertimeRow::getWorkDate, approved, OvertimeRow::getHours));
+        for (String key : OVERTIME_TYPES) {
+            TypeAmount stat = new TypeAmount();
+            stat.setKey(key);
+            stat.setName(overtimeTypeName(key));
+            stat.setValue(sumAmount(rows, approved.and(x -> key.equals(x.getType())), OvertimeRow::getHours));
+            result.getTypes().add(stat);
+        }
+        rows.stream().collect(Collectors.groupingBy(OvertimeRow::getOrg, LinkedHashMap::new, Collectors.toList()))
+                .entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+                    OvertimeOrgStat stat = new OvertimeOrgStat();
+                    stat.setOrg(entry.getKey());
+                    stat.setHours(sumAmount(entry.getValue(), approved, OvertimeRow::getHours));
+                    stat.setUnsettledHours(sumAmount(entry.getValue(), unsettled, OvertimeRow::getHours));
+                    result.getByOrg().add(stat);
+                });
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    public RecruitmentLedger recruitment(String from, String to, Long orgId, String stage, String source,
+                                         String keyword, int page, int size) {
+        validatePage(page, size);
+        DateRange range = dateRange(from, to);
+        String normalizedStage = requireChoice(stage, Set.of("ALL", "RESUME", "INTERVIEW", "OFFER", "REJECTED"), "候选人阶段");
+        String normalizedSource = source == null ? "" : source.trim();
+        String normalizedKeyword = keyword(keyword);
+        List<OrgOption> orgs = accessibleOrgs();
+        Map<Long, String> orgNames = orgNames(orgs);
+        LambdaQueryWrapper<Candidate> candidateQuery = Wrappers.lambdaQuery();
+        dataScope.applyOrgScope(candidateQuery, Candidate::getOrgCode);
+        List<Candidate> candidates = applyOrgFilter(candidateQuery, orgId, Candidate::getOrgId)
+                ? candidateMapper.selectList(candidateQuery) : List.of();
+        List<Candidate> filtered = candidates.stream()
+                .filter(x -> "ALL".equals(normalizedStage) || normalizedStage.equals(x.getStage()))
+                .filter(x -> normalizedSource.isEmpty() || normalizedSource.equalsIgnoreCase(nvl(x.getSource()).trim()))
+                .filter(x -> matchesKeyword(x.getName(), x.getCandidateNo(), x.getPosition(), normalizedKeyword))
+                .toList();
+        Map<Long, Candidate> candidateMap = filtered.stream().filter(x -> x.getId() != null)
+                .collect(Collectors.toMap(Candidate::getId, Function.identity(), (a, b) -> a));
+        List<Long> candidateIds = List.copyOf(candidateMap.keySet());
+
+        List<Offer> offers = new ArrayList<>();
+        List<Interview> interviews = new ArrayList<>();
+        if (!candidateIds.isEmpty()) {
+            LambdaQueryWrapper<Offer> offerQuery = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(offerQuery, Offer::getOrgCode);
+            offers = offerMapper.selectList(offerQuery.in(Offer::getCandidateId, candidateIds));
+            interviews = interviewMapper.selectList(Wrappers.<Interview>lambdaQuery()
+                    .in(Interview::getCandidateId, candidateIds)
+                    .eq(Interview::getStatus, Interview.STATUS_DONE)
+                    .in(Interview::getRoundResult, Interview.RESULT_PASS, Interview.RESULT_FAIL)
+                    .isNotNull(Interview::getDecidedAt));
+        }
+        Set<Long> scopedOfferIds = offers.stream().map(Offer::getId).filter(Objects::nonNull).collect(Collectors.toSet());
+        long recruitedEmployees = scopedEmployees(orgId).stream()
+                .filter(x -> x.getSourceOfferId() != null && scopedOfferIds.contains(x.getSourceOfferId()))
+                .filter(x -> inRange(x.getHireDate(), range.start(), range.end()))
+                .map(Employee::getId).filter(Objects::nonNull).distinct().count();
+
+        List<RecruitmentRow> rows = new ArrayList<>();
+        for (Candidate candidate : filtered) {
+            RecruitmentRow row = new RecruitmentRow();
+            row.setId(idString(candidate.getId()));
+            row.setCandidateId(idString(candidate.getId()));
+            row.setCandidateNo(nvl(candidate.getCandidateNo()));
+            row.setName(nvl(candidate.getName()));
+            row.setOrg(orgNames.getOrDefault(candidate.getOrgId(), "未知组织"));
+            row.setPosition(nvl(candidate.getPosition()));
+            row.setSource(nvl(candidate.getSource()));
+            row.setStage(candidate.getStage());
+            row.setOwnerName(nvl(candidate.getOwnerName()));
+            row.setAppliedAt(candidate.getAppliedAt());
+            row.setLastStageAt(candidate.getLastStageAt());
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(RecruitmentRow::getAppliedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(RecruitmentRow::getCandidateNo).thenComparing(RecruitmentRow::getId));
+
+        RecruitmentLedger result = new RecruitmentLedger();
+        result.setOrgs(orgs);
+        result.setNewCandidates(filtered.stream().filter(x -> inRange(x.getCreatedAt(), range)).count());
+        result.setInterviewedCandidates(interviews.stream()
+                .filter(x -> inRange(x.getDecidedAt(), range))
+                .map(Interview::getCandidateId).filter(Objects::nonNull).distinct().count());
+        result.setConfirmedOffers(offers.stream().filter(x -> inRange(x.getConfirmedAt(), range)).count());
+        result.setRecruitedEmployees(recruitedEmployees);
+        Map<String, Long> sourceCounts = filtered.stream().collect(Collectors.groupingBy(
+                x -> nvl(x.getSource()).trim().isEmpty() ? "UNKNOWN" : x.getSource().trim(),
+                LinkedHashMap::new, Collectors.counting()));
+        sourceCounts.forEach((key, value) -> result.getSources().add(countItem(key, recruitmentSourceName(key), value)));
+        result.setStages(countItems(rows, List.of("RESUME", "INTERVIEW", "OFFER", "REJECTED"),
+                RecruitmentRow::getStage, HrLedgerService::recruitmentStageName));
+        Map<String, Long> positionCounts = filtered.stream().collect(Collectors.groupingBy(
+                x -> nvl(x.getPosition()).trim().isEmpty() ? "未填写职位" : x.getPosition().trim(),
+                LinkedHashMap::new, Collectors.counting()));
+        Map<String, Long> confirmedByPosition = new HashMap<>();
+        offers.stream().filter(x -> inRange(x.getConfirmedAt(), range)).forEach(offer -> {
+            Candidate candidate = candidateMap.get(offer.getCandidateId());
+            if (candidate != null) {
+                String position = nvl(candidate.getPosition()).trim().isEmpty() ? "未填写职位" : candidate.getPosition().trim();
+                confirmedByPosition.merge(position, 1L, Long::sum);
+            }
+        });
+        positionCounts.forEach((position, count) -> {
+            RecruitmentPositionStat stat = new RecruitmentPositionStat();
+            stat.setPosition(position);
+            stat.setCandidates(count);
+            stat.setConfirmedOffers(confirmedByPosition.getOrDefault(position, 0L));
+            result.getPositions().add(stat);
+        });
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    public ProfileQualityLedger profileQuality(Long orgId, String issue, String keyword, int page, int size) {
+        validatePage(page, size);
+        String normalizedIssue = requireChoice(issue,
+                Set.of("ALL", "NO_ACCOUNT", "INCOMPLETE", "NO_SENIORITY", "NO_CONTRACT"), "档案问题类型");
+        boolean contractVisible = canViewContracts();
+        if ("NO_CONTRACT".equals(normalizedIssue) && !contractVisible) {
+            throw new BizException(ErrorCode.FORBIDDEN, "当前账号无权查看合同风险");
+        }
+        String normalizedKeyword = keyword(keyword);
+        List<OrgOption> orgs = accessibleOrgs();
+        Map<Long, String> orgNames = orgNames(orgs);
+        List<Employee> employees = scopedEmployees(orgId).stream()
+                .filter(x -> Integer.valueOf(30).equals(x.getStatus()) || Integer.valueOf(40).equals(x.getStatus()))
+                .filter(x -> matchesKeyword(x.getName(), x.getEmpNo(), "", normalizedKeyword))
+                .toList();
+        List<Long> employeeIds = employees.stream().map(Employee::getId).filter(Objects::nonNull).toList();
+        Set<Long> employeesWithActiveContract = Set.of();
+        if (contractVisible && !employeeIds.isEmpty()) {
+            LambdaQueryWrapper<Contract> contractQuery = Wrappers.lambdaQuery();
+            dataScope.applyOrgScope(contractQuery, Contract::getOrgCode);
+            employeesWithActiveContract = contractMapper.selectList(contractQuery
+                            .in(Contract::getEmployeeId, employeeIds).eq(Contract::getStatus, "ACTIVE"))
+                    .stream().map(Contract::getEmployeeId).filter(Objects::nonNull).collect(Collectors.toSet());
+        }
+
+        List<ProfileQualityRow> allRows = new ArrayList<>();
+        for (Employee employee : employees) {
+            List<String> issues = new ArrayList<>();
+            if (employee.getAccountId() == null) issues.add(profileIssueName("NO_ACCOUNT"));
+            if (employee.getOrgId() == null || nvl(employee.getPosition()).isBlank() || employee.getHireDate() == null) {
+                issues.add(profileIssueName("INCOMPLETE"));
+            }
+            if (employee.getSeniorityStartDate() == null) issues.add(profileIssueName("NO_SENIORITY"));
+            if (contractVisible && !employeesWithActiveContract.contains(employee.getId())) {
+                issues.add(profileIssueName("NO_CONTRACT"));
+            }
+            if (issues.isEmpty()) continue;
+            ProfileQualityRow row = new ProfileQualityRow();
+            row.setId(idString(employee.getId()));
+            row.setEmployeeId(idString(employee.getId()));
+            row.setName(nvl(employee.getName()));
+            row.setEmpNo(nvl(employee.getEmpNo()));
+            row.setOrg(orgNames.getOrDefault(employee.getOrgId(), "未知组织"));
+            row.setStatus(employee.getStatus());
+            row.setIssues(issues);
+            allRows.add(row);
+        }
+        List<ProfileQualityRow> rows = allRows.stream()
+                .filter(x -> "ALL".equals(normalizedIssue) || x.getIssues().contains(profileIssueName(normalizedIssue)))
+                .sorted(Comparator.comparing(ProfileQualityRow::getOrg)
+                        .thenComparing(ProfileQualityRow::getEmpNo).thenComparing(ProfileQualityRow::getId))
+                .toList();
+
+        ProfileQualityLedger result = new ProfileQualityLedger();
+        result.setOrgs(orgs);
+        result.setProblemPeople(rows.size());
+        result.setProblemItems(rows.stream().mapToLong(x -> x.getIssues().size()).sum());
+        result.setNoAccount(countProfileIssue(rows, "NO_ACCOUNT"));
+        result.setIncomplete(countProfileIssue(rows, "INCOMPLETE"));
+        result.setNoSeniority(countProfileIssue(rows, "NO_SENIORITY"));
+        result.setContractVisible(contractVisible);
+        if (contractVisible) result.setNoContract(countProfileIssue(rows, "NO_CONTRACT"));
+        List<String> issueKeys = new ArrayList<>(List.of("NO_ACCOUNT", "INCOMPLETE", "NO_SENIORITY"));
+        if (contractVisible) issueKeys.add("NO_CONTRACT");
+        for (String key : issueKeys) {
+            result.getIssueTypes().add(countItem(key, profileIssueName(key), countProfileIssue(rows, key)));
+        }
+        rows.stream().collect(Collectors.groupingBy(ProfileQualityRow::getOrg, LinkedHashMap::new, Collectors.counting()))
+                .forEach((org, count) -> result.getByOrg().add(countItem(org, org, count)));
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    private static long countProfileIssue(List<ProfileQualityRow> rows, String issue) {
+        String name = profileIssueName(issue);
+        return rows.stream().filter(x -> x.getIssues().contains(name)).count();
+    }
+
+    private static String profileIssueName(String issue) {
+        return switch (issue) {
+            case "NO_ACCOUNT" -> "在职未开通账号";
+            case "INCOMPLETE" -> "关键档案不完整";
+            case "NO_SENIORITY" -> "司龄起算日缺失";
+            case "NO_CONTRACT" -> "无有效合同";
+            default -> issue;
+        };
+    }
+
+    private boolean canViewContracts() {
+        return SecurityUtils.currentUser().map(x -> x.isSuperAdmin()
+                || x.getPermissions() != null && x.getPermissions().contains(PermissionCodes.CONTRACT_VIEW)).orElse(false);
+    }
+
+    public EmployeeChangeLedger employeeChanges(String from, String to, Long orgId, String status,
+                                                String keyword, int page, int size) {
+        validatePage(page, size);
+        DateRange range = dateRange(from, to);
+        Integer statusFilter = parseIntFilter(status, Set.of(0, 1, 2, 3), "变更单状态");
+        String normalizedKeyword = keyword(keyword);
+        List<OrgOption> orgs = accessibleOrgs();
+        Map<Long, String> orgNames = orgNames(orgs);
+        List<Employee> employees = scopedEmployees(orgId);
+        Map<Long, Employee> employeeMap = employeeMap(employees);
+        List<Long> employeeIds = employees.stream().map(Employee::getId).filter(Objects::nonNull).toList();
+        List<EmpChange> changes = employeeIds.isEmpty() ? List.of() : empChangeMapper.selectList(Wrappers.<EmpChange>lambdaQuery()
+                .in(EmpChange::getEmployeeId, employeeIds)
+                .ge(EmpChange::getCreatedAt, range.start().atStartOfDay())
+                .lt(EmpChange::getCreatedAt, range.end().plusDays(1).atStartOfDay()));
+
+        List<EmployeeChangeRow> rows = new ArrayList<>();
+        for (EmpChange change : changes) {
+            if (statusFilter != null && !statusFilter.equals(change.getStatus())
+                    || !matchesKeyword(change.getEmployeeName(), change.getEmpNo(), idString(change.getId()), normalizedKeyword)) {
+                continue;
+            }
+            Employee employee = employeeMap.get(change.getEmployeeId());
+            EmployeeChangeRow row = new EmployeeChangeRow();
+            row.setId(idString(change.getId()));
+            row.setEmployeeId(idString(change.getEmployeeId()));
+            row.setName(nvl(change.getEmployeeName()).isBlank() && employee != null ? nvl(employee.getName()) : nvl(change.getEmployeeName()));
+            row.setEmpNo(nvl(change.getEmpNo()).isBlank() && employee != null ? nvl(employee.getEmpNo()) : nvl(change.getEmpNo()));
+            row.setOrg(nvl(change.getOrgName()).isBlank()
+                    ? orgNames.getOrDefault(change.getOrgId(), "未知组织") : change.getOrgName());
+            row.setAppliedAt(change.getCreatedAt());
+            row.setBaseChanges(number(change.getBaseChanges()));
+            row.setAddCount(number(change.getAddCount()));
+            row.setModCount(number(change.getModCount()));
+            row.setDelCount(number(change.getDelCount()));
+            row.setStatus(change.getStatus());
+            rows.add(row);
+        }
+        rows.sort(Comparator.comparing(EmployeeChangeRow::getAppliedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(EmployeeChangeRow::getId));
+
+        EmployeeChangeLedger result = new EmployeeChangeLedger();
+        result.setOrgs(orgs);
+        result.setApproving(rows.stream().filter(x -> Integer.valueOf(0).equals(x.getStatus())).count());
+        result.setEffective(rows.stream().filter(x -> Integer.valueOf(1).equals(x.getStatus())).count());
+        result.setRejected(rows.stream().filter(x -> Integer.valueOf(2).equals(x.getStatus())).count());
+        result.setCanceled(rows.stream().filter(x -> Integer.valueOf(3).equals(x.getStatus())).count());
+        result.setBaseChanges(rows.stream().mapToLong(EmployeeChangeRow::getBaseChanges).sum());
+        result.setAddCount(rows.stream().mapToLong(EmployeeChangeRow::getAddCount).sum());
+        result.setModCount(rows.stream().mapToLong(EmployeeChangeRow::getModCount).sum());
+        result.setDelCount(rows.stream().mapToLong(EmployeeChangeRow::getDelCount).sum());
+        List<Long> changeIds = rows.stream().map(EmployeeChangeRow::getId).filter(Objects::nonNull).map(Long::valueOf).toList();
+        if (!changeIds.isEmpty()) {
+            List<EmpChangeField> fields = empChangeFieldMapper.selectList(Wrappers.<EmpChangeField>lambdaQuery()
+                    .in(EmpChangeField::getChangeId, changeIds));
+            Map<String, Long> fieldCounts = fields.stream().collect(Collectors.groupingBy(
+                    x -> !nvl(x.getFieldKey()).isBlank() ? x.getFieldKey().trim()
+                            : !nvl(x.getFieldLabel()).isBlank() ? x.getFieldLabel().trim() : "UNKNOWN",
+                    LinkedHashMap::new, Collectors.counting()));
+            Map<String, String> fieldLabels = fields.stream()
+                    .filter(x -> !nvl(x.getFieldKey()).isBlank() && !nvl(x.getFieldLabel()).isBlank())
+                    .collect(Collectors.toMap(x -> x.getFieldKey().trim(), EmpChangeField::getFieldLabel, (a, b) -> a));
+            fieldCounts.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+                    .limit(10).forEach(entry -> result.getTopFields().add(countItem(entry.getKey(),
+                            fieldLabels.getOrDefault(entry.getKey(), entry.getKey()), entry.getValue())));
+        }
+        YearMonth month = YearMonth.from(range.start());
+        YearMonth lastMonth = YearMonth.from(range.end());
+        while (!month.isAfter(lastMonth)) {
+            YearMonth current = month;
+            MonthCount item = new MonthCount();
+            item.setMonth(month.toString());
+            item.setValue(rows.stream().filter(x -> x.getAppliedAt() != null
+                    && YearMonth.from(x.getAppliedAt()).equals(current)).count());
+            result.getMonthly().add(item);
+            month = month.plusMonths(1);
+        }
+        rows.stream().collect(Collectors.groupingBy(EmployeeChangeRow::getOrg, LinkedHashMap::new, Collectors.counting()))
+                .forEach((org, count) -> result.getByOrg().add(countItem(org, org, count)));
+        result.setPage(page(rows, page, size));
+        return result;
+    }
+
+    private static Map<Long, Employee> employeeMap(List<Employee> employees) {
+        return employees.stream().filter(x -> x.getId() != null)
+                .collect(Collectors.toMap(Employee::getId, Function.identity(), (a, b) -> a));
+    }
+
+    private static boolean activeEmployee(WorkforceRow row) {
+        return Integer.valueOf(30).equals(row.getStatus()) || Integer.valueOf(40).equals(row.getStatus());
+    }
+
+    private static Integer age(LocalDate birthday, LocalDate today) {
+        return birthday == null || birthday.isAfter(today) ? null : Period.between(birthday, today).getYears();
+    }
+
+    private static BigDecimal seniorityYears(Employee emp, LocalDate today) {
+        if (emp.getSeniorityYears() != null) {
+            return emp.getSeniorityYears();
+        }
+        return emp.getSeniorityStartDate() == null ? null
+                : SeniorityService.yearsBetween(emp.getSeniorityStartDate(), today);
+    }
+
+    private static String educationName(String education, Map<String, String> names) {
+        return education == null || education.isBlank() ? "未知" : names.getOrDefault(education, education);
+    }
+
+    private static List<CountItem> educationCountItems(List<WorkforceRow> rows, Map<String, String> names) {
+        Map<String, Long> counts = rows.stream().collect(Collectors.groupingBy(
+                x -> x.getEducation() == null || x.getEducation().isBlank() ? "UNKNOWN" : x.getEducation(),
+                LinkedHashMap::new, Collectors.counting()));
+        List<String> keys = new ArrayList<>();
+        for (String key : names.keySet()) {
+            if (counts.containsKey(key) && !"UNKNOWN".equals(key)) {
+                keys.add(key);
+            }
+        }
+        for (String key : counts.keySet()) {
+            if (!"UNKNOWN".equals(key) && !keys.contains(key)) {
+                keys.add(key);
+            }
+        }
+        keys.add("UNKNOWN");
+        List<CountItem> items = new ArrayList<>();
+        for (String key : keys) {
+            String name = "UNKNOWN".equals(key) ? "未知" : names.getOrDefault(key, key);
+            items.add(countItem(key, name, counts.getOrDefault(key, 0L)));
+        }
+        return items;
+    }
+
+    private static String ageGroup(Integer age) {
+        if (age == null) return "UNKNOWN";
+        if (age < 25) return "<25";
+        if (age < 30) return "25-29";
+        if (age < 35) return "30-34";
+        if (age < 40) return "35-39";
+        if (age < 45) return "40-44";
+        if (age < 50) return "45-49";
+        return "50+";
+    }
+
+    private static String seniorityGroup(BigDecimal years) {
+        if (years == null) return "UNKNOWN";
+        if (years.compareTo(BigDecimal.ONE) < 0) return "<1";
+        if (years.compareTo(BigDecimal.valueOf(3)) < 0) return "1-2";
+        if (years.compareTo(BigDecimal.valueOf(5)) < 0) return "3-4";
+        if (years.compareTo(BigDecimal.TEN) < 0) return "5-9";
+        return "10+";
+    }
+
+    private static String groupName(String key) {
+        return "UNKNOWN".equals(key) ? "未知" : key;
+    }
+
+    private static CountItem countItem(String key, String name, long value) {
+        CountItem item = new CountItem();
+        item.setKey(key);
+        item.setName(name);
+        item.setValue(value);
+        return item;
+    }
+
+    private static boolean dueWithin30(RegularizationRow row) {
+        return row.getRemainingDays() != null && row.getRemainingDays() >= 0 && row.getRemainingDays() <= 30;
+    }
+
+    private static boolean matchesRegularizationExpiry(Long remaining, String expiry) {
+        return switch (expiry) {
+            case "ALL" -> true;
+            case "OVERDUE" -> remaining != null && remaining < 0;
+            case "30" -> remaining != null && remaining >= 0 && remaining <= 30;
+            case "60" -> remaining != null && remaining > 30 && remaining <= 60;
+            case "LATER" -> remaining != null && remaining > 60;
+            default -> false;
+        };
+    }
+
+    private static String regularizeStatusName(String status) {
+        return switch (status) {
+            case "-1" -> "已驳回";
+            case "0" -> "未申请";
+            case "1" -> "部门审批中";
+            case "2" -> "人事审批中";
+            default -> status;
+        };
+    }
+
+    private static boolean effectiveLeave(LeaveRow row) {
+        return Integer.valueOf(1).equals(row.getStatus()) || Integer.valueOf(4).equals(row.getStatus());
+    }
+
+    private static String canonicalType(String value) {
+        return value == null || value.isBlank() ? "" : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private Map<String, String> configuredLeaveTypeNames() {
+        Map<String, String> names = new LinkedHashMap<>(settingsClient.bizMap("leave_type"));
+        if (names.isEmpty()) {
+            names.putAll(DEFAULT_LEAVE_TYPES);
+        }
+        return names;
+    }
+
+    private static Map<String, String> defaultLeaveTypeNames() {
+        Map<String, String> names = new LinkedHashMap<>();
+        names.put("ANNUAL", "年假");
+        names.put("SICK", "病假");
+        names.put("PERSONAL", "事假");
+        names.put("MARRIAGE", "婚假");
+        names.put("MATERNITY", "产假");
+        names.put("PATERNITY", "陪产假");
+        names.put("COMPENSATORY", "调休");
+        names.put("OTHER", "其他");
+        return names;
+    }
+
+    private static String fallbackLeaveTypeName(String type) {
+        String key = canonicalType(type);
+        return DEFAULT_LEAVE_TYPES.getOrDefault(key, key);
+    }
+
+    private static String overtimeTypeName(String type) {
+        return switch (type) {
+            case "NORMAL" -> "工作日";
+            case "RESTDAY" -> "休息日";
+            case "HOLIDAY" -> "节假日";
+            default -> type;
+        };
+    }
+
+    private static <T> List<AmountMonth> monthlyAmounts(List<T> rows, DateRange range,
+                                                        Function<T, LocalDate> dateFn,
+                                                        Predicate<T> predicate,
+                                                        Function<T, BigDecimal> valueFn) {
+        List<AmountMonth> monthly = new ArrayList<>();
+        YearMonth month = YearMonth.from(range.start());
+        YearMonth end = YearMonth.from(range.end());
+        while (!month.isAfter(end)) {
+            YearMonth current = month;
+            AmountMonth item = new AmountMonth();
+            item.setMonth(month.toString());
+            item.setValue(sumAmount(rows, x -> predicate.test(x) && dateFn.apply(x) != null
+                    && YearMonth.from(dateFn.apply(x)).equals(current), valueFn));
+            monthly.add(item);
+            month = month.plusMonths(1);
+        }
+        return monthly;
+    }
+
+    private static <T> BigDecimal sumAmount(List<T> rows, Predicate<T> predicate,
+                                            Function<T, BigDecimal> valueFn) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (T row : rows) {
+            if (predicate.test(row)) {
+                total = total.add(amount(valueFn.apply(row)));
+            }
+        }
+        return total;
+    }
+
+    private static BigDecimal amount(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private static boolean matchesKeyword(String name, String empNo, String documentNo, String keyword) {
+        return keyword.isEmpty() || (nvl(name) + nvl(empNo) + nvl(documentNo))
+                .toLowerCase(Locale.ROOT).contains(keyword);
+    }
+
+    private static void validatePage(int page, int size) {
+        if (page < 1 || size < 1) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "页码和每页条数必须大于 0");
+        }
+    }
+
+    private static Integer parseIntFilter(String raw, Set<Integer> allowed, String label) {
+        String value = normalize(raw);
+        if ("ALL".equals(value)) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(value);
+            if (!allowed.contains(parsed)) {
+                throw new BizException(ErrorCode.PARAM_ERROR, label + "不合法");
+            }
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new BizException(ErrorCode.PARAM_ERROR, label + "不合法");
+        }
+    }
+
+    private static String requireChoice(String raw, Set<String> allowed, String label) {
+        String value = normalize(raw);
+        if (!allowed.contains(value)) {
+            throw new BizException(ErrorCode.PARAM_ERROR, label + "不合法");
+        }
+        return value;
+    }
+
+    private static DateRange dateRange(String fromRaw, String toRaw) {
+        YearMonth current = YearMonth.now();
+        LocalDate from = parseDate(fromRaw, current.minusMonths(11).atDay(1));
+        LocalDate to = parseDate(toRaw, current.atEndOfMonth());
+        if (to.isBefore(from)) {
+            LocalDate tmp = from;
+            from = to;
+            to = tmp;
+        }
+        if (ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) > 119) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "日期跨度不能超过 120 个月");
+        }
+        return new DateRange(from, to);
+    }
+
+    private static LocalDate parseDate(String raw, LocalDate defaultValue) {
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return LocalDate.parse(raw.trim());
+        } catch (DateTimeParseException e) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "日期格式应为 yyyy-MM-dd");
+        }
+    }
+
+    private static String idString(Long id) {
+        return id == null ? null : String.valueOf(id);
+    }
+
+    private record DateRange(LocalDate start, LocalDate end) {
+    }
+
     private ContractLedger emptyContract(List<OrgOption> orgs, int page, int size) {
         ContractLedger result = new ContractLedger();
         result.setOrgs(orgs);
@@ -285,8 +1189,15 @@ public class HrLedgerService {
     }
 
     private List<OrgOption> accessibleOrgs() {
+        return accessibleOrgs(null);
+    }
+
+    private List<OrgOption> accessibleOrgs(String teamOrgCode) {
         LambdaQueryWrapper<OrgNode> w = Wrappers.lambdaQuery();
         dataScope.applyOrgScope(w, OrgNode::getCode);
+        if (teamOrgCode != null) {
+            w.likeRight(OrgNode::getCode, teamOrgCode);
+        }
         w.orderByAsc(OrgNode::getSort).orderByAsc(OrgNode::getId);
         return orgMapper.selectList(w).stream().map(org -> {
             OrgOption option = new OrgOption();
@@ -302,12 +1213,37 @@ public class HrLedgerService {
     }
 
     private List<Employee> scopedEmployees(Long orgId) {
+        return scopedEmployees(orgId, null);
+    }
+
+    private List<Employee> scopedEmployees(Long orgId, String teamOrgCode) {
         LambdaQueryWrapper<Employee> w = Wrappers.lambdaQuery();
         dataScope.applyOrgScope(w, Employee::getOrgCode);
+        if (teamOrgCode != null) {
+            w.likeRight(Employee::getOrgCode, teamOrgCode);
+        }
         if (!applyOrgFilter(w, orgId, Employee::getOrgId)) {
             return List.of();
         }
         return employeeMapper.selectList(w);
+    }
+
+    private String teamOrgCode(String allPermission, String teamPermission) {
+        SecurityUser user = SecurityUtils.currentUser().orElseThrow(() ->
+                new BizException(ErrorCode.FORBIDDEN, "当前账号无权查看团队台账"));
+        Set<String> permissions = user.getPermissions() == null ? Set.of() : user.getPermissions();
+        if (user.isSuperAdmin() || permissions.contains(allPermission)) {
+            return null;
+        }
+        if (!permissions.contains(teamPermission)) {
+            throw new BizException(ErrorCode.FORBIDDEN, "当前账号无权查看团队台账");
+        }
+        Employee me = user.getAccountId() == null ? null : employeeMapper.selectOne(Wrappers.<Employee>lambdaQuery()
+                .eq(Employee::getAccountId, user.getAccountId()).last("limit 1"));
+        if (me == null || me.getOrgCode() == null || me.getOrgCode().isBlank()) {
+            throw new BizException(ErrorCode.FORBIDDEN, "当前账号未关联员工组织，无法查看团队台账");
+        }
+        return me.getOrgCode();
     }
 
     private List<Long> scopedEmployeeIds(Long orgId) {
@@ -457,6 +1393,25 @@ public class HrLedgerService {
 
     private static boolean inRange(LocalDate value, LocalDate start, LocalDate end) {
         return value != null && !value.isBefore(start) && !value.isAfter(end);
+    }
+
+    private static boolean inRange(LocalDateTime value, DateRange range) {
+        return value != null && !value.isBefore(range.start().atStartOfDay())
+                && value.isBefore(range.end().plusDays(1).atStartOfDay());
+    }
+
+    private static String recruitmentSourceName(String source) {
+        return "UNKNOWN".equals(source) ? "未知来源" : source;
+    }
+
+    private static String recruitmentStageName(String stage) {
+        return switch (stage) {
+            case "RESUME" -> "简历筛选";
+            case "INTERVIEW" -> "面试中";
+            case "OFFER" -> "Offer 阶段";
+            case "REJECTED" -> "已淘汰";
+            default -> stage;
+        };
     }
 
     private static String normalize(String value) {
