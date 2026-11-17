@@ -22,7 +22,7 @@ public class HrLedgerController {
     private final HrLedgerService ledgerService;
 
     @GetMapping("/contracts")
-    @Permit(PermissionCodes.CONTRACT_VIEW)
+    @Permit(PermissionCodes.LEDGER_CONTRACT)
     public R<ContractLedger> contracts(@RequestParam(required = false) Long orgId,
                                        @RequestParam(defaultValue = "ALL") String expiry,
                                        @RequestParam(defaultValue = "ALL") String type,
@@ -33,7 +33,7 @@ public class HrLedgerController {
     }
 
     @GetMapping("/movement")
-    @Permit(PermissionCodes.EMPLOYEE_VIEW)
+    @Permit(PermissionCodes.LEDGER_MOVEMENT)
     public R<MovementLedger> movement(@RequestParam(required = false) String fromMonth,
                                       @RequestParam(required = false) String toMonth,
                                       @RequestParam(required = false) Long orgId,
@@ -44,7 +44,7 @@ public class HrLedgerController {
     }
 
     @GetMapping("/attendance")
-    @Permit(PermissionCodes.ATTENDANCE_DAILY)
+    @Permit(PermissionCodes.LEDGER_ATTENDANCE)
     public R<AttendanceLedger> attendance(@RequestParam(required = false) String month,
                                           @RequestParam(required = false) Long orgId,
                                           @RequestParam(defaultValue = "ALL") String type,

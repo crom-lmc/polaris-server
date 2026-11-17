@@ -291,6 +291,7 @@ public class HrLedgerService {
         return orgMapper.selectList(w).stream().map(org -> {
             OrgOption option = new OrgOption();
             option.setId(org.getId());
+            option.setParentId(org.getParentId());
             option.setName(nvl(org.getShortName()).isBlank() ? nvl(org.getName()) : org.getShortName());
             return option;
         }).toList();

@@ -82,6 +82,7 @@ public final class PermissionCodes {
     public static final String LEAVE_MENU = "leave";
     public static final String APPROVAL_MENU = "approval";
     public static final String ANNOUNCEMENT_MENU = "announcement";
+    public static final String LEDGER_MENU = "ledger";
 
     /* 组织架构 */
     public static final String ORG_VIEW = "org:view";
@@ -145,6 +146,11 @@ public final class PermissionCodes {
     /* 合同 */
     public static final String CONTRACT_VIEW = "contract:view";
     public static final String CONTRACT_MANAGE = "contract:manage";
+
+    /* 人力台账：页签 */
+    public static final String LEDGER_CONTRACT = "ledger:contract";
+    public static final String LEDGER_MOVEMENT = "ledger:movement";
+    public static final String LEDGER_ATTENDANCE = "ledger:attendance";
 
     /* 考勤：页签及数据视图 */
     public static final String ATTENDANCE_MENU = "attendance";

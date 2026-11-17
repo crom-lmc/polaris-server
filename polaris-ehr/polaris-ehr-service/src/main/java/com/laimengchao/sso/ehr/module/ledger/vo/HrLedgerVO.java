@@ -1,5 +1,7 @@
 package com.laimengchao.sso.ehr.module.ledger.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.laimengchao.sso.common.R;
 import lombok.Data;
 
@@ -12,7 +14,10 @@ public class HrLedgerVO {
 
     @Data
     public static class OrgOption {
+        @JsonSerialize(using = ToStringSerializer.class)
         private Long id;
+        @JsonSerialize(using = ToStringSerializer.class)
+        private Long parentId;
         private String name;
     }
 
