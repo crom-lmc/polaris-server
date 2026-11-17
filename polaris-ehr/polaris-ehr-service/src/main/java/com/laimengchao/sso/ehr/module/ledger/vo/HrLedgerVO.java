@@ -1,7 +1,6 @@
 package com.laimengchao.sso.ehr.module.ledger.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.laimengchao.sso.common.R;
@@ -343,62 +342,4 @@ public class HrLedgerVO {
         private List<RecruitmentPositionStat> positions = new ArrayList<>();
     }
 
-    @Data
-    public static class ProfileQualityRow {
-        private String id;
-        private String employeeId;
-        private String name;
-        private String empNo;
-        private String org;
-        private Integer status;
-        private List<String> issues = new ArrayList<>();
-    }
-
-    @Data
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class ProfileQualityLedger {
-        private R.Page<ProfileQualityRow> page;
-        private long problemPeople;
-        private long problemItems;
-        private long noAccount;
-        private long incomplete;
-        private long noSeniority;
-        private Long noContract;
-        private boolean contractVisible;
-        private List<OrgOption> orgs = new ArrayList<>();
-        private List<CountItem> issueTypes = new ArrayList<>();
-        private List<CountItem> byOrg = new ArrayList<>();
-    }
-
-    @Data
-    public static class EmployeeChangeRow {
-        private String id;
-        private String employeeId;
-        private String name;
-        private String empNo;
-        private String org;
-        private LocalDateTime appliedAt;
-        private int baseChanges;
-        private int addCount;
-        private int modCount;
-        private int delCount;
-        private Integer status;
-    }
-
-    @Data
-    public static class EmployeeChangeLedger {
-        private R.Page<EmployeeChangeRow> page;
-        private long approving;
-        private long effective;
-        private long rejected;
-        private long canceled;
-        private long baseChanges;
-        private long addCount;
-        private long modCount;
-        private long delCount;
-        private List<OrgOption> orgs = new ArrayList<>();
-        private List<CountItem> topFields = new ArrayList<>();
-        private List<MonthCount> monthly = new ArrayList<>();
-        private List<CountItem> byOrg = new ArrayList<>();
-    }
 }

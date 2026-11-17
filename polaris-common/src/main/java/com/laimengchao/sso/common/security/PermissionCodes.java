@@ -151,6 +151,11 @@ public final class PermissionCodes {
     public static final String LEDGER_CONTRACT = "ledger:contract";
     public static final String LEDGER_MOVEMENT = "ledger:movement";
     public static final String LEDGER_ATTENDANCE = "ledger:attendance";
+    public static final String LEDGER_WORKFORCE = "ledger:workforce";
+    public static final String LEDGER_REGULARIZATION = "ledger:regularization";
+    public static final String LEDGER_RECRUITMENT = "ledger:recruitment";
+    public static final String LEDGER_LEAVES = "ledger:leaves";
+    public static final String LEDGER_OVERTIMES = "ledger:overtimes";
 
     /* 考勤：页签及数据视图 */
     public static final String ATTENDANCE_MENU = "attendance";

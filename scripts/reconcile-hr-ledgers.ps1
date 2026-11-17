@@ -1,12 +1,12 @@
 ﻿# 用法：powershell -ExecutionPolicy Bypass -File scripts\reconcile-hr-ledgers.ps1 -AccountId <账号ID> -JShell <jshell路径>
-# 说明：直连本机 EHR 与 MySQL，仅执行 GET / SELECT；覆盖七个新增台账的指标卡和图表卡。
-# 账号需具备各台账的 all/view 权限，OrgCodes 必须与账号数据范围一致；team-only 账号不适用。
+# 说明：直连本机 EHR 与 MySQL，仅执行 GET / SELECT；覆盖五个新增台账的指标卡和图表卡。
+# 账号需具备各台账的 ledger:* 权限，OrgCodes 必须与账号数据范围一致。
 
 param(
   [Parameter(Mandatory = $true)][string]$AccountId,
   [string]$BaseUrl      = 'http://127.0.0.1:9006',
   [string]$AccountName  = 'hr-ledger-reconciliation',
-  [string]$Permissions  = 'employee:view,leave:all,attendance:overtime:all,recruit:board,contract:view',
+  [string]$Permissions  = 'ledger:workforce,ledger:regularization,ledger:recruitment,ledger:contract,ledger:movement,ledger:leaves,ledger:overtimes,ledger:attendance',
   [bool]$Super          = $true,
   [string[]]$OrgCodes   = @('XC0001'),
   [string]$From         = (Get-Date).AddMonths(-119).ToString('yyyy-MM-01'),
@@ -59,8 +59,6 @@ $ledgers = @{
   leave           = Invoke-Ledger 'leaves' "?page=1&size=100&$period&type=ALL&status=ALL"
   overtime        = Invoke-Ledger 'overtimes' "?page=1&size=100&$period&type=ALL&status=ALL&settleStatus=ALL"
   recruitment     = Invoke-Ledger 'recruitment' "?page=1&size=100&$period&stage=ALL"
-  profileQuality  = Invoke-Ledger 'profile-quality' '?page=1&size=100&issue=ALL'
-  employeeChanges = Invoke-Ledger 'employee-changes' "?page=1&size=100&$period&status=ALL"
 }
 
 function Scope-Sql([string]$Alias, [bool]$Deleted = $true) {
@@ -71,14 +69,10 @@ function Scope-Sql([string]$Alias, [bool]$Deleted = $true) {
 $employeeScope = Scope-Sql 'e'
 $candidateScope = Scope-Sql 'c'
 $offerScope = Scope-Sql 'o'
-$contractScope = Scope-Sql 'ct'
 $leaveScope = (Scope-Sql 'l') + ' AND ' + (Scope-Sql 'e')
 $overtimeScope = (Scope-Sql 'o' $false) + ' AND ' + (Scope-Sql 'e')
-$changeScope = 'ch.deleted = 0 AND ' + (Scope-Sql 'e')
 $orgJoin = 'LEFT JOIN ehr_org_node org ON org.id = e.org_id AND org.deleted = 0'
 $orgName = "COALESCE(NULLIF(TRIM(org.short_name), ''), org.name, '未知组织')"
-$activeContract = "NOT EXISTS (SELECT 1 FROM ehr_emp_contract ct WHERE ct.employee_id = e.id AND ct.status = 'ACTIVE' AND $contractScope)"
-$profileIssues = "((e.account_id IS NULL) + (e.org_id IS NULL OR e.position IS NULL OR TRIM(e.position) = '' OR e.hire_date IS NULL) + (e.seniority_start_date IS NULL) + ($activeContract))"
 
 $queries = @()
 function Add-Row([string]$Name, [string]$Sql) { $script:queries += @{ Type = 'r'; Name = $Name; Sql = $Sql } }
@@ -124,17 +118,6 @@ $positionName = "COALESCE(NULLIF(TRIM(c.position),''),'未填写职位')"
 Add-Map 'recruitmentPositionCandidates' "SELECT $positionName k, COUNT(*) v FROM ehr_candidate c WHERE $candidateScope GROUP BY BINARY $positionName"
 Add-Map 'recruitmentPositionOffers' "SELECT $positionName k, COUNT(o.id) v FROM ehr_candidate c LEFT JOIN ehr_offer o ON o.candidate_id = c.id AND o.deleted = 0 AND $offerScope AND $offerPeriod WHERE $candidateScope GROUP BY BINARY $positionName"
 
-Add-Row 'profileQuality' "SELECT COUNT(*) activePeople, COALESCE(SUM(($profileIssues) > 0),0) problemPeople, COALESCE(SUM($profileIssues),0) problemItems, COALESCE(SUM(e.account_id IS NULL),0) noAccount, COALESCE(SUM(e.org_id IS NULL OR e.position IS NULL OR TRIM(e.position) = '' OR e.hire_date IS NULL),0) incomplete, COALESCE(SUM(e.seniority_start_date IS NULL),0) noSeniority, COALESCE(SUM($activeContract),0) noContract FROM ehr_employee e WHERE $employeeScope AND e.status IN (30,40)"
-Add-Map 'profileQualityOrg' "SELECT $orgName k, COUNT(*) v FROM ehr_employee e $orgJoin WHERE $employeeScope AND e.status IN (30,40) AND ($profileIssues) > 0 GROUP BY $orgName"
-
-$changePeriod = "ch.created_at >= '$From 00:00:00' AND ch.created_at < '$toExclusive 00:00:00'"
-Add-Row 'employeeChanges' "SELECT COUNT(*) total, COALESCE(SUM(ch.status = 0),0) approving, COALESCE(SUM(ch.status = 1),0) effective, COALESCE(SUM(ch.status = 2),0) rejected, COALESCE(SUM(ch.status = 3),0) canceled, COALESCE(SUM(ch.base_changes),0) baseChanges, COALESCE(SUM(ch.add_count),0) addCount, COALESCE(SUM(ch.mod_count),0) modCount, COALESCE(SUM(ch.del_count),0) delCount FROM ehr_emp_change ch JOIN ehr_employee e ON e.id = ch.employee_id WHERE $changeScope AND $changePeriod"
-Add-Map 'employeeChangesMonthly' "SELECT DATE_FORMAT(ch.created_at,'%Y-%m') k, COUNT(*) v FROM ehr_emp_change ch JOIN ehr_employee e ON e.id = ch.employee_id WHERE $changeScope AND $changePeriod GROUP BY DATE_FORMAT(ch.created_at,'%Y-%m')"
-$changeFieldKey = "CASE WHEN f.field_key IS NOT NULL AND TRIM(f.field_key) <> '' THEN TRIM(f.field_key) WHEN f.field_label IS NOT NULL AND TRIM(f.field_label) <> '' THEN TRIM(f.field_label) ELSE 'UNKNOWN' END"
-Add-Map 'employeeChangesFields' "SELECT $changeFieldKey k, COUNT(*) v FROM ehr_emp_change_field f JOIN ehr_emp_change ch ON ch.id = f.change_id JOIN ehr_employee e ON e.id = ch.employee_id WHERE $changeScope AND $changePeriod GROUP BY BINARY $changeFieldKey ORDER BY v DESC, k LIMIT 10"
-$changeOrgName = "COALESCE(NULLIF(TRIM(ch.org_name), ''), NULLIF(TRIM(org.short_name), ''), org.name, '未知组织')"
-Add-Map 'employeeChangesOrg' "SELECT $changeOrgName k, COUNT(*) v FROM ehr_emp_change ch JOIN ehr_employee e ON e.id = ch.employee_id LEFT JOIN ehr_org_node org ON org.id = ch.org_id AND org.deleted = 0 WHERE $changeScope AND $changePeriod GROUP BY $changeOrgName"
-
 function Java-String([string]$Value) {
   return $Value.Replace('\', '\\').Replace('"', '\"').Replace("`r", ' ').Replace("`n", ' ')
 }
@@ -156,10 +139,13 @@ foreach ($query in $queries) {
 $jshellLines.Add('conn.close();')
 $jshellLines.Add('/exit')
 $previousErrorAction = $ErrorActionPreference
+$previousOutputEncoding = $OutputEncoding
 $ErrorActionPreference = 'Continue'
+$OutputEncoding = [Text.UTF8Encoding]::new($false)
 $dbOutput = $jshellLines -join "`n" | & $JShell --class-path $MySqlConnectorJar 2>&1
 $jshellExitCode = $LASTEXITCODE
 $ErrorActionPreference = $previousErrorAction
+$OutputEncoding = $previousOutputEncoding
 if ($jshellExitCode -ne 0) { throw "JDBC 对账执行失败，退出码 $jshellExitCode" }
 
 $db = @{}
@@ -180,6 +166,7 @@ foreach ($line in $dbOutput) {
 if ($failedQueries.Count -gt 0) { throw "SQL 执行失败：$(($failedQueries.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join ', ')" }
 $missingQueries = @($queries | Where-Object { -not $executed.ContainsKey($_.Name) } | ForEach-Object { $_.Name })
 if ($missingQueries.Count -gt 0) { throw "以下 SQL 未成功执行：$($missingQueries -join ', ')" }
+if ($db.Count -eq 0) { throw "JDBC 未返回任何标量字段，JShell 输出：$($dbOutput -join ' | ')" }
 
 function Db-Value([string]$Key) {
   if (-not $db.ContainsKey($Key)) { throw "缺少数据库对账字段：$Key；已返回字段：$($db.Keys -join ', ')" }
@@ -270,36 +257,6 @@ Check-Map '招聘转化/来源分布' $data.sources 'key' 'value' (Db-Map 'recru
 Check-Map '招聘转化/当前阶段' $data.stages 'key' 'value' (Db-Map 'recruitmentStages')
 Check-Map '招聘转化/职位候选人数' $data.positions 'position' 'candidates' (Db-Map 'recruitmentPositionCandidates')
 Check-Map '招聘转化/职位确认Offer数' $data.positions 'position' 'confirmedOffers' (Db-Map 'recruitmentPositionOffers')
-
-$data = $ledgers.profileQuality
-Check-Value '档案质量/问题人数' (Db-Value 'profileQuality.problemPeople') $data.problemPeople
-Check-Value '档案质量/问题项数' (Db-Value 'profileQuality.problemItems') $data.problemItems
-Check-Value '档案质量/在职未开通账号' (Db-Value 'profileQuality.noAccount') $data.noAccount
-Check-Value '档案质量/关键档案不完整' (Db-Value 'profileQuality.incomplete') $data.incomplete
-Check-Value '档案质量/司龄起算日缺失' (Db-Value 'profileQuality.noSeniority') $data.noSeniority
-Check-Value '档案质量/无有效合同' (Db-Value 'profileQuality.noContract') $data.noContract
-Check-Value '档案质量/明细总数' (Db-Value 'profileQuality.problemPeople') $data.page.total
-$issueExpected = @{ NO_ACCOUNT = Db-Value 'profileQuality.noAccount'; INCOMPLETE = Db-Value 'profileQuality.incomplete'; NO_SENIORITY = Db-Value 'profileQuality.noSeniority'; NO_CONTRACT = Db-Value 'profileQuality.noContract' }
-Check-Map '档案质量/问题类型分布' $data.issueTypes 'key' 'value' $issueExpected
-Check-Map '档案质量/组织问题人数' $data.byOrg 'key' 'value' (Db-Map 'profileQualityOrg')
-
-$data = $ledgers.employeeChanges
-Check-Value '人员信息变更/审批中' (Db-Value 'employeeChanges.approving') $data.approving
-Check-Value '人员信息变更/已生效' (Db-Value 'employeeChanges.effective') $data.effective
-Check-Value '人员信息变更/已驳回' (Db-Value 'employeeChanges.rejected') $data.rejected
-Check-Value '人员信息变更/已撤销' (Db-Value 'employeeChanges.canceled') $data.canceled
-Check-Value '人员信息变更/明细总数' (Db-Value 'employeeChanges.total') $data.page.total
-Check-Map '人员信息变更/月度变更单量' $data.monthly 'month' 'value' (Db-Map 'employeeChangesMonthly')
-Check-Map '人员信息变更/高频字段' $data.topFields 'key' 'value' (Db-Map 'employeeChangesFields')
-Check-Map '人员信息变更/组织变更单量' $data.byOrg 'key' 'value' (Db-Map 'employeeChangesOrg')
-$contentExpected = @{ BASE = Db-Value 'employeeChanges.baseChanges'; ADD = Db-Value 'employeeChanges.addCount'; MOD = Db-Value 'employeeChanges.modCount'; DEL = Db-Value 'employeeChanges.delCount' }
-$contentActual = @(
-  [pscustomobject]@{ key = 'BASE'; value = $data.baseChanges },
-  [pscustomobject]@{ key = 'ADD'; value = $data.addCount },
-  [pscustomobject]@{ key = 'MOD'; value = $data.modCount },
-  [pscustomobject]@{ key = 'DEL'; value = $data.delCount }
-)
-Check-Map '人员信息变更/基本字段与子表增删改' $contentActual 'key' 'value' $contentExpected
 
 $failed = @($results | Where-Object { -not $_.Passed })
 Write-Host "=== 对账完成：$($results.Count - $failed.Count) 通过，$($failed.Count) 失败 ===" -ForegroundColor $(if ($failed.Count -eq 0) { 'Green' } else { 'Red' })
