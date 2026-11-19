@@ -2,6 +2,7 @@ package com.laimengchao.sso.forum.security;
 
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,16 +17,15 @@ import java.util.Arrays;
 import java.util.Set;
 
 /**
- * 按钮级权限切面，四步：未登录 401 → 令牌作用域必须是 forum-admin（403）→ 超管旁路 → 权限码判定。
- * 论坛前台（app=forum）的令牌不能直接调管理端接口，即使权限码重名也会被作用域拦住。
+ * 按钮级权限切面，四步：未登录 401 → 令牌作用域必须匹配注解声明的应用（403）→ 超管旁路 → 权限码判定。
+ *
+ * <p>论坛双应用域：管理端接口对应 {@code forum-admin}，前台写操作对应 {@code forum}。
+ * 作用域不匹配一律拒绝，前台令牌进不了管理端，管理端令牌也不会被前台码误判。
  */
 @Slf4j
 @Aspect
 @Component
 public class PermissionAspect {
-
-    /** 与 sso_application.code 一致 */
-    public static final String APP_CODE = "forum-admin";
 
     @Before("@annotation(com.laimengchao.sso.forum.security.Permit)")
     public void check(JoinPoint joinPoint) {
@@ -33,17 +33,19 @@ public class PermissionAspect {
         if (user == null) {
             throw new BizException(ErrorCode.UNAUTHORIZED);
         }
-        if (!APP_CODE.equals(user.getAppCode())) {
-            log.warn("跨应用访问论坛管理端接口被拒：app={} 账户={} 方法={}", user.getAppCode(),
+        Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
+        Permit permit = method.getAnnotation(Permit.class);
+        String expectedApp = permit.app() == null || permit.app().isBlank()
+                ? PermissionCodes.APP_FORUM_ADMIN : permit.app().trim();
+        if (!expectedApp.equals(user.getAppCode())) {
+            log.warn("跨应用访问论坛接口被拒：app={} 期望={} 账户={} 方法={}", user.getAppCode(), expectedApp,
                     user.getUsername(), joinPoint.getSignature().toShortString());
             throw new BizException(ErrorCode.FORBIDDEN,
-                    "该接口仅限论坛管理端令牌访问（当前作用域：" + user.getAppCode() + "）");
+                    "该接口仅限 " + expectedApp + " 令牌访问（当前作用域：" + user.getAppCode() + "）");
         }
         if (user.isSuperAdmin()) {
             return;
         }
-        Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
-        Permit permit = method.getAnnotation(Permit.class);
         Set<String> owned = user.getPermissions() == null ? Set.of() : user.getPermissions();
         boolean ok = switch (permit.logical()) {
             case ALL -> Arrays.stream(permit.value()).allMatch(owned::contains);

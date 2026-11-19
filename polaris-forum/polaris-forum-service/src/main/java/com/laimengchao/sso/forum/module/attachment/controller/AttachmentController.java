@@ -1,8 +1,10 @@
 package com.laimengchao.sso.forum.module.attachment.controller;
 
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.forum.module.attachment.service.AttachmentService;
 import com.laimengchao.sso.forum.module.attachment.vo.AttachmentVO;
+import com.laimengchao.sso.forum.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -23,6 +25,7 @@ public class AttachmentController {
     private final AttachmentService attachmentService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Permit(value = PermissionCodes.FORUM_ATTACHMENT_UPLOAD, app = PermissionCodes.APP_FORUM)
     public R<AttachmentVO> upload(@RequestParam("file") MultipartFile file,
                                          @RequestParam(defaultValue = "ATTACHMENT") String usageType) {
         return R.ok(attachmentService.upload(file, usageType));

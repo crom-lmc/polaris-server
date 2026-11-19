@@ -1,6 +1,7 @@
 package com.laimengchao.sso.forum.module.admin.controller;
 
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.forum.module.admin.dto.CommentDeleteRequest;
 import com.laimengchao.sso.forum.module.admin.dto.ExchangeFulfillmentRequest;
 import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordEnabledRequest;
@@ -49,73 +50,73 @@ public class AdminForumController {
     private final ReportService reportService;
     private final SiteService siteService;
 
-    @Permit("forum:site:view")
+    @Permit(PermissionCodes.FORUM_SITE_VIEW)
     @GetMapping("/site")
     public R<SiteConfig> site() {
         return R.ok(siteService.adminConfig());
     }
 
-    @Permit("forum:site:edit")
+    @Permit(PermissionCodes.FORUM_SITE_EDIT)
     @PatchMapping("/site")
     public R<SiteConfig> updateSite(@RequestBody SiteConfigRequest body) {
         return R.ok(siteService.updateConfig(body));
     }
 
-    @Permit("forum:site:view")
+    @Permit(PermissionCodes.FORUM_SITE_VIEW)
     @GetMapping("/friend-links")
     public R<List<FriendLinkVO>> friendLinks() {
         return R.ok(siteService.adminLinks());
     }
 
-    @Permit("forum:site:link:manage")
+    @Permit(PermissionCodes.FORUM_SITE_LINK_MANAGE)
     @PostMapping("/friend-links")
     public R<FriendLinkVO> createFriendLink(@RequestBody FriendLinkRequest body) {
         return R.ok(siteService.createLink(body));
     }
 
-    @Permit("forum:site:link:manage")
+    @Permit(PermissionCodes.FORUM_SITE_LINK_MANAGE)
     @PatchMapping("/friend-links/{id}")
     public R<FriendLinkVO> updateFriendLink(@PathVariable long id, @RequestBody FriendLinkRequest body) {
         return R.ok(siteService.updateLink(id, body));
     }
 
-    @Permit("forum:taxonomy:view")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_VIEW)
     @GetMapping("/boards")
     public R<List<BoardVO>> boards() {
         return R.ok(taxonomyService.adminBoards());
     }
 
-    @Permit("forum:taxonomy:board:manage")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_BOARD_MANAGE)
     @PostMapping("/boards")
     public R<BoardVO> createBoard(@RequestBody BoardRequest body) {
         return R.ok(taxonomyService.createBoard(body));
     }
 
-    @Permit("forum:taxonomy:board:manage")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_BOARD_MANAGE)
     @PatchMapping("/boards/{key}")
     public R<BoardVO> updateBoard(@PathVariable String key, @RequestBody BoardRequest body) {
         return R.ok(taxonomyService.updateBoard(key, body));
     }
 
-    @Permit("forum:taxonomy:view")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_VIEW)
     @GetMapping("/tags")
     public R<List<TagVO>> tags(@RequestParam(required = false) String board) {
         return R.ok(taxonomyService.adminTags(board));
     }
 
-    @Permit("forum:taxonomy:tag:manage")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_TAG_MANAGE)
     @PostMapping("/tags")
     public R<TagVO> createTag(@RequestBody TagCreateRequest body) {
         return R.ok(taxonomyService.createTag(body));
     }
 
-    @Permit("forum:taxonomy:tag:manage")
+    @Permit(PermissionCodes.FORUM_TAXONOMY_TAG_MANAGE)
     @PatchMapping("/tags/{id}")
     public R<TagVO> updateTag(@PathVariable long id, @RequestBody TagUpdateRequest body) {
         return R.ok(taxonomyService.updateTag(id, body));
     }
 
-    @Permit("forum:content:view")
+    @Permit(PermissionCodes.FORUM_CONTENT_VIEW)
     @GetMapping("/threads")
     public R<List<AdminThreadVO>> threads(@RequestParam(required = false) String kind,
                                           @RequestParam(required = false) String board,
@@ -128,13 +129,13 @@ public class AdminForumController {
      * 一个端点承载置顶/加精/已解决/删除四种状态变更，注解只能声明「任一即可」，
      * 具体字段对应的权限码由 {@link AdminService#updateThread} 精确判定。
      */
-    @Permit({"forum:content:delete", "forum:content:pin", "forum:content:solve", "forum:content:recommend"})
+    @Permit({PermissionCodes.FORUM_CONTENT_DELETE, PermissionCodes.FORUM_CONTENT_PIN, PermissionCodes.FORUM_CONTENT_SOLVE, PermissionCodes.FORUM_CONTENT_RECOMMEND})
     @PatchMapping("/threads/{id}")
     public R<AdminThreadVO> updateThread(@PathVariable long id, @RequestBody ThreadStatusUpdateRequest body) {
         return R.ok(adminService.updateThread(id, body));
     }
 
-    @Permit("forum:comment:view")
+    @Permit(PermissionCodes.FORUM_COMMENT_VIEW)
     @GetMapping("/comments")
     public R<List<AdminCommentVO>> comments(@RequestParam(required = false) Long threadId,
                                             @RequestParam(required = false) String keyword,
@@ -142,64 +143,64 @@ public class AdminForumController {
         return R.ok(adminService.comments(threadId, keyword, deleted));
     }
 
-    @Permit("forum:comment:delete")
+    @Permit(PermissionCodes.FORUM_COMMENT_DELETE)
     @PatchMapping("/comments/{id}")
     public R<AdminCommentVO> deleteComment(@PathVariable long id, @RequestBody CommentDeleteRequest body) {
         return R.ok(adminService.setCommentDeleted(id, body));
     }
 
-    @Permit("forum:sensitive:view")
+    @Permit(PermissionCodes.FORUM_SENSITIVE_VIEW)
     @GetMapping("/sensitive-words")
     public R<List<SensitiveWordVO>> sensitiveWords() {
         return R.ok(adminService.sensitiveWords());
     }
 
-    @Permit("forum:sensitive:add")
+    @Permit(PermissionCodes.FORUM_SENSITIVE_ADD)
     @PostMapping("/sensitive-words")
     public R<SensitiveWordVO> addSensitiveWord(@RequestBody SensitiveWordRequest body) {
         return R.ok(adminService.addSensitiveWord(body));
     }
 
-    @Permit("forum:sensitive:toggle")
+    @Permit(PermissionCodes.FORUM_SENSITIVE_TOGGLE)
     @PatchMapping("/sensitive-words/{id}")
     public R<Void> enableSensitiveWord(@PathVariable long id, @RequestBody SensitiveWordEnabledRequest body) {
         adminService.setSensitiveWordEnabled(id, body);
         return R.ok();
     }
 
-    @Permit("forum:sensitive:delete")
+    @Permit(PermissionCodes.FORUM_SENSITIVE_DELETE)
     @DeleteMapping("/sensitive-words/{id}")
     public R<Void> deleteSensitiveWord(@PathVariable long id) {
         adminService.deleteSensitiveWord(id);
         return R.ok();
     }
 
-    @Permit("forum:report:view")
+    @Permit(PermissionCodes.FORUM_REPORT_VIEW)
     @GetMapping("/reports")
     public R<List<ReportVO>> reports(@RequestParam(required = false) String status,
                                      @RequestParam(required = false) String targetType) {
         return R.ok(reportService.list(status, targetType));
     }
 
-    @Permit("forum:report:process")
+    @Permit(PermissionCodes.FORUM_REPORT_PROCESS)
     @PostMapping("/reports/{id}/process")
     public R<ReportVO> handleReport(@PathVariable long id, @RequestBody ReportHandleRequest body) {
         return R.ok(reportService.handle(id, body));
     }
 
-    @Permit("forum:exchange:view")
+    @Permit(PermissionCodes.FORUM_EXCHANGE_VIEW)
     @GetMapping("/exchanges")
     public R<List<ForumExchange>> exchanges(@RequestParam(required = false) String status) {
         return R.ok(adminService.exchanges(status));
     }
 
-    @Permit("forum:exchange:ship")
+    @Permit(PermissionCodes.FORUM_EXCHANGE_SHIP)
     @PostMapping("/exchanges/{id}/ship")
     public R<ForumExchange> shipExchange(@PathVariable long id, @RequestBody ExchangeFulfillmentRequest body) {
         return R.ok(adminService.shipExchange(id, body));
     }
 
-    @Permit("forum:exchange:issue")
+    @Permit(PermissionCodes.FORUM_EXCHANGE_ISSUE)
     @PostMapping("/exchanges/{id}/issue")
     public R<ForumExchange> issueExchange(@PathVariable long id, @RequestBody ExchangeFulfillmentRequest body) {
         return R.ok(adminService.issueExchange(id, body));

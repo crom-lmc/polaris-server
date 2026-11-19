@@ -1,12 +1,17 @@
 package com.laimengchao.sso.account.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.account.domain.entity.SsoAccountApp;
+import com.laimengchao.sso.account.domain.entity.SsoAccountRole;
 import com.laimengchao.sso.account.domain.entity.SsoApplication;
+import com.laimengchao.sso.account.domain.entity.SsoRole;
 import com.laimengchao.sso.account.dto.response.ApplicationVO;
 import com.laimengchao.sso.account.mapper.SsoAccountAppMapper;
 import com.laimengchao.sso.account.mapper.SsoAccountMapper;
+import com.laimengchao.sso.account.mapper.SsoAccountRoleMapper;
 import com.laimengchao.sso.account.mapper.SsoApplicationMapper;
+import com.laimengchao.sso.account.mapper.SsoRoleMapper;
 import com.laimengchao.sso.account.service.AccountAppService;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
@@ -26,6 +31,8 @@ public class AccountAppServiceImpl implements AccountAppService {
     private final SsoAccountAppMapper accountAppMapper;
     private final SsoApplicationMapper applicationMapper;
     private final SsoAccountMapper accountMapper;
+    private final SsoRoleMapper roleMapper;
+    private final SsoAccountRoleMapper accountRoleMapper;
 
     @Override
     public List<Long> appIds(Long accountId) {
@@ -61,11 +68,9 @@ public class AccountAppServiceImpl implements AccountAppService {
             }
         }
         // 只允许授权真实存在的应用（已停用的也允许保留授权，等启用后自然生效）
-        if (!wanted.isEmpty()) {
-            List<SsoApplication> found = applicationMapper.selectBatchIds(wanted);
-            if (found.size() != wanted.size()) {
-                throw new BizException(ErrorCode.PARAM_ERROR, "存在无效的应用 ID");
-            }
+        List<SsoApplication> found = wanted.isEmpty() ? List.of() : applicationMapper.selectBatchIds(wanted);
+        if (!wanted.isEmpty() && found.size() != wanted.size()) {
+            throw new BizException(ErrorCode.PARAM_ERROR, "存在无效的应用 ID");
         }
 
         accountAppMapper.delete(new LambdaQueryWrapper<SsoAccountApp>()
@@ -75,6 +80,32 @@ public class AccountAppServiceImpl implements AccountAppService {
             link.setAccountId(accountId);
             link.setAppId(appId);
             accountAppMapper.insert(link);
+        }
+        syncForumMemberRole(accountId, found.stream()
+                .anyMatch(app -> PermissionConstants.FORUM_APP.equals(app.getCode())));
+    }
+
+    /**
+     * 论坛应用访问权与「论坛用户」角色保持同步：授权论坛时补角色，取消时收回角色。
+     * 角色只含北极星空前台的写操作权限，查看类接口不判权。
+     */
+    private void syncForumMemberRole(Long accountId, boolean hasForumApp) {
+        SsoRole memberRole = roleMapper.selectByCode(PermissionConstants.FORUM_MEMBER_ROLE_CODE);
+        if (memberRole == null) {
+            return;
+        }
+        long bound = accountRoleMapper.selectCount(new LambdaQueryWrapper<SsoAccountRole>()
+                .eq(SsoAccountRole::getAccountId, accountId)
+                .eq(SsoAccountRole::getRoleId, memberRole.getId()));
+        if (hasForumApp && bound == 0) {
+            SsoAccountRole link = new SsoAccountRole();
+            link.setAccountId(accountId);
+            link.setRoleId(memberRole.getId());
+            accountRoleMapper.insert(link);
+        } else if (!hasForumApp && bound > 0) {
+            accountRoleMapper.delete(new LambdaQueryWrapper<SsoAccountRole>()
+                    .eq(SsoAccountRole::getAccountId, accountId)
+                    .eq(SsoAccountRole::getRoleId, memberRole.getId()));
         }
     }
 

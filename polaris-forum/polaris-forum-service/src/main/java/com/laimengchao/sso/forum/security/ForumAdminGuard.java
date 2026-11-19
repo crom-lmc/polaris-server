@@ -1,5 +1,6 @@
 package com.laimengchao.sso.forum.security;
 
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.common.security.SecurityUser;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,11 @@ import java.util.Set;
 public class ForumAdminGuard {
 
     /** 8 个业务菜单的查看码，拥有任一即视为论坛后台人员 */
-    private static final Set<String> ADMIN_PERMISSIONS = Set.of("forum:content:view", "forum:comment:view",
-            "forum:sensitive:view", "forum:exchange:view", "forum:badge:view", "forum:taxonomy:view",
-            "forum:report:view", "forum:site:view");
+    private static final Set<String> ADMIN_PERMISSIONS = Set.of(PermissionCodes.FORUM_CONTENT_VIEW,
+            PermissionCodes.FORUM_COMMENT_VIEW, PermissionCodes.FORUM_SENSITIVE_VIEW,
+            PermissionCodes.FORUM_EXCHANGE_VIEW, PermissionCodes.FORUM_BADGE_VIEW,
+            PermissionCodes.FORUM_TAXONOMY_VIEW, PermissionCodes.FORUM_REPORT_VIEW,
+            PermissionCodes.FORUM_SITE_VIEW);
 
     public boolean isForumAdmin(SecurityUser user) {
         return user != null && (user.isSuperAdmin() || user.getPermissions() != null

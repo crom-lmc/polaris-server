@@ -69,6 +69,7 @@ public class BootstrapInitializer implements ApplicationRunner {
         initNoticeRoleBindings();
         initForumAdmin();
         initForumOperationRoles();
+        initForumMemberRole();
         initForumAdminApplication();
         initSuperAdmin();
         initBuiltinApplication();
@@ -201,8 +202,9 @@ public class BootstrapInitializer implements ApplicationRunner {
         seedPermissions(PermissionConstants.PLATFORM_APP, PermissionConstants.BUILTIN);
         // 业务应用 ehr 的权限码（通知管理）同样幂等播种：sso_permission 按 app_code 隔离
         seedPermissions(PermissionConstants.EHR_APP, PermissionConstants.EHR_BUILTIN);
-        seedPermissions(PermissionConstants.FORUM_APP, PermissionConstants.FORUM_BUILTIN);
-        seedPermissions(PermissionConstants.FORUM_ADMIN_APP, PermissionConstants.FORUM_BUILTIN);
+        // 论坛双应用域：前台（北极星空）只有写操作码，管理端（北极星核）保留完整后台权限树
+        seedPermissions(PermissionConstants.FORUM_APP, PermissionConstants.FORUM_MEMBER_BUILTIN);
+        seedPermissions(PermissionConstants.FORUM_ADMIN_APP, PermissionConstants.FORUM_ADMIN_BUILTIN);
     }
 
     /** 按应用补权限码；父级菜单的 id 只在同应用内找，避免业务应用同名码把 parentId 指错 */
@@ -303,12 +305,11 @@ public class BootstrapInitializer implements ApplicationRunner {
             log.info("已播种论坛管理员角色：{}", PermissionConstants.FORUM_ADMIN_ROLE_CODE);
         }
 
-        String[] permissionCodes = PermissionConstants.FORUM_BUILTIN.stream()
+        String[] permissionCodes = PermissionConstants.FORUM_ADMIN_BUILTIN.stream()
                 .map(PermDef::code)
                 .toArray(String[]::new);
+        // 后台权限树只存在于 forum-admin 应用域，forum 前台不再复制一份
         boolean permissionsChanged = bindRolePermissions(List.of(PermissionConstants.FORUM_ADMIN_ROLE_CODE),
-                PermissionConstants.FORUM_APP, permissionCodes);
-        permissionsChanged |= bindRolePermissions(List.of(PermissionConstants.FORUM_ADMIN_ROLE_CODE),
                 PermissionConstants.FORUM_ADMIN_APP, permissionCodes);
         if (permissionsChanged) {
             log.info("论坛管理员角色权限已补齐");
@@ -379,10 +380,9 @@ public class BootstrapInitializer implements ApplicationRunner {
                 anyCreated = true;
             }
 
-            // 权限每次启动都补齐：双应用域下按权限码关联出 id
+            // 后台权限树只存在于 forum-admin 应用域
             String[] permCodes = def.permissions().toArray(String[]::new);
-            boolean changed = bindRolePermissions(List.of(def.code()), PermissionConstants.FORUM_APP, permCodes);
-            changed |= bindRolePermissions(List.of(def.code()), PermissionConstants.FORUM_ADMIN_APP, permCodes);
+            boolean changed = bindRolePermissions(List.of(def.code()), PermissionConstants.FORUM_ADMIN_APP, permCodes);
             if (changed) {
                 log.info("论坛职能角色权限已补齐：{}", def.code());
             }
@@ -443,6 +443,45 @@ public class BootstrapInitializer implements ApplicationRunner {
             }
         }
         log.info("运营中心全员论坛双应用访问权已补齐");
+    }
+
+    /**
+     * 初始化论坛用户角色（北极星空前台）。权限只含写操作码，查看类不设权限。
+     *
+     * <p>角色权限每次启动按内置清单补齐；账号绑定只在角色首次创建时回填一次，
+     * 之后由「账号管理」授权论坛应用时同步（见 {@code AccountAppServiceImpl}），
+     * 避免重启把管理员手工撤销的授权又加回来。
+     */
+    private void initForumMemberRole() {
+        SsoRole role = roleMapper.selectByCode(PermissionConstants.FORUM_MEMBER_ROLE_CODE);
+        boolean firstCreated = role == null;
+        if (firstCreated) {
+            role = new SsoRole();
+            role.setCode(PermissionConstants.FORUM_MEMBER_ROLE_CODE);
+            role.setAppCode(PermissionConstants.FORUM_APP);
+            role.setName("论坛用户");
+            role.setRemark("内置：北极星空前台写操作权限，查看类不设权限");
+            roleMapper.insert(role);
+            log.info("已播种论坛用户角色：{}", PermissionConstants.FORUM_MEMBER_ROLE_CODE);
+        }
+
+        String[] permCodes = PermissionConstants.FORUM_MEMBER_PERMISSIONS.toArray(String[]::new);
+        if (bindRolePermissions(List.of(PermissionConstants.FORUM_MEMBER_ROLE_CODE),
+                PermissionConstants.FORUM_APP, permCodes)) {
+            log.info("论坛用户角色权限已补齐");
+        }
+        if (!firstCreated) {
+            return;
+        }
+
+        // 首次创建：给当前已有论坛访问权的账号补一次角色绑定
+        int bound = jdbcTemplate.update(
+                "INSERT IGNORE INTO sso_account_role (account_id, role_id) "
+                        + "SELECT aa.account_id, ? FROM sso_account_app aa "
+                        + "JOIN sso_application a ON a.id = aa.app_id AND a.code = ? AND a.deleted = 0 "
+                        + "JOIN sso_account ac ON ac.id = aa.account_id AND ac.deleted = 0",
+                role.getId(), PermissionConstants.FORUM_APP);
+        log.info("论坛用户角色首次授权完成：共绑定 {} 个账号", bound);
     }
 
     /** 管理端应用仅首次创建时给现有论坛管理员补授权，之后尊重管理员的手工调整。 */

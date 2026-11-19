@@ -1,11 +1,13 @@
 package com.laimengchao.sso.forum.module.reward.controller;
 
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.forum.module.forum.entity.ForumExchange;
 import com.laimengchao.sso.forum.module.reward.service.RewardService;
 import com.laimengchao.sso.forum.module.reward.vo.GiftExchangeVO;
 import com.laimengchao.sso.forum.module.reward.vo.LotteryDrawVO;
 import com.laimengchao.sso.forum.module.reward.vo.RewardSummaryVO;
+import com.laimengchao.sso.forum.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,16 +30,19 @@ public class RewardController {
     }
 
     @PostMapping("/points/checkin")
+    @Permit(value = PermissionCodes.FORUM_CHECKIN, app = PermissionCodes.APP_FORUM)
     public R<RewardSummaryVO> checkin() {
         return R.ok(rewardService.checkin());
     }
 
     @PostMapping("/lottery/draw")
+    @Permit(value = PermissionCodes.FORUM_LOTTERY_DRAW, app = PermissionCodes.APP_FORUM)
     public R<LotteryDrawVO> draw() {
         return R.ok(rewardService.draw());
     }
 
     @PostMapping("/gifts/{id}/exchange")
+    @Permit(value = PermissionCodes.FORUM_GIFT_REDEEM, app = PermissionCodes.APP_FORUM)
     public R<GiftExchangeVO> exchange(@PathVariable long id) {
         return R.ok(rewardService.exchange(id));
     }

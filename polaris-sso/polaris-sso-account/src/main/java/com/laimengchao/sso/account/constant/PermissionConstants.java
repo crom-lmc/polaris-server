@@ -142,7 +142,7 @@ public final class PermissionConstants {
 
     public static final String FORUM_APP = "forum";
     public static final String FORUM_ADMIN_APP = "forum-admin";
-    /** 论坛管理总开关：后端 isForumAdmin 与论坛前台 canManageForum 的身份判断依据，保留 */
+    /** 论坛管理总开关（forum-admin 应用域），保留给管理端权限树做分组与「论坛管理员」角色标识 */
     public static final String FORUM_MENU_ADMIN = "forum:admin";
     /* —— 业务菜单（与论坛管理端侧栏一一对应） —— */
     public static final String FORUM_CONTENT_MANAGE = "forum:content";
@@ -189,7 +189,11 @@ public final class PermissionConstants {
     public static final String FORUM_BADGE_PUBLISH = "forum:badge:publish";
     public static final String FORUM_BADGE_OFFLINE = "forum:badge:offline";
 
-    public static final java.util.List<PermDef> FORUM_BUILTIN = java.util.List.of(
+    /**
+     * 论坛管理端（forum-admin / 北极星核）的内置权限：8 个业务菜单 + 27 个按钮。
+     * 后台控制器 {@code @Permit} 直接引用这些码，删掉会让接口永久 403。
+     */
+    public static final java.util.List<PermDef> FORUM_ADMIN_BUILTIN = java.util.List.of(
             // —— 总开关与业务菜单 ——
             new PermDef("论坛管理", FORUM_MENU_ADMIN, PermissionType.MENU, null, 0),
             new PermDef("内容管理", FORUM_CONTENT_MANAGE, PermissionType.MENU, null, 1),
@@ -236,6 +240,53 @@ public final class PermissionConstants {
             new PermDef("发布勋章", FORUM_BADGE_PUBLISH, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 4),
             new PermDef("下线勋章", FORUM_BADGE_OFFLINE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 5)
     );
+
+    /**
+     * 社区论坛（forum / 北极星空）前台的内置权限：只控制需要登录才能操作的按钮。
+     *
+     * <p>前台没有后台菜单，浏览类接口（帖子、板块、评论、用户主页）完全公开，
+     * 因此这里不设任何 {@code *:view} 码，只有写操作才需要判权。
+     * 默认由 {@link #FORUM_MEMBER_ROLE_CODE} 角色全量授予，撤销即等价于限制该用户的社区互动。
+     */
+    public static final String FORUM_MENU_OPS = "forum:ops";
+    public static final String FORUM_POST_CREATE = "forum:post:create";
+    public static final String FORUM_COMMENT_CREATE = "forum:comment:create";
+    public static final String FORUM_LIKE = "forum:like";
+    public static final String FORUM_FAVORITE = "forum:favorite";
+    public static final String FORUM_FOLLOW = "forum:follow";
+    public static final String FORUM_REPORT_CREATE = "forum:report:create";
+    public static final String FORUM_VOTE = "forum:vote";
+    public static final String FORUM_DRAFT = "forum:draft";
+    public static final String FORUM_ATTACHMENT_UPLOAD = "forum:attachment:upload";
+    public static final String FORUM_PROFILE_EDIT = "forum:profile:edit";
+    public static final String FORUM_CHECKIN = "forum:checkin";
+    public static final String FORUM_LOTTERY_DRAW = "forum:lottery:draw";
+    public static final String FORUM_GIFT_REDEEM = "forum:gift:redeem";
+
+    public static final java.util.List<PermDef> FORUM_MEMBER_BUILTIN = java.util.List.of(
+            // —— 分组菜单：权限管理里平铺展示，前台没有对应路由 ——
+            new PermDef("社区操作", FORUM_MENU_OPS, PermissionType.MENU, null, 0),
+            new PermDef("发布内容", FORUM_POST_CREATE, PermissionType.BUTTON, FORUM_MENU_OPS, 1),
+            new PermDef("发表评论", FORUM_COMMENT_CREATE, PermissionType.BUTTON, FORUM_MENU_OPS, 2),
+            new PermDef("点赞/取消点赞", FORUM_LIKE, PermissionType.BUTTON, FORUM_MENU_OPS, 3),
+            new PermDef("收藏/取消收藏", FORUM_FAVORITE, PermissionType.BUTTON, FORUM_MENU_OPS, 4),
+            new PermDef("关注/取消关注", FORUM_FOLLOW, PermissionType.BUTTON, FORUM_MENU_OPS, 5),
+            new PermDef("举报内容", FORUM_REPORT_CREATE, PermissionType.BUTTON, FORUM_MENU_OPS, 6),
+            new PermDef("参与投票", FORUM_VOTE, PermissionType.BUTTON, FORUM_MENU_OPS, 7),
+            new PermDef("草稿箱", FORUM_DRAFT, PermissionType.BUTTON, FORUM_MENU_OPS, 8),
+            new PermDef("上传附件", FORUM_ATTACHMENT_UPLOAD, PermissionType.BUTTON, FORUM_MENU_OPS, 9),
+            new PermDef("编辑个人资料", FORUM_PROFILE_EDIT, PermissionType.BUTTON, FORUM_MENU_OPS, 10),
+            new PermDef("每日签到", FORUM_CHECKIN, PermissionType.BUTTON, FORUM_MENU_OPS, 11),
+            new PermDef("积分抽奖", FORUM_LOTTERY_DRAW, PermissionType.BUTTON, FORUM_MENU_OPS, 12),
+            new PermDef("兑换礼品", FORUM_GIFT_REDEEM, PermissionType.BUTTON, FORUM_MENU_OPS, 13)
+    );
+
+    /** 前台操作权限码清单（授给论坛用户角色时用） */
+    public static final java.util.List<String> FORUM_MEMBER_PERMISSIONS =
+            FORUM_MEMBER_BUILTIN.stream().map(PermDef::code).toList();
+
+    /** 论坛用户：拥有论坛访问权的账号默认绑定该角色，只含前台写操作权限 */
+    public static final String FORUM_MEMBER_ROLE_CODE = "FORUM_MEMBER";
 
     public static final String FORUM_ADMIN_ROLE_CODE = "FORUM_ADMIN";
     /** 首次创建论坛管理员角色时，默认授权的来源角色 */

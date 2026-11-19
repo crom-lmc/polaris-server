@@ -25,6 +25,10 @@ public final class PermissionCodes {
     public static final String APP_SETTINGS = "settings";
     public static final String APP_BLOG = "blog";
     public static final String APP_CMS = "cms";
+    /** 北极星空（社区论坛前台） */
+    public static final String APP_FORUM = "forum";
+    /** 北极星核（社区论坛管理端） */
+    public static final String APP_FORUM_ADMIN = "forum-admin";
 
     /* ============================================================
      * SSO 账号中心（app_code = sso）
@@ -389,4 +393,79 @@ public final class PermissionCodes {
     /* 门户布局 */
     public static final String PORTAL_VIEW = "portal:view";
     public static final String PORTAL_CONFIG = "portal:config";
+
+    /* ============================================================
+     * FORUM 社区论坛（双应用域：forum 前台 / forum-admin 管理端）
+     * ============================================================ */
+    /* ---------- 管理端 forum-admin（北极星核）：菜单 ---------- */
+    /** 论坛管理总开关，同时作为权限树根节点与「论坛管理员」角色标识 */
+    public static final String FORUM_MENU_ADMIN = "forum:admin";
+    public static final String FORUM_CONTENT_MANAGE = "forum:content";
+    public static final String FORUM_COMMENT_MANAGE = "forum:comment";
+    public static final String FORUM_REPORT_MANAGE = "forum:report";
+    public static final String FORUM_TAXONOMY_MANAGE = "forum:taxonomy";
+    public static final String FORUM_SITE_MANAGE = "forum:site";
+    public static final String FORUM_SENSITIVE_MANAGE = "forum:sensitive";
+    public static final String FORUM_EXCHANGE_MANAGE = "forum:exchange";
+    public static final String FORUM_BADGE_MANAGE = "forum:badge";
+
+    /* 管理端：内容管理按钮 */
+    public static final String FORUM_CONTENT_VIEW = "forum:content:view";
+    public static final String FORUM_CONTENT_PIN = "forum:content:pin";
+    public static final String FORUM_CONTENT_RECOMMEND = "forum:content:recommend";
+    public static final String FORUM_CONTENT_SOLVE = "forum:content:solve";
+    public static final String FORUM_CONTENT_DELETE = "forum:content:delete";
+
+    /* 管理端：评论管理按钮 */
+    public static final String FORUM_COMMENT_VIEW = "forum:comment:view";
+    public static final String FORUM_COMMENT_DELETE = "forum:comment:delete";
+
+    /* 管理端：举报管理按钮 */
+    public static final String FORUM_REPORT_VIEW = "forum:report:view";
+    public static final String FORUM_REPORT_PROCESS = "forum:report:process";
+
+    /* 管理端：板块与标签按钮 */
+    public static final String FORUM_TAXONOMY_VIEW = "forum:taxonomy:view";
+    public static final String FORUM_TAXONOMY_BOARD_MANAGE = "forum:taxonomy:board:manage";
+    public static final String FORUM_TAXONOMY_TAG_MANAGE = "forum:taxonomy:tag:manage";
+
+    /* 管理端：站点管理按钮 */
+    public static final String FORUM_SITE_VIEW = "forum:site:view";
+    public static final String FORUM_SITE_EDIT = "forum:site:edit";
+    public static final String FORUM_SITE_LINK_MANAGE = "forum:site:link:manage";
+
+    /* 管理端：敏感词管理按钮 */
+    public static final String FORUM_SENSITIVE_VIEW = "forum:sensitive:view";
+    public static final String FORUM_SENSITIVE_ADD = "forum:sensitive:add";
+    public static final String FORUM_SENSITIVE_TOGGLE = "forum:sensitive:toggle";
+    public static final String FORUM_SENSITIVE_DELETE = "forum:sensitive:delete";
+
+    /* 管理端：礼品发放按钮 */
+    public static final String FORUM_EXCHANGE_VIEW = "forum:exchange:view";
+    public static final String FORUM_EXCHANGE_SHIP = "forum:exchange:ship";
+    public static final String FORUM_EXCHANGE_ISSUE = "forum:exchange:issue";
+
+    /* 管理端：勋章管理按钮 */
+    public static final String FORUM_BADGE_VIEW = "forum:badge:view";
+    public static final String FORUM_BADGE_CREATE = "forum:badge:create";
+    public static final String FORUM_BADGE_EDIT = "forum:badge:edit";
+    public static final String FORUM_BADGE_PUBLISH = "forum:badge:publish";
+    public static final String FORUM_BADGE_OFFLINE = "forum:badge:offline";
+
+    /* ---------- 前台 forum（北极星空）：只控制需要登录才能操作的按钮 ---------- */
+    /** 前台操作权限的分组节点（权限管理里平铺展示，前台没有对应路由） */
+    public static final String FORUM_MENU_OPS = "forum:ops";
+    public static final String FORUM_POST_CREATE = "forum:post:create";
+    public static final String FORUM_COMMENT_CREATE = "forum:comment:create";
+    public static final String FORUM_LIKE = "forum:like";
+    public static final String FORUM_FAVORITE = "forum:favorite";
+    public static final String FORUM_FOLLOW = "forum:follow";
+    public static final String FORUM_REPORT_CREATE = "forum:report:create";
+    public static final String FORUM_VOTE = "forum:vote";
+    public static final String FORUM_DRAFT = "forum:draft";
+    public static final String FORUM_ATTACHMENT_UPLOAD = "forum:attachment:upload";
+    public static final String FORUM_PROFILE_EDIT = "forum:profile:edit";
+    public static final String FORUM_CHECKIN = "forum:checkin";
+    public static final String FORUM_LOTTERY_DRAW = "forum:lottery:draw";
+    public static final String FORUM_GIFT_REDEEM = "forum:gift:redeem";
 }

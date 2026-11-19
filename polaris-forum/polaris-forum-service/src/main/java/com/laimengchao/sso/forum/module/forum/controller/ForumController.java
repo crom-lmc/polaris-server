@@ -1,6 +1,7 @@
 package com.laimengchao.sso.forum.module.forum.controller;
 
 import com.laimengchao.sso.common.R;
+import com.laimengchao.sso.common.security.PermissionCodes;
 import com.laimengchao.sso.forum.module.badge.service.BadgeService;
 import com.laimengchao.sso.forum.module.badge.vo.MyBadgeVO;
 import com.laimengchao.sso.forum.module.forum.dto.CommentCreateRequest;
@@ -22,6 +23,7 @@ import com.laimengchao.sso.forum.module.member.vo.MemberProfileVO;
 import com.laimengchao.sso.forum.module.report.dto.ReportCreateRequest;
 import com.laimengchao.sso.forum.module.report.service.ReportService;
 import com.laimengchao.sso.forum.module.report.vo.ReportVO;
+import com.laimengchao.sso.forum.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,16 +54,19 @@ public class ForumController {
     }
 
     @PostMapping("/threads")
+    @Permit(value = PermissionCodes.FORUM_POST_CREATE, app = PermissionCodes.APP_FORUM)
     public R<ThreadDetailVO> createThread(@RequestBody ThreadPublishRequest body) {
         return R.ok(forumService.createThread(body));
     }
 
     @PostMapping("/threads/{id}/comments")
+    @Permit(value = PermissionCodes.FORUM_COMMENT_CREATE, app = PermissionCodes.APP_FORUM)
     public R<CommentVO> createComment(@PathVariable long id, @RequestBody CommentCreateRequest body) {
         return R.ok(forumService.createComment(id, body));
     }
 
     @PostMapping("/likes/toggle")
+    @Permit(value = PermissionCodes.FORUM_LIKE, app = PermissionCodes.APP_FORUM)
     public R<LikeToggleVO> toggleLike(@RequestBody LikeToggleRequest body) {
         return R.ok(forumService.toggleLike(body));
     }
@@ -72,16 +77,19 @@ public class ForumController {
     }
 
     @PutMapping("/profile")
+    @Permit(value = PermissionCodes.FORUM_PROFILE_EDIT, app = PermissionCodes.APP_FORUM)
     public R<MemberProfileVO> updateProfile(@RequestBody MemberProfileUpdateRequest body) {
         return R.ok(memberService.updateProfile(body));
     }
 
     @PostMapping("/threads/{id}/favorite")
+    @Permit(value = PermissionCodes.FORUM_FAVORITE, app = PermissionCodes.APP_FORUM)
     public R<FavoriteToggleVO> favorite(@PathVariable long id) {
         return R.ok(favoriteService.add(id));
     }
 
     @DeleteMapping("/threads/{id}/favorite")
+    @Permit(value = PermissionCodes.FORUM_FAVORITE, app = PermissionCodes.APP_FORUM)
     public R<FavoriteToggleVO> unfavorite(@PathVariable long id) {
         return R.ok(favoriteService.remove(id));
     }
@@ -97,16 +105,19 @@ public class ForumController {
     }
 
     @PostMapping("/reports")
+    @Permit(value = PermissionCodes.FORUM_REPORT_CREATE, app = PermissionCodes.APP_FORUM)
     public R<ReportVO> report(@RequestBody ReportCreateRequest body) {
         return R.ok(reportService.create(body));
     }
 
     @PostMapping("/members/{accountId}/follow")
+    @Permit(value = PermissionCodes.FORUM_FOLLOW, app = PermissionCodes.APP_FORUM)
     public R<FollowToggleVO> follow(@PathVariable long accountId) {
         return R.ok(followService.follow(accountId));
     }
 
     @DeleteMapping("/members/{accountId}/follow")
+    @Permit(value = PermissionCodes.FORUM_FOLLOW, app = PermissionCodes.APP_FORUM)
     public R<FollowToggleVO> unfollow(@PathVariable long accountId) {
         return R.ok(followService.unfollow(accountId));
     }
