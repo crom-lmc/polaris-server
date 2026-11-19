@@ -35,6 +35,7 @@ public class PublicReferenceController {
     /** 允许跨应用读取的纯枚举字典（民族/婚姻/政治面貌/性别/内部通知类型/招聘经验/职位标签/面试方式/沟通方式） */
     private static final Set<String> DICT_ALLOWED = Set.of(
             "general.nation",
+            "sso.application_type",
             "ehr.marital_status",
             "ehr.political_status",
             "ehr.gender",

@@ -21,6 +21,7 @@ public final class PermissionConstants {
     /** 菜单（页面级）：与前端左侧菜单一一对应 */
     /** 概览（默认首页，登录即可见，不做权限显隐，仅作为权限目录节点） */
     public static final String MENU_DASHBOARD = "dashboard";
+    public static final String MENU_MY_APPS = "my-apps";
     public static final String MENU_ACCOUNT = "account";
     public static final String MENU_ROLE = "role";
     public static final String MENU_PERMISSION = "permission";
@@ -84,6 +85,7 @@ public final class PermissionConstants {
     public static final java.util.List<PermDef> BUILTIN = java.util.List.of(
             // —— 菜单 ——
             new PermDef("概览", MENU_DASHBOARD, PermissionType.MENU, null, 0),
+            new PermDef("我的应用", MENU_MY_APPS, PermissionType.MENU, null, 1),
             new PermDef("账户管理", MENU_ACCOUNT, PermissionType.MENU, null, 1),
             new PermDef("角色管理", MENU_ROLE, PermissionType.MENU, null, 2),
             new PermDef("权限管理", MENU_PERMISSION, PermissionType.MENU, null, 3),
