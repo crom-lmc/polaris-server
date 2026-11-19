@@ -29,7 +29,8 @@ server {
         polaris-account.${DOMAIN}
         portal-blog-api.${DOMAIN}
         portal-blog-web.${DOMAIN}
-        portal-blog-admin.${DOMAIN};
+        portal-blog-admin.${DOMAIN}
+        polaris-forum.${DOMAIN};
     return 301 https://$host$request_uri;
 }
 
@@ -227,6 +228,32 @@ server {
     # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
     location / {
         include /etc/nginx/snippets/polaris-batch1-root.inc;
+    }
+}
+
+# 社区论坛：用户端使用 /，管理端使用 /admin，OAuth 回调分别为 /auth/callback 和 /admin/callback
+server {
+    listen 443 ssl;
+    server_name polaris-forum.${DOMAIN};
+    ssl_certificate     /etc/nginx/certs/polaris-forum.${DOMAIN}/polaris-forum.${DOMAIN}_nginx/polaris-forum.${DOMAIN}_bundle.crt;
+    ssl_certificate_key /etc/nginx/certs/polaris-forum.${DOMAIN}/polaris-forum.${DOMAIN}_nginx/polaris-forum.${DOMAIN}.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 50m;
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    include /etc/nginx/snippets/polaris-api.inc;
+
+    location = /admin { return 301 /admin/; }
+    location /admin/ {
+        root /opt/polaris/www;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    location / {
+        root /opt/polaris/www/forum;
+        index index.html;
+        try_files $uri $uri/ /index.html;
     }
 }
 

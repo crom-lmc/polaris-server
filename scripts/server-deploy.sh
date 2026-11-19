@@ -41,6 +41,7 @@ if [ "$DO_BACKEND" = 1 ]; then
     [blog.jar]=polaris-blog/polaris-blog-service/target/blog-service.jar
     [portal.jar]=polaris-portal/polaris-portal-service/target/portal-service.jar
     [job.jar]=polaris-job/polaris-job-service/target/job-service.jar
+    [forum.jar]=polaris-forum/polaris-forum-service/target/forum-service.jar
   )
   mkdir -p "$ROOT/jars"
   for name in "${!JARS[@]}"; do
@@ -56,6 +57,8 @@ if [ "$DO_WEB" = 1 ]; then
   export VITE_SSO_ORIGIN="https://polaris-sso.$DOMAIN"
   export VITE_WEB_ORIGIN="https://portal-blog-web.$DOMAIN"
   export VITE_PORTAL_ORIGIN="https://polaris-portal.$DOMAIN"
+  export VITE_FORUM_ORIGIN="https://polaris-forum.$DOMAIN"
+  export VITE_FORUM_ADMIN_ORIGIN="https://polaris-forum.$DOMAIN/admin"
 
   build_site() { # $1=工程目录 $2=站点目录
     local app="$SRC/polaris-web/$1" out="$ROOT/www/$2"
@@ -70,6 +73,8 @@ if [ "$DO_WEB" = 1 ]; then
   build_site polaris-cms-web      cms
   build_site polaris-portal-web   portal
   build_site polaris-job-web      job
+  build_site polaris-forum-web    forum
+  build_site polaris-forum-admin-web admin
 
   # 博客是一仓两端
   blog="$SRC/polaris-web/polaris-blog-web"
@@ -108,10 +113,10 @@ if [ "$DO_SYNC" = 1 ]; then
   nginx -t && nginx -s reload
 
   # 发版自检：只告警、不自动回滚，保留现场
-  say "发版自检（9 站点 + tengine 8443）"
+  say "发版自检（10 站点 + tengine 8443）"
   FAIL=0
   for name in polaris-sso polaris-ehr polaris-cms polaris-settings polaris-job \
-              polaris-portal portal-blog-admin portal-blog-web vault; do
+              polaris-portal portal-blog-admin portal-blog-web polaris-forum vault; do
     code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$name.$DOMAIN:443:127.0.0.1" "https://$name.$DOMAIN/" || echo 000)
     printf '  %-20s %s\n' "$name" "$code"
     [ "$code" = "200" ] || FAIL=1
@@ -134,7 +139,7 @@ if [ "$DO_SYNC" = 1 ]; then
     echo "  nginx -t && nginx -s reload"
     exit 1
   fi
-  echo "自检通过：9 域名均 200，tengine 8443 可达"
+  echo "自检通过：10 域名均 200，tengine 8443 可达"
 fi
 
 say "5/5 重启服务"

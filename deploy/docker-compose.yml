@@ -1,5 +1,5 @@
 # Polarís 生产部署（单机 2C4G，Docker + host 网络）
-# 依赖服务器上已有的 MySQL / Redis / Nginx；这里只跑 9 个 Java 服务。
+# 依赖服务器上已有的 MySQL / Redis / Nginx；这里只跑 Java 服务。
 # 使用前：cp .env.example .env 并按实际情况填写。
 name: polaris
 
@@ -35,6 +35,18 @@ x-base: &base
       max-file: "3"
 
 services:
+  forum:
+    <<: *base
+    container_name: polaris-forum
+    command: ["java", "-jar", "/jars/forum.jar"]
+    mem_limit: 400m
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9009' || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 90s
+
   sso-auth:
     <<: *base
     container_name: polaris-sso-auth
