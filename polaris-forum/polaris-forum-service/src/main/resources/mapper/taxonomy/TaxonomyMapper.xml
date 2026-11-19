@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.taxonomy.mapper.TaxonomyMapper">
+
+    <resultMap id="boardMap" type="com.laimengchao.sso.forum.module.taxonomy.entity.Board">
+        <id property="boardKey" column="boardKey"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="color" column="color"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="tagMap" type="com.laimengchao.sso.forum.module.taxonomy.entity.Tag">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="boardKey" column="boardKey"/>
+        <result property="name" column="name"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled"/>
+    </resultMap>
+
+    <sql id="boardColumns">
+        board_key AS boardKey,name,description,color,sort_no AS sortNo,enabled,
+        DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <sql id="tagColumns">
+        CAST(id AS CHAR) AS id,board_key AS boardKey,name,sort_no AS sortNo,enabled
+    </sql>
+
+    <select id="listBoards" resultMap="boardMap">
+        SELECT <include refid="boardColumns"/> FROM forum_board
+        <if test="enabledOnly">WHERE enabled=1</if>
+        ORDER BY sort_no,board_key
+    </select>
+
+    <select id="findBoard" resultMap="boardMap">
+        SELECT <include refid="boardColumns"/> FROM forum_board WHERE board_key=#{boardKey}
+    </select>
+
+    <insert id="insertBoard">
+        INSERT INTO forum_board(board_key,name,description,color,sort_no,enabled)
+        VALUES(#{boardKey},#{name},#{description},#{color},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="updateBoard">
+        UPDATE forum_board SET name=#{name},description=#{description},color=#{color},sort_no=#{sortNo},enabled=#{enabled}
+        WHERE board_key=#{boardKey}
+    </update>
+
+    <select id="listTags" resultMap="tagMap">
+        SELECT <include refid="tagColumns"/> FROM forum_tag
+        <where>
+            <if test="boardKey != null and boardKey != ''">AND board_key=#{boardKey}</if>
+            <if test="enabledOnly">AND enabled=1</if>
+        </where>
+        ORDER BY board_key,sort_no,id
+    </select>
+
+    <select id="findTag" resultMap="tagMap">
+        SELECT <include refid="tagColumns"/> FROM forum_tag WHERE id=#{id}
+    </select>
+
+    <select id="findTagByName" resultMap="tagMap">
+        SELECT <include refid="tagColumns"/> FROM forum_tag WHERE board_key=#{boardKey} AND name=#{name}
+    </select>
+
+    <insert id="insertTag">
+        INSERT INTO forum_tag(id,board_key,name,sort_no,enabled) VALUES(#{id},#{boardKey},#{name},#{sortNo},#{enabled})
+    </insert>
+
+    <insert id="registerTag">
+        INSERT IGNORE INTO forum_tag(id,board_key,name) VALUES(#{id},#{boardKey},#{name})
+    </insert>
+
+    <update id="updateTag">
+        UPDATE forum_tag SET sort_no=#{sortNo},enabled=#{enabled} WHERE id=#{id}
+    </update>
+
+    <select id="listThreadTags" resultType="string">
+        SELECT tags FROM forum_thread WHERE board_key=#{boardKey} AND deleted=0
+    </select>
+</mapper>

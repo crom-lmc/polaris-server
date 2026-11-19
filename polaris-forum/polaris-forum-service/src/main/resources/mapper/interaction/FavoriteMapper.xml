@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.interaction.mapper.FavoriteMapper">
+
+    <resultMap id="favoriteThreadResultMap" type="com.laimengchao.sso.forum.module.interaction.dto.FavoriteThreadDTO"
+               extends="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">
+        <result property="favoritedAt" column="favoritedAt"/>
+    </resultMap>
+
+    <insert id="add">
+        INSERT IGNORE INTO forum_favorite(id,account_id,thread_id) VALUES(#{id},#{accountId},#{threadId})
+    </insert>
+
+    <delete id="remove">
+        DELETE FROM forum_favorite WHERE account_id=#{accountId} AND thread_id=#{threadId}
+    </delete>
+
+    <select id="list" resultMap="favoriteThreadResultMap">
+        SELECT CAST(t.id AS CHAR) AS id,t.kind,t.board_key AS board,t.title,t.content,t.excerpt,t.tags,CAST(t.author_account_id AS CHAR) AS authorAccountId,
+        t.author_name AS authorName,t.reward,CAST(t.cover_attachment_id AS CHAR) AS coverAttachmentId,t.replies_count AS replies,
+        t.views_count AS views,t.likes_count AS likes,t.pinned,t.solved,
+        DATE_FORMAT(t.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,f.created_at AS favoritedAt FROM forum_favorite f
+        JOIN forum_thread t ON t.id=f.thread_id AND t.deleted=0
+        WHERE f.account_id=#{accountId} ORDER BY f.created_at DESC LIMIT 200
+    </select>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM forum_favorite f JOIN forum_thread t ON t.id=f.thread_id AND t.deleted=0
+        WHERE f.account_id=#{accountId}
+    </select>
+
+</mapper>

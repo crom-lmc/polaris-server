@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.draft.mapper.DraftMapper">
+
+    <resultMap id="draftResultMap" type="com.laimengchao.sso.forum.module.draft.entity.Draft">
+        <id property="id" column="id"/>
+        <result property="accountId" column="accountId"/>
+        <result property="kind" column="kind"/>
+        <result property="board" column="board"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="tags" column="tags"/>
+        <result property="reward" column="reward"/>
+        <result property="coverAttachmentId" column="coverAttachmentId"/>
+        <result property="pollConfig" column="pollConfig"/>
+        <result property="publishedThreadId" column="publishedThreadId"/>
+        <result property="deleted" column="deleted"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        CAST(id AS CHAR) AS id,CAST(account_id AS CHAR) AS accountId,kind,board_key AS board,title,content,tags,reward,
+        CAST(cover_attachment_id AS CHAR) AS coverAttachmentId,poll_config AS pollConfig,CAST(published_thread_id AS CHAR) AS publishedThreadId,
+        deleted,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <insert id="insert" parameterType="com.laimengchao.sso.forum.module.draft.entity.Draft">
+        INSERT INTO forum_draft(id,account_id,kind,board_key,title,content,tags,reward,cover_attachment_id,poll_config)
+        VALUES(#{id},#{accountId},#{kind},#{board},#{title},#{content},#{tags},#{reward},#{coverAttachmentId},#{pollConfig})
+    </insert>
+
+    <select id="list" resultMap="draftResultMap">
+        SELECT <include refid="columns"/> FROM forum_draft WHERE account_id=#{accountId} AND deleted=0
+        AND published_thread_id IS NULL ORDER BY updated_at DESC LIMIT 100
+    </select>
+
+    <select id="find" resultMap="draftResultMap">
+        SELECT <include refid="columns"/> FROM forum_draft WHERE id=#{id} AND account_id=#{accountId} AND deleted=0
+    </select>
+
+    <select id="findForUpdate" resultMap="draftResultMap">
+        SELECT <include refid="columns"/> FROM forum_draft WHERE id=#{id} AND account_id=#{accountId} AND deleted=0 FOR UPDATE
+    </select>
+
+    <update id="update" parameterType="com.laimengchao.sso.forum.module.draft.entity.Draft">
+        UPDATE forum_draft SET kind=#{kind},board_key=#{board},title=#{title},content=#{content},tags=#{tags},
+        reward=#{reward},cover_attachment_id=#{coverAttachmentId},poll_config=#{pollConfig}
+        WHERE id=#{id} AND account_id=#{accountId} AND published_thread_id IS NULL AND deleted=0
+    </update>
+
+    <update id="delete">
+        UPDATE forum_draft SET deleted=1 WHERE id=#{id} AND account_id=#{accountId} AND deleted=0
+    </update>
+
+    <update id="markPublished">
+        UPDATE forum_draft SET published_thread_id=#{threadId} WHERE id=#{id} AND published_thread_id IS NULL AND deleted=0
+    </update>
+
+</mapper>

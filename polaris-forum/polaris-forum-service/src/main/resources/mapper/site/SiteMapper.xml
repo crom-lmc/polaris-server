@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.site.mapper.SiteMapper">
+
+    <resultMap id="configMap" type="com.laimengchao.sso.forum.module.site.entity.SiteConfig">
+        <result property="aboutContent" column="aboutContent"/>
+        <result property="footerText" column="footerText"/>
+    </resultMap>
+
+    <resultMap id="linkMap" type="com.laimengchao.sso.forum.module.site.entity.FriendLink">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="name" column="name"/>
+        <result property="url" column="url"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="configColumns">
+        about_content AS aboutContent,footer_text AS footerText
+    </sql>
+
+    <sql id="linkColumns">
+        CAST(id AS CHAR) AS id,name,url,sort_no AS sortNo,enabled,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <select id="findConfig" resultMap="configMap">
+        SELECT <include refid="configColumns"/> FROM forum_site_config WHERE id=1
+    </select>
+
+    <update id="updateConfig">
+        UPDATE forum_site_config SET about_content=#{aboutContent},footer_text=#{footerText} WHERE id=1
+    </update>
+
+    <select id="listLinks" resultMap="linkMap">
+        SELECT <include refid="linkColumns"/> FROM forum_friend_link
+        <if test="enabledOnly">WHERE enabled=1</if>
+        ORDER BY sort_no,id
+    </select>
+
+    <select id="findLink" resultMap="linkMap">
+        SELECT <include refid="linkColumns"/> FROM forum_friend_link WHERE id=#{id}
+    </select>
+
+    <insert id="insertLink">
+        INSERT INTO forum_friend_link(id,name,url,sort_no,enabled) VALUES(#{id},#{name},#{url},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="updateLink">
+        UPDATE forum_friend_link SET name=#{name},url=#{url},sort_no=#{sortNo},enabled=#{enabled} WHERE id=#{id}
+    </update>
+</mapper>

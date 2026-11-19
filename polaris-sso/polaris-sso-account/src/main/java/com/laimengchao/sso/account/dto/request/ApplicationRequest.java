@@ -12,6 +12,8 @@ public class ApplicationRequest {
     /** 应用编码，创建后不可修改（ticket 与 JWT 里都用它） */
     private String code;
     private String name;
+    /** 应用类型，取值来自配置中心字典 sso.application_type */
+    private String appType;
     private String baseUrl;
     /** OAuth2 回调地址（授权码回跳点），与 baseUrl 同源 */
     private String redirectUri;

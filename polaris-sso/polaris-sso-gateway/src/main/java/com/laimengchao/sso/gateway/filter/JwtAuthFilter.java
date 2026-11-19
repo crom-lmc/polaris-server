@@ -59,14 +59,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return deny(clean, HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, "内部接口不对外开放");
         }
 
-        // 3) 白名单
-        if (isWhitelisted(path)) {
-            return chain.filter(clean);
-        }
-
-        // 4) 取令牌
+        // 3) 公开接口允许匿名；若携带有效令牌则继续注入身份，供详情返回点赞、收藏等个人状态
+        boolean whitelisted = isWhitelisted(path);
         String token = bearer(clean.getRequest().getHeaders().getFirst(AUTHORIZATION));
         if (token == null || token.isBlank()) {
+            if (whitelisted) return chain.filter(clean);
             return deny(clean, HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, "未登录，请先获取访问令牌");
         }
 
@@ -75,13 +72,16 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             claims = verifier.verify(token);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("JWT 验签失败 path={} reason={}", path, e.getMessage());
+            if (whitelisted) return chain.filter(clean);
             return deny(clean, HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, "令牌无效或已过期");
         }
 
         if (!JwtClaims.TYPE_ACCESS.equals(claims.get(JwtClaims.TOKEN_TYPE, String.class))) {
+            if (whitelisted) return chain.filter(clean);
             return deny(clean, HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, "该接口需要 access token");
         }
         if (revocationCache.isRevoked(claims.getId()) || isSessionRevoked(claims)) {
+            if (whitelisted) return chain.filter(clean);
             return deny(clean, HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, "登录状态已失效，请重新登录");
         }
 

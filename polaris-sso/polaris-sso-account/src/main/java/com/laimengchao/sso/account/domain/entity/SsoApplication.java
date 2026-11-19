@@ -19,6 +19,8 @@ public class SsoApplication extends BaseEntity {
     /** 应用编码，如 blog-admin（唯一，写入 ticket 与 JWT 的 apps claim） */
     private String code;
     private String name;
+    /** 应用类型，取值来自配置中心字典 sso.application_type */
+    private String appType;
     /** 应用访问地址，前端「去应用」跳转用 */
     private String baseUrl;
     /**

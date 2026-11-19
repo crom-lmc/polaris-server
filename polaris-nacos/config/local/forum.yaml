@@ -1,0 +1,5 @@
+# local forum OAuth client credentials; plaintext remains only in sso_ms.
+sso:
+  forum:
+    app-secret: ENC(Qm7ssnjMcnPNX4Yhw2AikzcAG9S/9YKQA6JVMFOIwbcfoypbunNXzCtlnFHgTxz6Uf4tQhO2zSUalsg=)
+    admin-app-secret: ENC(sFkZYDxdNHOmaSdqVyGTQCKFqfHweq3609r6kKqs+NmcII/a2okugt1fPGvbsHe2F2VR5qYe3xLVDZvx)

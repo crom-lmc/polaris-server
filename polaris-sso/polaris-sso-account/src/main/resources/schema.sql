@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS `sso_application` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `code` varchar(64) NOT NULL COMMENT '应用编码，如 blog-admin / fishing-admin',
   `name` varchar(64) NOT NULL COMMENT '应用名称',
+  `app_type` varchar(32) NOT NULL DEFAULT '' COMMENT '应用类型，字典 sso.application_type',
   `base_url` varchar(255) DEFAULT '' COMMENT '应用访问地址，如 https://blog.laimengchao.site',
   `app_secret` varchar(64) NOT NULL COMMENT '应用密钥（32位随机串），exchange 时校验',
   `icon` varchar(64) DEFAULT '' COMMENT '图标标识（前端选用）',

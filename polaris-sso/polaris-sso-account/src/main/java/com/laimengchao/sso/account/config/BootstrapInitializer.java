@@ -3,12 +3,14 @@ package com.laimengchao.sso.account.config;
 import com.laimengchao.sso.account.constant.PermissionConstants;
 import com.laimengchao.sso.account.constant.PermissionConstants.PermDef;
 import com.laimengchao.sso.account.domain.entity.SsoAccount;
+import com.laimengchao.sso.account.domain.entity.SsoAccountApp;
 import com.laimengchao.sso.account.domain.entity.SsoAccountRole;
 import com.laimengchao.sso.account.domain.entity.SsoApplication;
 import com.laimengchao.sso.account.domain.entity.SsoPermission;
 import com.laimengchao.sso.account.domain.entity.SsoRole;
 import com.laimengchao.sso.account.domain.entity.SsoRolePermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.laimengchao.sso.account.mapper.SsoAccountAppMapper;
 import com.laimengchao.sso.account.mapper.SsoAccountMapper;
 import com.laimengchao.sso.account.mapper.SsoAccountRoleMapper;
 import com.laimengchao.sso.account.mapper.SsoApplicationMapper;
@@ -28,8 +30,10 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 启动初始化：内置超级管理员账户 + SUPER_ADMIN 角色 + 全部内置权限。
@@ -44,6 +48,7 @@ public class BootstrapInitializer implements ApplicationRunner {
     private final SsoRoleMapper roleMapper;
     private final SsoPermissionMapper permissionMapper;
     private final SsoAccountRoleMapper accountRoleMapper;
+    private final SsoAccountAppMapper accountAppMapper;
     private final SsoRolePermissionMapper rolePermissionMapper;
     private final SsoApplicationMapper applicationMapper;
     private final JdbcTemplate jdbcTemplate;
@@ -62,6 +67,8 @@ public class BootstrapInitializer implements ApplicationRunner {
         migrateSchema();
         initPermissions();
         initNoticeRoleBindings();
+        initForumAdmin();
+        initForumAdminApplication();
         initSuperAdmin();
         initBuiltinApplication();
     }
@@ -80,6 +87,7 @@ public class BootstrapInitializer implements ApplicationRunner {
         SsoApplication app = new SsoApplication();
         app.setCode(ApplicationService.BUILTIN_CODE);
         app.setName("统一账号中心");
+        app.setAppType("SYSTEM");
         app.setBaseUrl("");
         app.setRemark("平台内置应用，代表平台自身，不可编辑或删除");
         app.setStatus(1);
@@ -112,6 +120,11 @@ public class BootstrapInitializer implements ApplicationRunner {
         } catch (Exception e) {
             log.error("权限表按应用分域迁移失败，按应用隔离权限的功能不可用：{}", e.getMessage(), e);
         }
+        try {
+            ensureApplicationAppType();
+        } catch (Exception e) {
+            log.error("应用类型字段迁移失败，应用分类功能不可用：{}", e.getMessage(), e);
+        }
     }
 
     /** sso_permission：补 app_code 列，并把全局唯一索引换成 (app_code, code) */
@@ -141,6 +154,30 @@ public class BootstrapInitializer implements ApplicationRunner {
         }
     }
 
+    /** sso_application：补应用类型列；只回填空类型，不覆盖管理员后续调整。 */
+    private void ensureApplicationAppType() {
+        if (!tableExists("sso_application")) {
+            return;
+        }
+        Integer col = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() "
+                        + "AND TABLE_NAME = 'sso_application' AND COLUMN_NAME = 'app_type'", Integer.class);
+        if (col == null || col == 0) {
+            jdbcTemplate.execute("ALTER TABLE sso_application ADD COLUMN app_type VARCHAR(32) NOT NULL "
+                    + "DEFAULT '' COMMENT '应用类型，字典 sso.application_type' AFTER name");
+            log.info("迁移：sso_application 已新增 app_type 列");
+        }
+        int updated = jdbcTemplate.update("UPDATE sso_application SET app_type = CASE "
+                + "WHEN code IN ('sso-center', 'settings', 'job') THEN 'SYSTEM' "
+                + "WHEN code IN ('cms', 'blog', 'ehr') THEN 'MANAGEMENT' "
+                + "WHEN code = 'portal' THEN 'PORTAL' "
+                + "WHEN code IN ('forum', 'forum-admin') THEN 'COMMUNITY' "
+                + "ELSE 'OTHER' END WHERE app_type IS NULL OR app_type = ''");
+        if (updated > 0) {
+            log.info("迁移：已回填 {} 个应用的空类型", updated);
+        }
+    }
+
     private boolean tableExists(String table) {
         Integer n = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
@@ -163,6 +200,8 @@ public class BootstrapInitializer implements ApplicationRunner {
         seedPermissions(PermissionConstants.PLATFORM_APP, PermissionConstants.BUILTIN);
         // 业务应用 ehr 的权限码（通知管理）同样幂等播种：sso_permission 按 app_code 隔离
         seedPermissions(PermissionConstants.EHR_APP, PermissionConstants.EHR_BUILTIN);
+        seedPermissions(PermissionConstants.FORUM_APP, PermissionConstants.FORUM_BUILTIN);
+        seedPermissions(PermissionConstants.FORUM_ADMIN_APP, PermissionConstants.FORUM_BUILTIN);
     }
 
     /** 按应用补权限码；父级菜单的 id 只在同应用内找，避免业务应用同名码把 parentId 指错 */
@@ -244,6 +283,125 @@ public class BootstrapInitializer implements ApplicationRunner {
             }
         }
         return changed;
+    }
+
+    /**
+     * 初始化论坛管理员角色。角色权限每次启动都补齐；账号角色与应用授权只在角色首次创建时迁移，
+     * 避免后续启动恢复管理员手工取消的授权。
+     */
+    private void initForumAdmin() {
+        SsoRole role = roleMapper.selectByCode(PermissionConstants.FORUM_ADMIN_ROLE_CODE);
+        boolean firstCreated = role == null;
+        if (firstCreated) {
+            role = new SsoRole();
+            role.setCode(PermissionConstants.FORUM_ADMIN_ROLE_CODE);
+            role.setAppCode(PermissionConstants.FORUM_APP);
+            role.setName("论坛管理员");
+            role.setRemark("内置，拥有论坛后台管理权限");
+            roleMapper.insert(role);
+            log.info("已播种论坛管理员角色：{}", PermissionConstants.FORUM_ADMIN_ROLE_CODE);
+        }
+
+        String[] permissionCodes = PermissionConstants.FORUM_BUILTIN.stream()
+                .map(PermDef::code)
+                .toArray(String[]::new);
+        boolean permissionsChanged = bindRolePermissions(List.of(PermissionConstants.FORUM_ADMIN_ROLE_CODE),
+                PermissionConstants.FORUM_APP, permissionCodes);
+        permissionsChanged |= bindRolePermissions(List.of(PermissionConstants.FORUM_ADMIN_ROLE_CODE),
+                PermissionConstants.FORUM_ADMIN_APP, permissionCodes);
+        if (permissionsChanged) {
+            log.info("论坛管理员角色权限已补齐");
+        }
+        if (!firstCreated) {
+            return;
+        }
+
+        Set<Long> sourceRoleIds = new LinkedHashSet<>();
+        for (String roleCode : PermissionConstants.FORUM_ADMIN_SOURCE_ROLE_CODES) {
+            SsoRole sourceRole = roleMapper.selectByCode(roleCode);
+            if (sourceRole != null) {
+                sourceRoleIds.add(sourceRole.getId());
+            }
+        }
+        if (sourceRoleIds.isEmpty()) {
+            log.info("论坛默认授权来源角色不存在，跳过账号授权");
+            return;
+        }
+
+        Set<Long> accountIds = new LinkedHashSet<>();
+        List<SsoAccountRole> sourceBindings = accountRoleMapper.selectList(
+                new LambdaQueryWrapper<SsoAccountRole>()
+                        .in(SsoAccountRole::getRoleId, sourceRoleIds));
+        for (SsoAccountRole binding : sourceBindings) {
+            accountIds.add(binding.getAccountId());
+        }
+
+        SsoApplication forumApp = applicationMapper.selectByCode(PermissionConstants.FORUM_APP);
+        SsoApplication forumAdminApp = applicationMapper.selectByCode(PermissionConstants.FORUM_ADMIN_APP);
+        if (forumApp == null) {
+            log.warn("forum 应用不存在，跳过论坛管理员的默认应用授权");
+        }
+        for (Long accountId : accountIds) {
+            long roleBound = accountRoleMapper.selectCount(
+                    new LambdaQueryWrapper<SsoAccountRole>()
+                            .eq(SsoAccountRole::getAccountId, accountId)
+                            .eq(SsoAccountRole::getRoleId, role.getId()));
+            if (roleBound == 0) {
+                SsoAccountRole accountRole = new SsoAccountRole();
+                accountRole.setAccountId(accountId);
+                accountRole.setRoleId(role.getId());
+                accountRoleMapper.insert(accountRole);
+            }
+            bindAccountApp(accountId, forumApp);
+            bindAccountApp(accountId, forumAdminApp);
+        }
+        log.info("论坛管理员首次默认授权完成：来源角色成员去重后共 {} 个账号", accountIds.size());
+    }
+
+    /** 管理端应用仅首次创建时给现有论坛管理员补授权，之后尊重管理员的手工调整。 */
+    private void initForumAdminApplication() {
+        if (applicationMapper.selectByCode(PermissionConstants.FORUM_ADMIN_APP) != null) {
+            return;
+        }
+        SsoApplication app = new SsoApplication();
+        app.setCode(PermissionConstants.FORUM_ADMIN_APP);
+        app.setName("论坛管理端");
+        app.setAppType("COMMUNITY");
+        app.setBaseUrl("http://localhost:5183");
+        app.setRedirectUri("http://localhost:5183/callback");
+        app.setAppSecret(randomSecret());
+        app.setIcon("/icons/forum.svg");
+        app.setRemark("社区论坛独立管理端");
+        app.setStatus(1);
+        app.setSort(4);
+        applicationMapper.insert(app);
+
+        SsoRole role = roleMapper.selectByCode(PermissionConstants.FORUM_ADMIN_ROLE_CODE);
+        if (role == null) {
+            return;
+        }
+        List<SsoAccountRole> bindings = accountRoleMapper.selectList(
+                new LambdaQueryWrapper<SsoAccountRole>().eq(SsoAccountRole::getRoleId, role.getId()));
+        for (SsoAccountRole binding : bindings) {
+            bindAccountApp(binding.getAccountId(), app);
+        }
+        log.info("已播种论坛管理端应用，并为 {} 个现有论坛管理员补授权", bindings.size());
+    }
+
+    private void bindAccountApp(Long accountId, SsoApplication app) {
+        if (app == null) {
+            return;
+        }
+        long appBound = accountAppMapper.selectCount(
+                new LambdaQueryWrapper<SsoAccountApp>()
+                        .eq(SsoAccountApp::getAccountId, accountId)
+                        .eq(SsoAccountApp::getAppId, app.getId()));
+        if (appBound == 0) {
+            SsoAccountApp accountApp = new SsoAccountApp();
+            accountApp.setAccountId(accountId);
+            accountApp.setAppId(app.getId());
+            accountAppMapper.insert(accountApp);
+        }
     }
 
     /** 初始化 SUPER_ADMIN 角色与内置管理员账户，并让该角色拥有全部权限（幂等补链） */

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.interaction.mapper.FollowMapper">
+
+    <resultMap id="followRelationResultMap" type="com.laimengchao.sso.forum.module.interaction.dto.FollowRelationDTO"
+               extends="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.memberResultMap">
+        <result property="followedAt" column="followedAt"/>
+    </resultMap>
+
+    <sql id="memberColumns">
+        CAST(m.account_id AS CHAR) AS accountId,m.username,m.nickname,m.bio,m.location,m.website,
+        CAST(m.avatar_attachment_id AS CHAR) AS avatarAttachmentId,DATE_FORMAT(f.created_at,'%Y-%m-%d %H:%i:%s') AS followedAt
+    </sql>
+
+    <insert id="add">
+        INSERT IGNORE INTO forum_follow(account_id,followed_account_id) VALUES(#{accountId},#{followedAccountId})
+    </insert>
+
+    <delete id="remove">
+        DELETE FROM forum_follow WHERE account_id=#{accountId} AND followed_account_id=#{followedAccountId}
+    </delete>
+
+    <select id="exists" resultType="int">
+        SELECT COUNT(*) FROM forum_follow WHERE account_id=#{accountId} AND followed_account_id=#{followedAccountId}
+    </select>
+
+    <select id="followingCount" resultType="int">
+        SELECT COUNT(*) FROM forum_follow WHERE account_id=#{accountId}
+    </select>
+
+    <select id="followerCount" resultType="int">
+        SELECT COUNT(*) FROM forum_follow WHERE followed_account_id=#{accountId}
+    </select>
+
+    <select id="following" resultMap="followRelationResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_follow f JOIN forum_member m ON m.account_id=f.followed_account_id
+        WHERE f.account_id=#{accountId} ORDER BY f.created_at DESC,m.account_id DESC LIMIT 200
+    </select>
+
+    <select id="followers" resultMap="followRelationResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_follow f JOIN forum_member m ON m.account_id=f.account_id
+        WHERE f.followed_account_id=#{accountId} ORDER BY f.created_at DESC,m.account_id DESC LIMIT 200
+    </select>
+
+</mapper>

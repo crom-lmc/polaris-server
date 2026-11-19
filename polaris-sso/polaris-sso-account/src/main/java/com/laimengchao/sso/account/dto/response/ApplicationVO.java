@@ -20,6 +20,7 @@ public class ApplicationVO {
     private Long id;
     private String code;
     private String name;
+    private String appType;
     private String baseUrl;
     /** OAuth2 回调地址（授权码回跳点），前端「进入」按钮构造 /authorize 用 */
     private String redirectUri;

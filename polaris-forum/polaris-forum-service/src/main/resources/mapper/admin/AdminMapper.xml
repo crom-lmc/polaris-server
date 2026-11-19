@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.admin.mapper.AdminMapper">
+
+    <resultMap id="commentDetailResultMap" type="com.laimengchao.sso.forum.module.forum.dto.ForumCommentDetailDTO"
+               extends="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.commentResultMap">
+        <result property="threadTitle" column="threadTitle"/>
+    </resultMap>
+
+    <sql id="exchangeColumns">
+        CAST(e.id AS CHAR) AS id,CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,
+        e.points,e.status,e.tracking_no AS trackingNo,DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        e.issued_by_name AS issuedByName,DATE_FORMAT(e.issued_at,'%Y-%m-%d %H:%i:%s') AS issuedAt,e.issue_remark AS issueRemark
+    </sql>
+
+    <select id="listThreads" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">
+        SELECT <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadColumns"/>,deleted FROM forum_thread WHERE 1=1
+        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
+        <if test="board != null and board != ''">AND board_key=#{board}</if>
+        <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR content LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
+        <if test="deleted != null">AND deleted=#{deleted}</if>
+        ORDER BY created_at DESC LIMIT 200
+    </select>
+
+    <update id="setThreadDeleted">
+        UPDATE forum_thread SET deleted=#{deleted} WHERE id=#{id}
+    </update>
+
+    <update id="setThreadPinned">
+        UPDATE forum_thread SET pinned=#{pinned} WHERE id=#{id}
+    </update>
+
+    <update id="setThreadSolved">
+        UPDATE forum_thread SET solved=#{solved} WHERE id=#{id}
+    </update>
+
+    <update id="setThreadRecommended">
+        UPDATE forum_thread SET recommended=#{recommended},recommended_at=IF(#{recommended},NOW(),NULL) WHERE id=#{id}
+    </update>
+
+    <select id="listComments" resultMap="commentDetailResultMap">
+        SELECT CAST(c.id AS CHAR) AS id,CAST(c.thread_id AS CHAR) AS threadId,CAST(c.author_account_id AS CHAR) AS authorAccountId,c.author_name AS authorName,
+        c.content,CAST(c.parent_comment_id AS CHAR) AS parentCommentId,c.likes_count AS likes,c.deleted,DATE_FORMAT(c.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,t.title AS threadTitle
+        FROM forum_comment c LEFT JOIN forum_thread t ON t.id=c.thread_id WHERE 1=1
+        <if test="threadId != null">AND c.thread_id=#{threadId}</if>
+        <if test="keyword != null and keyword != ''">AND (c.content LIKE CONCAT('%',#{keyword},'%') OR c.author_name LIKE CONCAT('%',#{keyword},'%'))</if>
+        <if test="deleted != null">AND c.deleted=#{deleted}</if>
+        ORDER BY c.created_at DESC LIMIT 200
+    </select>
+
+    <select id="findComment" resultMap="commentDetailResultMap">
+        SELECT CAST(c.id AS CHAR) AS id,CAST(c.thread_id AS CHAR) AS threadId,CAST(c.author_account_id AS CHAR) AS authorAccountId,c.author_name AS authorName,
+        c.content,CAST(c.parent_comment_id AS CHAR) AS parentCommentId,c.likes_count AS likes,c.deleted,DATE_FORMAT(c.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        t.title AS threadTitle FROM forum_comment c LEFT JOIN forum_thread t ON t.id=c.thread_id WHERE c.id=#{id}
+    </select>
+
+    <select id="commentForUpdate" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.commentResultMap">
+        SELECT CAST(id AS CHAR) AS id,CAST(thread_id AS CHAR) AS threadId,deleted FROM forum_comment WHERE id=#{id} FOR UPDATE
+    </select>
+
+    <update id="setCommentDeleted">
+        UPDATE forum_comment SET deleted=#{deleted} WHERE id=#{id} AND deleted!=#{deleted}
+    </update>
+
+    <update id="changeReplies">
+        UPDATE forum_thread SET replies_count=GREATEST(0,replies_count+#{delta}) WHERE id=#{threadId}
+    </update>
+
+    <select id="listExchanges" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.exchangeResultMap">
+        SELECT <include refid="exchangeColumns"/> FROM forum_exchange e LEFT JOIN forum_member m ON m.account_id=e.account_id
+        <if test="status != null and status != ''">WHERE e.status=#{status}</if>
+        ORDER BY e.created_at DESC LIMIT 200
+    </select>
+
+    <select id="exchangeForUpdate" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.exchangeResultMap">
+        SELECT CAST(id AS CHAR) AS id,status FROM forum_exchange WHERE id=#{id} FOR UPDATE
+    </select>
+
+    <update id="ship">
+        UPDATE forum_exchange SET status='SHIPPING',tracking_no=#{trackingNo},issue_remark=#{remark}
+        WHERE id=#{id} AND status='PENDING_ISSUE'
+    </update>
+
+    <update id="issue">
+        UPDATE forum_exchange SET status='ISSUED',issued_by=#{issuedBy},issued_by_name=#{issuedByName},
+        issued_at=NOW(),issue_remark=CASE WHEN #{remark}='' THEN issue_remark ELSE #{remark} END
+        WHERE id=#{id} AND status='SHIPPING'
+    </update>
+
+    <select id="findExchange" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.exchangeResultMap">
+        SELECT <include refid="exchangeColumns"/> FROM forum_exchange e LEFT JOIN forum_member m ON m.account_id=e.account_id WHERE e.id=#{id}
+    </select>
+</mapper>

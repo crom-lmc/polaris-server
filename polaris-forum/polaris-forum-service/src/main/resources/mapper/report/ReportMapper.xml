@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.report.mapper.ReportMapper">
+
+    <resultMap id="reportMap" type="com.laimengchao.sso.forum.module.report.entity.Report">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="reporterAccountId" column="reporterAccountId" javaType="java.lang.Long"/>
+        <result property="targetType" column="targetType"/>
+        <result property="targetId" column="targetId" javaType="java.lang.Long"/>
+        <result property="threadId" column="threadId" javaType="java.lang.Long"/>
+        <result property="reason" column="reason"/>
+        <result property="detail" column="detail"/>
+        <result property="status" column="status"/>
+        <result property="handlerAccountId" column="handlerAccountId" javaType="java.lang.Long"/>
+        <result property="handlerName" column="handlerName"/>
+        <result property="handleResult" column="handleResult"/>
+        <result property="handledAt" column="handledAt"/>
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <resultMap id="reportDetailMap" type="com.laimengchao.sso.forum.module.report.dto.ReportDetailDTO" extends="reportMap">
+        <result property="reporterName" column="reporterName"/>
+        <result property="threadTitle" column="threadTitle"/>
+        <result property="targetContent" column="targetContent"/>
+    </resultMap>
+
+    <sql id="reportColumns">
+        CAST(r.id AS CHAR) AS id,CAST(r.reporter_account_id AS CHAR) AS reporterAccountId,COALESCE(m.username,'') AS reporterName,
+        r.target_type AS targetType,CAST(r.target_id AS CHAR) AS targetId,CAST(r.thread_id AS CHAR) AS threadId,r.reason,r.detail,r.status,
+        CAST(r.handler_account_id AS CHAR) AS handlerAccountId,r.handler_name AS handlerName,r.handle_result AS handleResult,
+        DATE_FORMAT(r.handled_at,'%Y-%m-%d %H:%i:%s') AS handledAt,DATE_FORMAT(r.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        t.title AS threadTitle,CASE WHEN r.target_type='thread' THEN COALESCE(NULLIF(rt.excerpt,''),rt.title)
+        WHEN r.target_type='comment' THEN c.content ELSE '' END AS targetContent
+    </sql>
+
+    <sql id="reportJoins">
+        LEFT JOIN forum_member m ON m.account_id=r.reporter_account_id
+        LEFT JOIN forum_thread t ON t.id=r.thread_id
+        LEFT JOIN forum_thread rt ON rt.id=r.target_id AND r.target_type='thread'
+        LEFT JOIN forum_comment c ON c.id=r.target_id AND r.target_type='comment'
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO forum_report(id,reporter_account_id,target_type,target_id,thread_id,reason,detail)
+        VALUES(#{id},#{reporterAccountId},#{targetType},#{targetId},#{threadId},#{reason},#{detail})
+    </insert>
+
+    <select id="findById" resultMap="reportDetailMap">
+        SELECT <include refid="reportColumns"/> FROM forum_report r
+        <include refid="reportJoins"/>
+        WHERE r.id=#{id}
+    </select>
+
+    <select id="list" resultMap="reportDetailMap">
+        SELECT <include refid="reportColumns"/> FROM forum_report r
+        <include refid="reportJoins"/>
+        <where>
+            <if test="status != null and status != ''">AND r.status=#{status}</if>
+            <if test="targetType != null and targetType != ''">AND r.target_type=#{targetType}</if>
+        </where>
+        ORDER BY r.created_at DESC,r.id DESC LIMIT 200
+    </select>
+
+    <select id="forUpdate" resultMap="reportMap">
+        SELECT CAST(id AS CHAR) AS id,CAST(reporter_account_id AS CHAR) AS reporterAccountId,target_type AS targetType,CAST(target_id AS CHAR) AS targetId,
+        CAST(thread_id AS CHAR) AS threadId,status FROM forum_report WHERE id=#{id} FOR UPDATE
+    </select>
+
+    <update id="handle">
+        UPDATE forum_report SET status=#{status},handler_account_id=#{handlerAccountId},handler_name=#{handlerName},
+        handle_result=#{handleResult},handled_at=NOW() WHERE id=#{id} AND status='PENDING'
+    </update>
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.poll.mapper.PollMapper">
+
+    <resultMap id="pollResultMap" type="com.laimengchao.sso.forum.module.poll.entity.Poll">
+        <id property="id" column="id"/>
+        <result property="threadId" column="threadId"/>
+        <result property="mode" column="mode"/>
+        <result property="maxChoices" column="maxChoices"/>
+    </resultMap>
+
+    <resultMap id="optionResultMap" type="com.laimengchao.sso.forum.module.poll.entity.PollOption">
+        <id property="id" column="id"/>
+        <result property="text" column="text"/>
+        <result property="votes" column="votes"/>
+    </resultMap>
+
+    <insert id="insertPoll" parameterType="com.laimengchao.sso.forum.module.poll.entity.Poll">
+        INSERT INTO forum_poll(id,thread_id,mode,max_choices) VALUES(#{id},#{threadId},#{mode},#{maxChoices})
+    </insert>
+
+    <insert id="insertOption" parameterType="com.laimengchao.sso.forum.module.poll.entity.PollOption">
+        INSERT INTO forum_poll_option(id,poll_id,option_text,sort_no) VALUES(#{id},#{pollId},#{text},#{sortNo})
+    </insert>
+
+    <select id="findByThread" resultMap="pollResultMap">
+        SELECT CAST(id AS CHAR) AS id,CAST(thread_id AS CHAR) AS threadId,mode,max_choices AS maxChoices FROM forum_poll WHERE thread_id=#{threadId}
+    </select>
+
+    <select id="findByThreadForUpdate" resultMap="pollResultMap">
+        SELECT CAST(id AS CHAR) AS id,CAST(thread_id AS CHAR) AS threadId,mode,max_choices AS maxChoices FROM forum_poll WHERE thread_id=#{threadId} FOR UPDATE
+    </select>
+
+    <select id="options" resultMap="optionResultMap">
+        SELECT CAST(o.id AS CHAR) AS id,o.option_text AS text,(SELECT COUNT(*) FROM forum_poll_vote v WHERE v.option_id=o.id) AS votes
+        FROM forum_poll_option o WHERE o.poll_id=#{pollId} ORDER BY o.sort_no,o.id
+    </select>
+
+    <select id="optionBelongs" resultType="int">
+        SELECT COUNT(*) FROM forum_poll_option WHERE id=#{optionId} AND poll_id=#{pollId}
+    </select>
+
+    <select id="countAccountVotes" resultType="int">
+        SELECT COUNT(*) FROM forum_poll_vote WHERE poll_id=#{pollId} AND account_id=#{accountId}
+    </select>
+
+    <select id="selectedOptionIds" resultType="long">
+        SELECT CAST(option_id AS CHAR) FROM forum_poll_vote WHERE poll_id=#{pollId} AND account_id=#{accountId} ORDER BY option_id
+    </select>
+
+    <select id="totalVotes" resultType="int">
+        SELECT COUNT(*) FROM forum_poll_vote WHERE poll_id=#{pollId}
+    </select>
+
+    <insert id="insertVote">
+        INSERT INTO forum_poll_vote(id,poll_id,account_id,option_id) VALUES(#{id},#{pollId},#{accountId},#{optionId})
+    </insert>
+
+</mapper>

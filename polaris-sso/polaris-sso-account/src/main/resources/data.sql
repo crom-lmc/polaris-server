@@ -1097,6 +1097,7 @@ INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_sec
 INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_secret`, `icon`, `remark`, `status`, `sort`, `created_at`, `updated_at`, `deleted`, `redirect_uri`) VALUES (2116850135541460994,'settings','配置中心','http://localhost:5180','i7kN2dvTDSXVKAALeMLzNwdwEePVUpag','/icons/settings.svg','配置中心（枚举型基础信息统一收口，其他服务经内部接口拉取字典）',1,0,'2026-11-01 19:09:36','2026-11-01 19:09:36',0,'http://localhost:5180/callback');
 INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_secret`, `icon`, `remark`, `status`, `sort`, `created_at`, `updated_at`, `deleted`, `redirect_uri`) VALUES (2116999000000000001,'job','调度中心','http://localhost:5181','jObS3cr3tX9Kw7dN2pQ5vYzLmAeRuTc8H','/icons/job.svg','定时任务调度中心，统一管理全平台调度任务',1,2,'2026-11-11 14:21:54','2026-11-11 14:21:54',0,'http://localhost:5181/callback');
 INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_secret`, `icon`, `remark`, `status`, `sort`, `created_at`, `updated_at`, `deleted`, `redirect_uri`) VALUES (4997626274347468456,'portal','内容门户','http://localhost:5178','gwvDhWiyieEQhPhLCqnb2UlHrI5XksEA','/icons/portal.svg','内容中心对外展示门户',1,0,'2026-11-01 13:01:28','2026-11-01 13:01:28',0,'http://localhost:5178/callback');
+INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_secret`, `icon`, `remark`, `status`, `sort`, `created_at`, `updated_at`, `deleted`, `redirect_uri`) VALUES (2117000000000000001,'forum','社区论坛','http://localhost:5182','fOrUmS3cr3t9Kw7dN2pQ5vYzLmAeRuT','/icons/forum.svg','独立社区论坛，公开浏览与 SSO 互动',1,3,'2026-11-18 12:20:00','2026-11-18 12:20:00',0,'http://localhost:5182/auth/callback');
 INSERT IGNORE INTO `sso_audit_log` (`id`, `operator_id`, `operator_name`, `action`, `target_type`, `target_id`, `fields`, `ip`, `ua`, `created_at`) VALUES (380278600416497664,2119703016825098241,'wanghaoran','PASSWORD_RESET','ACCOUNT',2500000000000000071,'result=success;channel=admin;forceChange=true','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36','2026-11-15 16:51:24');
 INSERT IGNORE INTO `sso_audit_log` (`id`, `operator_id`, `operator_name`, `action`, `target_type`, `target_id`, `fields`, `ip`, `ua`, `created_at`) VALUES (380279724531912704,2119703016825098241,'wanghaoran','PERMISSION_UPDATE','PERMISSION',375182598000000017,'result=success;appCode=ehr;code=attendance','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36','2026-11-15 16:55:52');
 INSERT IGNORE INTO `sso_audit_log` (`id`, `operator_id`, `operator_name`, `action`, `target_type`, `target_id`, `fields`, `ip`, `ua`, `created_at`) VALUES (380391778752270336,2119703016825098241,'wanghaoran','PASSWORD_RESET','ACCOUNT',2500000000000000027,'result=success;channel=admin;forceChange=true','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36','2026-11-16 00:21:07');
@@ -1527,6 +1528,30 @@ INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (21
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519951,374983598249480192);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519952,374983598249480192);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (376700004179513344,374983598257868800);
+
+-- 论坛管理端独立应用。密钥仅在服务端随机生成；应用授权仅在首次创建时迁移，避免重启恢复手工撤销的授权。
+SET @forum_admin_app_created = (SELECT COUNT(*) = 0 FROM `sso_application` WHERE `code` = 'forum-admin' AND `deleted` = 0);
+INSERT IGNORE INTO `sso_application` (`id`, `code`, `name`, `base_url`, `app_secret`, `icon`, `remark`, `status`, `sort`, `created_at`, `updated_at`, `deleted`, `redirect_uri`)
+SELECT 2117000000000000002,'forum-admin','论坛管理端','http://localhost:5183',REPLACE(UUID(),'-',''),'/icons/forum.svg','社区论坛独立管理端',1,4,NOW(),NOW(),0,'http://localhost:5183/callback'
+WHERE @forum_admin_app_created = 1;
+INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`)
+SELECT ar.`account_id`, app.`id`
+FROM `sso_account_role` ar
+JOIN `sso_role` r ON r.`id` = ar.`role_id` AND r.`code` = 'FORUM_ADMIN' AND r.`deleted` = 0
+JOIN `sso_application` app ON app.`code` = 'forum-admin' AND app.`deleted` = 0
+WHERE @forum_admin_app_created = 1;
+
+-- 应用类型只初始化空值，保留管理员在应用管理中设置的分类。
+UPDATE `sso_application`
+SET `app_type` = CASE
+  WHEN `code` IN ('sso-center', 'settings', 'job') THEN 'SYSTEM'
+  WHEN `code` IN ('cms', 'blog', 'ehr') THEN 'MANAGEMENT'
+  WHEN `code` = 'portal' THEN 'PORTAL'
+  WHEN `code` IN ('forum', 'forum-admin') THEN 'COMMUNITY'
+  ELSE 'OTHER'
+END
+WHERE `app_type` IS NULL OR `app_type` = '';
+
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,374983598257868800);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,374983598257868800);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519950,374983598257868800);
@@ -2703,3 +2728,29 @@ INSERT INTO `sso_account_app` (account_id,app_id) SELECT 2700000000000040063,id 
 INSERT INTO `sso_account_app` (account_id,app_id) SELECT 2700000000000040063,id FROM sso_ms.sso_application WHERE code='portal' AND deleted=0 ON DUPLICATE KEY UPDATE app_id=VALUES(app_id);
 INSERT INTO `sso_account_app` (account_id,app_id) SELECT 2700000000000040063,id FROM sso_ms.sso_application WHERE code='ehr' AND deleted=0 ON DUPLICATE KEY UPDATE app_id=VALUES(app_id);
 -- END HR_SIMULATION_24M
+
+-- 论坛双应用域权限：动态分配 ID，避免与既有雪花 ID 冲突。
+SET @forum_permission_id = (SELECT COALESCE(MAX(`id`),0) FROM `sso_permission`);
+INSERT IGNORE INTO `sso_permission` (`id`,`code`,`name`,`type`,`parent_id`,`sort`,`remark`,`created_at`,`updated_at`,`deleted`,`app_code`)
+SELECT (@forum_permission_id := @forum_permission_id + 1),'forum:admin','论坛管理',1,0,1,'',NOW(),NOW(),0,a.`app_code`
+FROM (SELECT 'forum' AS `app_code` UNION ALL SELECT 'forum-admin') a;
+INSERT IGNORE INTO `sso_permission` (`id`,`code`,`name`,`type`,`parent_id`,`sort`,`remark`,`created_at`,`updated_at`,`deleted`,`app_code`)
+SELECT (@forum_permission_id := @forum_permission_id + 1),d.`code`,d.`name`,2,COALESCE(p.`id`,0),d.`sort_no`,'',NOW(),NOW(),0,a.`app_code`
+FROM (SELECT 'forum' AS `app_code` UNION ALL SELECT 'forum-admin') a
+JOIN (
+  SELECT 'forum:content' AS `code`,'内容与评论管理' AS `name`,1 AS `sort_no`
+  UNION ALL SELECT 'forum:sensitive','敏感词维护',2
+  UNION ALL SELECT 'forum:exchange','礼品发放管理',3
+  UNION ALL SELECT 'forum:badge','勋章管理',4
+  UNION ALL SELECT 'forum:taxonomy','板块与标签管理',5
+  UNION ALL SELECT 'forum:report','举报处理',6
+  UNION ALL SELECT 'forum:site','站点与友链管理',7
+) d
+LEFT JOIN `sso_permission` p ON p.`app_code`=a.`app_code` AND p.`code`='forum:admin' AND p.`deleted`=0;
+INSERT IGNORE INTO `sso_role_permission` (`role_id`,`permission_id`)
+SELECT r.`id`,p.`id`
+FROM `sso_role` r
+JOIN `sso_permission` p ON p.`app_code` IN ('forum','forum-admin')
+  AND p.`code` IN ('forum:admin','forum:content','forum:sensitive','forum:exchange','forum:badge','forum:taxonomy','forum:report','forum:site')
+  AND p.`deleted`=0
+WHERE r.`code`='FORUM_ADMIN' AND r.`deleted`=0;

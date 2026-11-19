@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.notification.mapper.NotificationMapper">
+
+    <resultMap id="notificationMap" type="com.laimengchao.sso.forum.module.notification.entity.Notification">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="recipientAccountId" column="recipientAccountId" javaType="java.lang.Long"/>
+        <result property="actorAccountId" column="actorAccountId" javaType="java.lang.Long"/>
+        <result property="type" column="type"/>
+        <result property="bizId" column="bizId" javaType="java.lang.Long"/>
+        <result property="threadId" column="threadId" javaType="java.lang.Long"/>
+        <result property="title" column="title"/>
+        <result property="summary" column="summary"/>
+        <result property="readAt" column="readAt"/>
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <resultMap id="notificationListMap" type="com.laimengchao.sso.forum.module.notification.dto.NotificationListDTO"
+               extends="notificationMap">
+        <result property="actorName" column="actorName"/>
+        <result property="actorAvatarAttachmentId" column="actorAvatarAttachmentId" javaType="java.lang.Long"/>
+        <result property="threadTitle" column="threadTitle"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT IGNORE INTO forum_notification(id,recipient_account_id,actor_account_id,type,biz_id,thread_id,title,summary)
+        VALUES(#{id},#{recipientAccountId},#{actorAccountId},#{type},#{bizId},#{threadId},#{title},#{summary})
+    </insert>
+
+    <select id="list" resultMap="notificationListMap">
+        SELECT CAST(n.id AS CHAR) AS id,CAST(n.recipient_account_id AS CHAR) AS recipientAccountId,CAST(n.actor_account_id AS CHAR) AS actorAccountId,
+        COALESCE(NULLIF(m.nickname,''),m.username,'') AS actorName,CAST(m.avatar_attachment_id AS CHAR) AS actorAvatarAttachmentId,
+        n.type,CAST(n.biz_id AS CHAR) AS bizId,CAST(n.thread_id AS CHAR) AS threadId,t.title AS threadTitle,n.title,n.summary,
+        DATE_FORMAT(n.read_at,'%Y-%m-%d %H:%i:%s') AS readAt,DATE_FORMAT(n.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
+        FROM forum_notification n LEFT JOIN forum_member m ON m.account_id=n.actor_account_id
+        LEFT JOIN forum_thread t ON t.id=n.thread_id WHERE n.recipient_account_id=#{accountId}
+        <if test="type != null and type != ''">AND n.type=#{type}</if>
+        <if test="unread != null and unread">AND n.read_at IS NULL</if>
+        <if test="unread != null and !unread">AND n.read_at IS NOT NULL</if>
+        ORDER BY n.created_at DESC,n.id DESC LIMIT 200
+    </select>
+
+    <select id="unreadCount" resultType="int">
+        SELECT COUNT(*) FROM forum_notification WHERE recipient_account_id=#{accountId} AND read_at IS NULL
+    </select>
+
+    <update id="markRead">
+        UPDATE forum_notification SET read_at=COALESCE(read_at,NOW()) WHERE id=#{id} AND recipient_account_id=#{accountId}
+    </update>
+
+    <update id="markAllRead">
+        UPDATE forum_notification SET read_at=NOW() WHERE recipient_account_id=#{accountId} AND read_at IS NULL
+    </update>
+</mapper>

@@ -69,6 +69,9 @@ public class GatewayProperties {
             "/api/settings/sso/**",
             // 业务应用（调度中心）的换票端：前端从 /callback 回来时还没有令牌，必须免鉴权
             "/api/jobs/auth/exchange",
+            // 独立论坛：游客查询与 OAuth2 换票匿名可用，互动接口仍需 Bearer
+            "/api/forum/public/**",
+            "/api/forum/sso/**",
             // 上传的图片/附件：静态资源，读者端也要能直接加载
             "/uploads/**",
             // 调度中心派发入口：中心直连网关 9080 调 /internal/jobs/run，

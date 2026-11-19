@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.member.mapper.MemberMapper">
+
+    <resultMap id="memberDetailResultMap" type="com.laimengchao.sso.forum.module.member.dto.MemberDetailDTO"
+               extends="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.memberResultMap">
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <sql id="memberColumns">
+        <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.memberColumns"/>,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
+    </sql>
+
+    <select id="findById" resultMap="memberDetailResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_member WHERE account_id=#{accountId}
+    </select>
+
+    <update id="updateProfile" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumMember">
+        UPDATE forum_member SET nickname=#{nickname},bio=#{bio},location=#{location},website=#{website},
+        avatar_attachment_id=#{avatarAttachmentId},cover_attachment_id=#{coverAttachmentId} WHERE account_id=#{accountId}
+    </update>
+
+    <select id="stats" resultType="com.laimengchao.sso.forum.module.member.dto.MemberStatsDTO">
+        SELECT
+        (SELECT COUNT(*) FROM forum_thread t WHERE t.author_account_id=#{accountId} AND t.deleted=0) AS threadsCount,
+        (SELECT COUNT(*) FROM forum_comment c WHERE c.author_account_id=#{accountId} AND c.deleted=0) AS commentsCount,
+        (SELECT COALESCE(SUM(t.likes_count),0) FROM forum_thread t WHERE t.author_account_id=#{accountId} AND t.deleted=0) AS likesReceived,
+        (SELECT 100+COALESCE(SUM(CASE WHEN p.change_points&gt;0 THEN p.change_points ELSE 0 END),0)
+        FROM forum_point_log p WHERE p.account_id=#{accountId}) AS totalPoints
+    </select>
+
+    <select id="pointRanking" resultType="com.laimengchao.sso.forum.module.member.dto.PointRankingDTO">
+        SELECT CAST(m.account_id AS CHAR) AS accountId,m.username,m.nickname,m.points,CAST(m.avatar_attachment_id AS CHAR) AS avatarAttachmentId,
+        100+COALESCE(SUM(CASE WHEN p.change_points&gt;0 THEN p.change_points ELSE 0 END),0) AS totalPoints
+        FROM forum_member m LEFT JOIN forum_point_log p ON p.account_id=m.account_id
+        GROUP BY m.account_id ORDER BY m.points DESC,totalPoints DESC,m.account_id ASC LIMIT #{limit}
+    </select>
+
+    <select id="memberThreads" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">
+        SELECT <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadColumns"/> FROM forum_thread
+        WHERE author_account_id=#{accountId} AND deleted=0
+        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
+        ORDER BY created_at DESC LIMIT 100
+    </select>
+</mapper>

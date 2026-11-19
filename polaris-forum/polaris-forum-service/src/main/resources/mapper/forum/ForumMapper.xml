@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper">
+
+    <resultMap id="threadResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumThread">
+        <id property="id" column="id"/>
+        <result property="kind" column="kind"/>
+        <result property="board" column="board"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="excerpt" column="excerpt"/>
+        <result property="tags" column="tags"/>
+        <result property="authorAccountId" column="authorAccountId"/>
+        <result property="authorName" column="authorName"/>
+        <result property="reward" column="reward"/>
+        <result property="coverAttachmentId" column="coverAttachmentId"/>
+        <result property="replies" column="replies"/>
+        <result property="views" column="views"/>
+        <result property="likes" column="likes"/>
+        <result property="pinned" column="pinned"/>
+        <result property="solved" column="solved"/>
+        <result property="recommended" column="recommended"/>
+        <result property="recommendedAt" column="recommendedAt"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <resultMap id="commentResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumComment">
+        <id property="id" column="id"/>
+        <result property="threadId" column="threadId"/>
+        <result property="authorAccountId" column="authorAccountId"/>
+        <result property="authorName" column="authorName"/>
+        <result property="content" column="content"/>
+        <result property="parentCommentId" column="parentCommentId"/>
+        <result property="likes" column="likes"/>
+        <result property="deleted" column="deleted"/>
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <resultMap id="memberResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumMember">
+        <id property="accountId" column="accountId"/>
+        <result property="username" column="username"/>
+        <result property="nickname" column="nickname"/>
+        <result property="bio" column="bio"/>
+        <result property="location" column="location"/>
+        <result property="website" column="website"/>
+        <result property="points" column="points"/>
+        <result property="threadsCount" column="threadsCount"/>
+        <result property="likesReceived" column="likesReceived"/>
+        <result property="avatarAttachmentId" column="avatarAttachmentId"/>
+        <result property="coverAttachmentId" column="coverAttachmentId"/>
+    </resultMap>
+
+    <resultMap id="pointLogResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumPointLog">
+        <id property="id" column="id"/>
+        <result property="changePoints" column="changePoints"/>
+        <result property="balance" column="balance"/>
+        <result property="bizType" column="bizType"/>
+        <result property="bizId" column="bizId"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <resultMap id="giftResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumGift">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="category" column="category"/>
+        <result property="description" column="description"/>
+        <result property="points" column="points"/>
+        <result property="stock" column="stock"/>
+        <result property="icon" column="icon"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <resultMap id="exchangeResultMap" type="com.laimengchao.sso.forum.module.forum.entity.ForumExchange">
+        <id property="id" column="id"/>
+        <result property="accountId" column="accountId"/>
+        <result property="username" column="username"/>
+        <result property="giftName" column="giftName"/>
+        <result property="points" column="points"/>
+        <result property="status" column="status"/>
+        <result property="trackingNo" column="trackingNo"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="issuedByName" column="issuedByName"/>
+        <result property="issuedAt" column="issuedAt"/>
+        <result property="issueRemark" column="issueRemark"/>
+    </resultMap>
+
+    <sql id="threadColumns">
+        CAST(id AS CHAR) AS id,kind,board_key AS board,title,content,excerpt,tags,CAST(author_account_id AS CHAR) AS authorAccountId,
+        author_name AS authorName,reward,CAST(cover_attachment_id AS CHAR) AS coverAttachmentId,replies_count AS replies,
+        views_count AS views,likes_count AS likes,pinned,solved,recommended,
+        DATE_FORMAT(recommended_at,'%Y-%m-%d %H:%i:%s') AS recommendedAt,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
+    </sql>
+
+    <sql id="memberColumns">
+        CAST(account_id AS CHAR) AS accountId,username,nickname,bio,location,website,points,threads_count AS threadsCount,
+        likes_received AS likesReceived,CAST(avatar_attachment_id AS CHAR) AS avatarAttachmentId,CAST(cover_attachment_id AS CHAR) AS coverAttachmentId
+    </sql>
+
+    <select id="listThreads" resultMap="threadResultMap">
+        SELECT <include refid="threadColumns"/> FROM forum_thread WHERE deleted=0
+        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
+        <if test="board != null and board != ''">AND board_key=#{board}</if>
+        <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR excerpt LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
+        <if test="sort == 'recommended'">AND recommended=1</if>
+        <if test="sort == 'following'">AND EXISTS(SELECT 1 FROM forum_follow f WHERE f.account_id=#{accountId} AND f.followed_account_id=forum_thread.author_account_id)</if>
+        <choose>
+            <when test="sort == 'hot'">ORDER BY (likes_count+replies_count*2) DESC,created_at DESC</when>
+            <when test="sort == 'recommended'">ORDER BY recommended_at DESC,created_at DESC</when>
+            <otherwise>ORDER BY pinned DESC,created_at DESC</otherwise>
+        </choose>
+        LIMIT 100
+    </select>
+
+    <select id="findThread" resultMap="threadResultMap">
+        SELECT <include refid="threadColumns"/> FROM forum_thread WHERE id=#{id} AND deleted=0
+    </select>
+
+    <select id="findThreadAny" resultMap="threadResultMap">
+        SELECT <include refid="threadColumns"/>,deleted FROM forum_thread WHERE id=#{id}
+    </select>
+
+    <select id="countBoard" resultType="int">
+        SELECT COUNT(*) FROM forum_thread WHERE board_key=#{board} AND deleted=0
+    </select>
+
+    <update id="increaseViews">
+        UPDATE forum_thread SET views_count=views_count+1 WHERE id=#{id} AND deleted=0
+    </update>
+
+    <insert id="insertThread" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumThread">
+        INSERT INTO forum_thread(id,kind,board_key,title,content,excerpt,tags,author_account_id,author_name,reward,cover_attachment_id)
+        VALUES(#{id},#{kind},#{board},#{title},#{content},#{excerpt},#{tags},#{authorAccountId},#{authorName},#{reward},#{coverAttachmentId})
+    </insert>
+
+    <select id="listComments" resultMap="commentResultMap">
+        SELECT CAST(c.id AS CHAR) AS id,CAST(c.thread_id AS CHAR) AS threadId,CAST(c.author_account_id AS CHAR) AS authorAccountId,c.author_name AS authorName,c.content,
+        CAST(c.parent_comment_id AS CHAR) AS parentCommentId,c.likes_count AS likes,c.deleted,
+        DATE_FORMAT(c.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt FROM forum_comment c
+        WHERE c.thread_id=#{threadId} AND (c.deleted=0 OR (c.parent_comment_id IS NULL AND EXISTS(
+        SELECT 1 FROM forum_comment r WHERE r.parent_comment_id=c.id AND r.deleted=0)))
+        ORDER BY c.created_at DESC,c.id DESC LIMIT 200
+    </select>
+
+    <select id="findComment" resultMap="commentResultMap">
+        SELECT CAST(id AS CHAR) AS id,CAST(thread_id AS CHAR) AS threadId,CAST(author_account_id AS CHAR) AS authorAccountId,author_name AS authorName,content,
+        CAST(parent_comment_id AS CHAR) AS parentCommentId,likes_count AS likes,deleted,
+        DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt FROM forum_comment WHERE id=#{id} AND deleted=0
+    </select>
+
+    <insert id="insertComment" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumComment">
+        INSERT INTO forum_comment(id,thread_id,author_account_id,author_name,content,parent_comment_id)
+        VALUES(#{id},#{threadId},#{authorAccountId},#{authorName},#{content},#{parentCommentId})
+    </insert>
+
+    <update id="increaseReplies">
+        UPDATE forum_thread SET replies_count=replies_count+1 WHERE id=#{id} AND deleted=0
+    </update>
+
+    <insert id="insertLike">
+        INSERT IGNORE INTO forum_like(id,account_id,target_type,target_id) VALUES(#{id},#{accountId},#{targetType},#{targetId})
+    </insert>
+
+    <update id="deleteLike">
+        DELETE FROM forum_like WHERE account_id=#{accountId} AND target_type=#{targetType} AND target_id=#{targetId}
+    </update>
+
+    <select id="likeExists" resultType="int">
+        SELECT COUNT(*) FROM forum_like WHERE account_id=#{accountId} AND target_type=#{targetType} AND target_id=#{targetId}
+    </select>
+
+    <select id="favoriteExists" resultType="int">
+        SELECT COUNT(*) FROM forum_favorite WHERE account_id=#{accountId} AND thread_id=#{threadId}
+    </select>
+
+    <update id="changeThreadLikes">
+        UPDATE forum_thread SET likes_count=GREATEST(0,likes_count+#{delta}) WHERE id=#{id}
+    </update>
+
+    <update id="changeCommentLikes">
+        UPDATE forum_comment SET likes_count=GREATEST(0,likes_count+#{delta}) WHERE id=#{id}
+    </update>
+
+    <update id="changeAuthorLikes">
+        UPDATE forum_member SET likes_received=GREATEST(0,likes_received+#{delta}) WHERE account_id=#{accountId}
+    </update>
+
+    <insert id="ensureMember">
+        INSERT INTO forum_member(account_id,username) VALUES(#{accountId},#{username})
+        ON DUPLICATE KEY UPDATE username=VALUES(username)
+    </insert>
+
+    <select id="memberForUpdate" resultMap="memberResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_member WHERE account_id=#{accountId} FOR UPDATE
+    </select>
+
+    <select id="findMember" resultMap="memberResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_member WHERE account_id=#{accountId}
+    </select>
+
+    <update id="changePoints">
+        UPDATE forum_member SET points=points+#{delta} WHERE account_id=#{accountId} AND points+#{delta}&gt;=0
+    </update>
+
+    <update id="increaseMemberThreads">
+        UPDATE forum_member SET threads_count=threads_count+1 WHERE account_id=#{accountId}
+    </update>
+
+    <insert id="insertPointLog" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumPointLog">
+        INSERT INTO forum_point_log(id,account_id,change_points,balance,biz_type,biz_id,remark)
+        VALUES(#{id},#{accountId},#{changePoints},#{balance},#{bizType},#{bizId},#{remark})
+    </insert>
+
+    <select id="pointLogs" resultMap="pointLogResultMap">
+        SELECT CAST(id AS CHAR) AS id,change_points AS changePoints,balance,biz_type AS bizType,biz_id AS bizId,remark,
+        DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt FROM forum_point_log
+        WHERE account_id=#{accountId} ORDER BY id DESC LIMIT 50
+    </select>
+
+    <insert id="checkin">
+        INSERT IGNORE INTO forum_checkin(id,account_id,checkin_date,points) VALUES(#{id},#{accountId},CURDATE(),10)
+    </insert>
+
+    <select id="checkedInToday" resultType="int">
+        SELECT COUNT(*) FROM forum_checkin WHERE account_id=#{accountId} AND checkin_date=CURDATE()
+    </select>
+
+    <select id="checkinDays" resultType="int">
+        SELECT COUNT(*) FROM forum_checkin WHERE account_id=#{accountId}
+    </select>
+
+    <select id="lotteryCountToday" resultType="int">
+        SELECT COUNT(*) FROM forum_lottery_log WHERE account_id=#{accountId} AND created_at&gt;=CURDATE()
+    </select>
+
+    <insert id="insertLottery" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumLotteryLog">
+        INSERT INTO forum_lottery_log(id,account_id,prize_key,prize_name,cost_points,award_points)
+        VALUES(#{id},#{accountId},#{prizeKey},#{prizeName},50,#{awardPoints})
+    </insert>
+
+    <select id="listGifts" resultMap="giftResultMap">
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon FROM forum_gift WHERE status=1 ORDER BY points,id
+    </select>
+
+    <select id="giftForUpdate" resultMap="giftResultMap">
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,status FROM forum_gift WHERE id=#{id} FOR UPDATE
+    </select>
+
+    <update id="decreaseGiftStock">
+        UPDATE forum_gift SET stock=stock-1 WHERE id=#{id} AND status=1 AND stock&gt;0
+    </update>
+
+    <insert id="insertExchange" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumExchange">
+        INSERT INTO forum_exchange(id,account_id,gift_id,gift_name,points,status)
+        VALUES(#{id},#{accountId},#{giftId},#{giftName},#{points},'PENDING_ISSUE')
+    </insert>
+
+    <select id="listExchanges" resultMap="exchangeResultMap">
+        SELECT CAST(e.id AS CHAR) AS id,CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,e.points,e.status,
+        e.tracking_no AS trackingNo,DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,e.issued_by_name AS issuedByName,
+        DATE_FORMAT(e.issued_at,'%Y-%m-%d %H:%i:%s') AS issuedAt,e.issue_remark AS issueRemark
+        FROM forum_exchange e LEFT JOIN forum_member m ON m.account_id=e.account_id
+        WHERE e.account_id=#{accountId} ORDER BY e.created_at DESC LIMIT 100
+    </select>
+</mapper>

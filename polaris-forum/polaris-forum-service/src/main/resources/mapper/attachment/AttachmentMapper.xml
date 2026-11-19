@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.attachment.mapper.AttachmentMapper">
+
+    <resultMap id="attachmentMap" type="com.laimengchao.sso.forum.module.attachment.entity.Attachment">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="ownerAccountId" column="ownerAccountId" javaType="java.lang.Long"/>
+        <result property="usageType" column="usageType"/>
+        <result property="originalName" column="originalName"/>
+        <result property="storagePath" column="storagePath"/>
+        <result property="mimeType" column="mimeType"/>
+        <result property="size" column="size" javaType="java.lang.Long"/>
+        <result property="threadId" column="threadId" javaType="java.lang.Long"/>
+        <result property="draftId" column="draftId" javaType="java.lang.Long"/>
+        <result property="profileAccountId" column="profileAccountId" javaType="java.lang.Long"/>
+        <result property="createdAt" column="createdAt"/>
+    </resultMap>
+
+    <sql id="columns">
+        CAST(id AS CHAR) AS id,CAST(owner_account_id AS CHAR) AS ownerAccountId,usage_type AS usageType,original_name AS originalName,
+        storage_path AS storagePath,mime_type AS mimeType,file_size AS size,CAST(thread_id AS CHAR) AS threadId,CAST(draft_id AS CHAR) AS draftId,
+        CAST(profile_account_id AS CHAR) AS profileAccountId,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO forum_attachment(id,owner_account_id,usage_type,original_name,storage_path,mime_type,file_size)
+        VALUES(#{id},#{ownerAccountId},#{usageType},#{originalName},#{storagePath},#{mimeType},#{size})
+    </insert>
+
+    <select id="findById" resultMap="attachmentMap">
+        SELECT <include refid="columns"/> FROM forum_attachment WHERE id=#{id}
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="attachmentMap">
+        SELECT <include refid="columns"/> FROM forum_attachment WHERE id=#{id} FOR UPDATE
+    </select>
+
+    <select id="findPublicById" resultMap="attachmentMap">
+        SELECT CAST(a.id AS CHAR) AS id,CAST(a.owner_account_id AS CHAR) AS ownerAccountId,a.usage_type AS usageType,a.original_name AS originalName,
+        a.storage_path AS storagePath,a.mime_type AS mimeType,a.file_size AS size,CAST(a.thread_id AS CHAR) AS threadId,CAST(a.draft_id AS CHAR) AS draftId,
+        CAST(a.profile_account_id AS CHAR) AS profileAccountId,DATE_FORMAT(a.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt FROM forum_attachment a
+        LEFT JOIN forum_thread t ON t.id=a.thread_id AND t.deleted=0
+        LEFT JOIN forum_member pm ON pm.account_id=a.profile_account_id AND (
+        (a.usage_type='AVATAR' AND pm.avatar_attachment_id=a.id) OR
+        (a.usage_type='PROFILE_COVER' AND pm.cover_attachment_id=a.id))
+        WHERE a.id=#{id} AND (t.id IS NOT NULL OR pm.account_id IS NOT NULL)
+    </select>
+
+    <select id="listByThread" resultMap="attachmentMap">
+        SELECT <include refid="columns"/> FROM forum_attachment WHERE thread_id=#{threadId} AND usage_type='ATTACHMENT' ORDER BY id
+    </select>
+
+    <select id="listByDraft" resultMap="attachmentMap">
+        SELECT <include refid="columns"/> FROM forum_attachment WHERE draft_id=#{draftId} ORDER BY usage_type,id
+    </select>
+
+    <update id="clearDraft">
+        UPDATE forum_attachment SET draft_id=NULL WHERE draft_id=#{draftId} AND thread_id IS NULL
+    </update>
+
+    <update id="bindDraft">
+        UPDATE forum_attachment SET draft_id=#{draftId} WHERE id=#{id} AND owner_account_id=#{accountId}
+        AND thread_id IS NULL AND (draft_id IS NULL OR draft_id=#{draftId})
+    </update>
+
+    <update id="bindDirectThread">
+        UPDATE forum_attachment SET thread_id=#{threadId} WHERE id=#{id} AND owner_account_id=#{accountId}
+        AND thread_id IS NULL AND draft_id IS NULL
+    </update>
+
+    <update id="bindDraftThread">
+        UPDATE forum_attachment SET thread_id=#{threadId} WHERE id=#{id} AND owner_account_id=#{accountId}
+        AND thread_id IS NULL AND (draft_id IS NULL OR draft_id=#{draftId})
+    </update>
+
+    <update id="clearProfile">
+        UPDATE forum_attachment SET profile_account_id=NULL WHERE profile_account_id=#{accountId}
+        AND usage_type=#{usageType} AND (#{keepId} IS NULL OR id!=#{keepId})
+    </update>
+
+    <update id="bindProfile">
+        UPDATE forum_attachment SET profile_account_id=#{accountId} WHERE id=#{id} AND owner_account_id=#{accountId}
+        AND usage_type=#{usageType} AND thread_id IS NULL AND draft_id IS NULL
+    </update>
+
+</mapper>

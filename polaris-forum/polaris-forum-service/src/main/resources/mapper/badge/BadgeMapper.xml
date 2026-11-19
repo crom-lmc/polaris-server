@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.badge.mapper.BadgeMapper">
+
+    <resultMap id="badgeMap" type="com.laimengchao.sso.forum.module.badge.entity.Badge">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="icon" column="icon"/>
+        <result property="color" column="color"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="ruleType" column="ruleType"/>
+        <result property="threshold" column="threshold"/>
+        <result property="status" column="status"/>
+        <result property="createdBy" column="createdBy" javaType="java.lang.Long"/>
+        <result property="publishedAt" column="publishedAt"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="badgeAdminMap" type="com.laimengchao.sso.forum.module.badge.dto.BadgeAdminDTO" extends="badgeMap">
+        <result property="awardedCount" column="awardedCount" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <resultMap id="badgeAcquiredMap" type="com.laimengchao.sso.forum.module.badge.dto.BadgeAcquiredDTO" extends="badgeMap">
+        <result property="awardedAt" column="awardedAt"/>
+    </resultMap>
+
+    <resultMap id="badgeMemberMap" type="com.laimengchao.sso.forum.module.badge.dto.BadgeMemberDTO" extends="badgeMap">
+        <result property="awardedAt" column="awardedAt"/>
+        <result property="memberBadgeId" column="memberBadgeId" javaType="java.lang.Long"/>
+    </resultMap>
+
+    <sql id="badgeColumns">
+        CAST(b.id AS CHAR) AS id,b.name,b.description,b.icon,b.color,b.sort_no AS sortNo,b.rule_type AS ruleType,b.threshold,b.status,
+        CAST(b.created_by AS CHAR) AS createdBy,DATE_FORMAT(b.published_at,'%Y-%m-%d %H:%i:%s') AS publishedAt,
+        DATE_FORMAT(b.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,DATE_FORMAT(b.updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO forum_badge(id,name,description,icon,color,sort_no,rule_type,threshold,status,created_by)
+        VALUES(#{id},#{name},#{description},#{icon},#{color},#{sortNo},#{ruleType},#{threshold},'DRAFT',#{createdBy})
+    </insert>
+
+    <select id="listAdmin" resultMap="badgeAdminMap">
+        SELECT <include refid="badgeColumns"/>,(SELECT COUNT(*) FROM forum_member_badge mb WHERE mb.badge_id=b.id) AS awardedCount
+        FROM forum_badge b
+        <if test="status != null and status != ''">WHERE b.status=#{status}</if>
+        ORDER BY b.sort_no,b.id
+    </select>
+
+    <select id="findById" resultMap="badgeMap">
+        SELECT <include refid="badgeColumns"/> FROM forum_badge b WHERE b.id=#{id}
+    </select>
+
+    <select id="findForUpdate" resultMap="badgeMap">
+        SELECT <include refid="badgeColumns"/> FROM forum_badge b WHERE b.id=#{id} FOR UPDATE
+    </select>
+
+    <select id="listPublished" resultMap="badgeMap">
+        SELECT <include refid="badgeColumns"/> FROM forum_badge b WHERE b.status='PUBLISHED' ORDER BY b.sort_no,b.id
+    </select>
+
+    <select id="listPublishedForRules" resultMap="badgeMap">
+        SELECT <include refid="badgeColumns"/> FROM forum_badge b WHERE b.status='PUBLISHED'
+        <if test="ruleTypes != null and !ruleTypes.isEmpty()">
+            AND b.rule_type IN
+            <foreach collection="ruleTypes" item="ruleType" open="(" separator="," close=")">#{ruleType}</foreach>
+        </if>
+        ORDER BY b.sort_no,b.id
+    </select>
+
+    <update id="updateDraft">
+        UPDATE forum_badge SET name=#{name},description=#{description},icon=#{icon},color=#{color},sort_no=#{sortNo},
+        rule_type=#{ruleType},threshold=#{threshold} WHERE id=#{id} AND status='DRAFT'
+    </update>
+
+    <update id="publish">
+        UPDATE forum_badge SET status='PUBLISHED',published_at=NOW() WHERE id=#{id} AND status='DRAFT'
+    </update>
+
+    <update id="offline">
+        UPDATE forum_badge SET status='OFFLINE' WHERE id=#{id} AND status='PUBLISHED'
+    </update>
+
+    <select id="listAccountIds" resultType="long">
+        SELECT account_id AS accountId FROM forum_member ORDER BY account_id
+    </select>
+
+    <insert id="award">
+        INSERT IGNORE INTO forum_member_badge(id,account_id,badge_id) VALUES(#{id},#{accountId},#{badgeId})
+    </insert>
+
+    <select id="listAcquired" resultMap="badgeAcquiredMap">
+        SELECT <include refid="badgeColumns"/>,DATE_FORMAT(mb.awarded_at,'%Y-%m-%d %H:%i:%s') AS awardedAt
+        FROM forum_badge b JOIN forum_member_badge mb ON mb.badge_id=b.id AND mb.account_id=#{accountId}
+        ORDER BY mb.awarded_at DESC,mb.id DESC LIMIT #{limit}
+    </select>
+
+    <select id="listForMember" resultMap="badgeMemberMap">
+        SELECT <include refid="badgeColumns"/>,DATE_FORMAT(mb.awarded_at,'%Y-%m-%d %H:%i:%s') AS awardedAt,
+        CAST(mb.id AS CHAR) AS memberBadgeId FROM forum_badge b LEFT JOIN forum_member_badge mb
+        ON mb.badge_id=b.id AND mb.account_id=#{accountId}
+        WHERE b.status='PUBLISHED' OR mb.id IS NOT NULL ORDER BY b.sort_no,b.id
+    </select>
+
+    <select id="totalPoints" resultType="long">
+        SELECT 100+COALESCE(SUM(CASE WHEN change_points>0 THEN change_points ELSE 0 END),0)
+        FROM forum_point_log WHERE account_id=#{accountId}
+    </select>
+
+    <select id="threadCount" resultType="long">
+        SELECT COUNT(*) FROM forum_thread WHERE author_account_id=#{accountId} AND deleted=0
+    </select>
+
+    <select id="commentCount" resultType="long">
+        SELECT COUNT(*) FROM forum_comment WHERE author_account_id=#{accountId} AND deleted=0
+    </select>
+
+    <select id="checkinDays" resultType="long">
+        SELECT COUNT(*) FROM forum_checkin WHERE account_id=#{accountId}
+    </select>
+
+    <select id="likesReceived" resultType="long">
+        SELECT COALESCE(SUM(likes_count),0) FROM forum_thread WHERE author_account_id=#{accountId} AND deleted=0
+    </select>
+</mapper>

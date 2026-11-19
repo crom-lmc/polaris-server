@@ -42,6 +42,8 @@
         <module>polaris-settings</module>
         <!-- 调度中心：job-service(9008) + job-client（Handler 契约 + 执行器运行时） -->
         <module>polaris-job</module>
+        <!-- 独立社区论坛：forum-service(9009)，公开浏览 + SSO 互动 + 积分交易 -->
+        <module>polaris-forum</module>
     </modules>
 
     <dependencyManagement>

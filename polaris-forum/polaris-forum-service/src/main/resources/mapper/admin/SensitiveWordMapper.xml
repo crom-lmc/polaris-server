@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.admin.mapper.SensitiveWordMapper">
+
+    <resultMap id="sensitiveWordMap" type="com.laimengchao.sso.forum.module.admin.entity.SensitiveWord">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="word" column="word"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <select id="listEnabled" resultType="string">
+        SELECT word FROM forum_sensitive_word WHERE enabled=1
+    </select>
+
+    <select id="listAll" resultMap="sensitiveWordMap">
+        SELECT CAST(id AS CHAR) AS id,word,enabled,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt FROM forum_sensitive_word ORDER BY id DESC
+    </select>
+
+    <insert id="insert">
+        INSERT INTO forum_sensitive_word(id,word,enabled) VALUES(#{id},#{word},1)
+    </insert>
+
+    <update id="setEnabled">
+        UPDATE forum_sensitive_word SET enabled=#{enabled} WHERE id=#{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM forum_sensitive_word WHERE id=#{id}
+    </delete>
+</mapper>

@@ -76,6 +76,8 @@ public class ApplicationServiceImpl implements ApplicationService {
         SsoApplication app = new SsoApplication();
         app.setCode(code);
         app.setName(requireName(req.getName()));
+        String appType = nvl(req.getAppType());
+        app.setAppType(appType.isEmpty() ? "OTHER" : appType);
         app.setBaseUrl(nvl(req.getBaseUrl()));
         app.setRedirectUri(nvl(req.getRedirectUri()));
         app.setIcon(nvl(req.getIcon()));
@@ -103,6 +105,10 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
         if (req.getName() != null) {
             app.setName(requireName(req.getName()));
+        }
+        if (req.getAppType() != null) {
+            String appType = req.getAppType().trim();
+            app.setAppType(appType.isEmpty() ? "OTHER" : appType);
         }
         if (req.getBaseUrl() != null) {
             app.setBaseUrl(req.getBaseUrl().trim());
@@ -225,6 +231,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         vo.setId(app.getId());
         vo.setCode(app.getCode());
         vo.setName(app.getName());
+        vo.setAppType(app.getAppType());
         vo.setBaseUrl(app.getBaseUrl());
         vo.setRedirectUri(app.getRedirectUri());
         vo.setIcon(app.getIcon());

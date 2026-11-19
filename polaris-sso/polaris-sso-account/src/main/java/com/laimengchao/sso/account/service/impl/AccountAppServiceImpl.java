@@ -88,6 +88,7 @@ public class AccountAppServiceImpl implements AccountAppService {
         vo.setId(app.getId());
         vo.setCode(app.getCode());
         vo.setName(app.getName());
+        vo.setAppType(app.getAppType());
         vo.setBaseUrl(app.getBaseUrl());
         vo.setIcon(app.getIcon());
         vo.setRemark(app.getRemark());

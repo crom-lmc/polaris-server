@@ -42,7 +42,7 @@ CONFIG_ROOT = os.path.join(REPO_ROOT, "polaris-nacos", "config")
 SECRET_TOOL = os.environ.get("SSO_SECRET_TOOL", "").strip()
 DATA_IDS = [
     "sso-gateway.yaml", "sso-auth.yaml", "sso-account.yaml",
-    "blog-admin.yaml", "cms.yaml", "ehr.yaml", "settings.yaml", "portal.yaml", "job.yaml",
+    "blog-admin.yaml", "cms.yaml", "ehr.yaml", "forum.yaml", "settings.yaml", "portal.yaml", "job.yaml",
 ]
 ENVS = {"local": "sso-ms-local", "prod": "sso-ms-prod"}
 SEALED_PREFIX = "ENC("

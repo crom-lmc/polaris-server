@@ -72,6 +72,11 @@ spring:
           uri: ${JOB_ROUTE:http://127.0.0.1:9008}
           predicates:
             - Path=/api/jobs/**
+        # 独立社区论坛：公开内容、登录互动与积分交易
+        - id: forum
+          uri: ${FORUM_ROUTE:http://127.0.0.1:9009}
+          predicates:
+            - Path=/api/forum/**
 
 sso:
   gateway:

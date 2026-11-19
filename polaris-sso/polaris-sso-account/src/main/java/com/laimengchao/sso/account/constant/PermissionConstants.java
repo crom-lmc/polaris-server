@@ -136,6 +136,35 @@ public final class PermissionConstants {
             new PermDef("维护通知", EHR_ANNOUNCEMENT_MANAGE, PermissionType.BUTTON, EHR_MENU_ANNOUNCEMENT, 1)
     );
 
+    /* ---------- 业务应用 forum（社区论坛）的内置权限 ---------- */
+
+    public static final String FORUM_APP = "forum";
+    public static final String FORUM_ADMIN_APP = "forum-admin";
+    public static final String FORUM_MENU_ADMIN = "forum:admin";
+    public static final String FORUM_CONTENT_MANAGE = "forum:content";
+    public static final String FORUM_SENSITIVE_MANAGE = "forum:sensitive";
+    public static final String FORUM_EXCHANGE_MANAGE = "forum:exchange";
+    public static final String FORUM_BADGE_MANAGE = "forum:badge";
+    public static final String FORUM_TAXONOMY_MANAGE = "forum:taxonomy";
+    public static final String FORUM_REPORT_MANAGE = "forum:report";
+    public static final String FORUM_SITE_MANAGE = "forum:site";
+
+    public static final java.util.List<PermDef> FORUM_BUILTIN = java.util.List.of(
+            new PermDef("论坛管理", FORUM_MENU_ADMIN, PermissionType.MENU, null, 1),
+            new PermDef("内容与评论管理", FORUM_CONTENT_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 1),
+            new PermDef("敏感词维护", FORUM_SENSITIVE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 2),
+            new PermDef("礼品发放管理", FORUM_EXCHANGE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 3),
+            new PermDef("勋章管理", FORUM_BADGE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 4),
+            new PermDef("板块与标签管理", FORUM_TAXONOMY_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 5),
+            new PermDef("举报处理", FORUM_REPORT_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 6),
+            new PermDef("站点与友链管理", FORUM_SITE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 7)
+    );
+
+    public static final String FORUM_ADMIN_ROLE_CODE = "FORUM_ADMIN";
+    /** 首次创建论坛管理员角色时，默认授权的来源角色 */
+    public static final java.util.List<String> FORUM_ADMIN_SOURCE_ROLE_CODES = java.util.List.of(
+            "CONTENT_OPS", "CMS_OPS_MANAGER");
+
     /** 通知中心默认授权角色：员工自助 */
     public static final java.util.List<String> NOTICE_ROLE_CODES = java.util.List.of("EMPLOYEE_SELF");
 
