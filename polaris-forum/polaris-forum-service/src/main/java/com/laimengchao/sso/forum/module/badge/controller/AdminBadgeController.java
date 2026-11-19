@@ -5,6 +5,7 @@ import com.laimengchao.sso.forum.module.badge.dto.BadgeRequest;
 import com.laimengchao.sso.forum.module.badge.service.BadgeService;
 import com.laimengchao.sso.forum.module.badge.vo.BadgeAdminVO;
 import com.laimengchao.sso.forum.module.badge.vo.BadgeVO;
+import com.laimengchao.sso.forum.security.Permit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,26 +25,31 @@ public class AdminBadgeController {
 
     private final BadgeService badgeService;
 
+    @Permit("forum:badge:view")
     @GetMapping
     public R<List<BadgeAdminVO>> list(@RequestParam(required = false) String status) {
         return R.ok(badgeService.adminList(status));
     }
 
+    @Permit("forum:badge:create")
     @PostMapping
     public R<BadgeVO> create(@RequestBody BadgeRequest body) {
         return R.ok(badgeService.create(body));
     }
 
+    @Permit("forum:badge:edit")
     @PatchMapping("/{id}")
     public R<BadgeVO> update(@PathVariable long id, @RequestBody BadgeRequest body) {
         return R.ok(badgeService.update(id, body));
     }
 
+    @Permit("forum:badge:publish")
     @PostMapping("/{id}/publish")
     public R<BadgeAdminVO> publish(@PathVariable long id) {
         return R.ok(badgeService.publish(id));
     }
 
+    @Permit("forum:badge:offline")
     @PostMapping("/{id}/offline")
     public R<BadgeVO> offline(@PathVariable long id) {
         return R.ok(badgeService.offline(id));

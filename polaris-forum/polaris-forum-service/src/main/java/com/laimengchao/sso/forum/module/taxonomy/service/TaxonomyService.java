@@ -14,7 +14,6 @@ import com.laimengchao.sso.forum.module.taxonomy.entity.Tag;
 import com.laimengchao.sso.forum.module.taxonomy.mapper.TaxonomyMapper;
 import com.laimengchao.sso.forum.module.taxonomy.vo.BoardVO;
 import com.laimengchao.sso.forum.module.taxonomy.vo.TagVO;
-import com.laimengchao.sso.forum.security.ForumAdminGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -35,7 +34,6 @@ public class TaxonomyService {
     private final TaxonomyMapper mapper;
     private final ForumMapper forumMapper;
     private final ObjectMapper objectMapper;
-    private final ForumAdminGuard guard;
 
     public List<BoardVO> boards() {
         return mapper.listBoards(true).stream().map(this::publicBoard).toList();
@@ -48,12 +46,10 @@ public class TaxonomyService {
     }
 
     public List<BoardVO> adminBoards() {
-        guard.require("forum:taxonomy:view");
         return mapper.listBoards(false).stream().map(this::adminBoard).toList();
     }
 
     public List<TagVO> adminTags(String boardKey) {
-        guard.require("forum:taxonomy:view");
         if (boardKey != null && !boardKey.isBlank()) requireBoard(boardKey, false);
         String board = boardKey == null ? "" : boardKey.trim();
         Map<String, Map<String, Integer>> counts = new HashMap<>();
@@ -65,7 +61,6 @@ public class TaxonomyService {
 
     @Transactional
     public BoardVO createBoard(BoardRequest body) {
-        guard.require("forum:taxonomy:board:manage");
         String key = text(body.getKey()).trim();
         if (!BOARD_KEY.matcher(key).matches()) throw param("板块标识应为 2-32 位小写字母、数字或连字符，且以字母开头");
         String name = requiredText(body.getName(), "板块名称", 80);
@@ -85,7 +80,6 @@ public class TaxonomyService {
     }
 
     public BoardVO updateBoard(String key, BoardRequest body) {
-        guard.require("forum:taxonomy:board:manage");
         Board current = mapper.findBoard(key);
         if (current == null) throw new BizException(ErrorCode.NOT_FOUND, "板块不存在");
         Board values = new Board();
@@ -103,7 +97,6 @@ public class TaxonomyService {
 
     @Transactional
     public TagVO createTag(TagCreateRequest body) {
-        guard.require("forum:taxonomy:tag:manage");
         String boardKey = text(body.getBoard()).trim();
         if (boardKey.isBlank()) boardKey = text(body.getBoardKey()).trim();
         requireBoard(boardKey, false);
@@ -123,7 +116,6 @@ public class TaxonomyService {
     }
 
     public TagVO updateTag(long id, TagUpdateRequest body) {
-        guard.require("forum:taxonomy:tag:manage");
         if (!body.getUnsupportedFields().isEmpty()) {
             throw param("标签仅支持修改 sortNo 和 enabled");
         }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.security.SecurityUser;
+import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.forum.module.admin.dto.CommentDeleteRequest;
 import com.laimengchao.sso.forum.module.admin.dto.ExchangeFulfillmentRequest;
 import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordEnabledRequest;
@@ -23,7 +24,6 @@ import com.laimengchao.sso.forum.module.forum.mapper.ForumMapper;
 import com.laimengchao.sso.forum.module.forum.service.ForumService;
 import com.laimengchao.sso.forum.module.forum.vo.CommentVO;
 import com.laimengchao.sso.forum.module.taxonomy.service.TaxonomyService;
-import com.laimengchao.sso.forum.security.ForumAdminGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -41,12 +41,10 @@ public class AdminService {
     private final AdminMapper mapper;
     private final ForumMapper forumMapper;
     private final SensitiveWordMapper sensitiveWordMapper;
-    private final ForumAdminGuard guard;
     private final ForumService forumService;
     private final TaxonomyService taxonomyService;
 
     public List<AdminThreadVO> threads(String kind, String board, String keyword, Boolean deleted) {
-        guard.require("forum:content:view");
         if (kind != null && !kind.isBlank() && !KINDS.contains(kind)) throw param("不支持的内容类型");
         if (board != null && !board.isBlank()) taxonomyService.requireBoard(board, false);
         String q = keyword == null ? "" : keyword.trim();
@@ -70,7 +68,7 @@ public class AdminService {
         } else {
             throw param("不支持的内容状态字段");
         }
-        guard.require(permission);
+        requireFieldPermission(permission);
         ForumThread thread = requireThread(id);
         if (body.isDeletedPresent()) {
             mapper.setThreadDeleted(id, bool(body.getDeleted(), "deleted"));
@@ -87,7 +85,6 @@ public class AdminService {
     }
 
     public List<AdminCommentVO> comments(Long threadId, String keyword, Boolean deleted) {
-        guard.require("forum:comment:view");
         String q = keyword == null ? "" : keyword.trim();
         if (q.length() > 80) throw param("搜索关键词不能超过 80 个字符");
         return mapper.listComments(threadId, q, deleted).stream().map(this::commentView).toList();
@@ -95,7 +92,6 @@ public class AdminService {
 
     @Transactional
     public AdminCommentVO setCommentDeleted(long id, CommentDeleteRequest body) {
-        guard.require("forum:comment:delete");
         boolean deleted = bool(body.getDeleted(), "deleted");
         ForumComment comment = mapper.commentForUpdate(id);
         if (comment == null) throw new BizException(ErrorCode.NOT_FOUND, "评论不存在");
@@ -108,12 +104,10 @@ public class AdminService {
     }
 
     public List<SensitiveWordVO> sensitiveWords() {
-        guard.require("forum:sensitive:view");
         return sensitiveWordMapper.listAll().stream().map(this::sensitiveWordView).toList();
     }
 
     public SensitiveWordVO addSensitiveWord(SensitiveWordRequest body) {
-        guard.require("forum:sensitive:add");
         String word = text(body.getWord()).trim();
         if (word.isBlank() || word.length() > 100) throw param("敏感词长度应为 1-100 个字符");
         SensitiveWord values = new SensitiveWord();
@@ -129,19 +123,16 @@ public class AdminService {
     }
 
     public void setSensitiveWordEnabled(long id, SensitiveWordEnabledRequest body) {
-        guard.require("forum:sensitive:toggle");
         if (sensitiveWordMapper.setEnabled(id, bool(body.getEnabled(), "enabled")) != 1) {
             throw new BizException(ErrorCode.NOT_FOUND, "敏感词不存在");
         }
     }
 
     public void deleteSensitiveWord(long id) {
-        guard.require("forum:sensitive:delete");
         if (sensitiveWordMapper.delete(id) != 1) throw new BizException(ErrorCode.NOT_FOUND, "敏感词不存在");
     }
 
     public List<ForumExchange> exchanges(String status) {
-        guard.require("forum:exchange:view");
         String value = status == null ? "" : status.trim().toUpperCase();
         if (!value.isBlank() && !Set.of("PENDING_ISSUE", "SHIPPING", "ISSUED").contains(value)) throw param("兑换状态不正确");
         return mapper.listExchanges(value);
@@ -149,7 +140,6 @@ public class AdminService {
 
     @Transactional
     public ForumExchange shipExchange(long id, ExchangeFulfillmentRequest body) {
-        guard.require("forum:exchange:ship");
         String trackingNo = text(body.getTrackingNo()).trim();
         String remark = remark(body);
         if (trackingNo.isBlank()) throw param("快递单号不能为空");
@@ -168,7 +158,7 @@ public class AdminService {
 
     @Transactional
     public ForumExchange issueExchange(long id, ExchangeFulfillmentRequest body) {
-        SecurityUser user = guard.require("forum:exchange:issue");
+        SecurityUser user = currentUser();
         String remark = remark(body);
         if (remark.length() > 500) throw param("发放备注不能超过 500 个字符");
         ForumExchange exchange = mapper.exchangeForUpdate(id);
@@ -184,6 +174,23 @@ public class AdminService {
 
     private String remark(ExchangeFulfillmentRequest body) {
         return text(body.isIssueRemarkPresent() ? body.getIssueRemark() : body.getRemark()).trim();
+    }
+
+    /** 入口鉴权已由 {@code @Permit} 切面完成，这里只取当前操作人。 */
+    private SecurityUser currentUser() {
+        return SecurityUtils.currentUser().orElseThrow(() -> new BizException(ErrorCode.UNAUTHORIZED));
+    }
+
+    /**
+     * 内容状态是一个端点承载置顶/加精/已解决/删除四种操作，注解只能声明「任一即可」，
+     * 因此按请求里实际出现的字段再做一次精确判权，避免只有置顶权的账号能删除内容。
+     */
+    private void requireFieldPermission(String permission) {
+        SecurityUser user = currentUser();
+        if (user.isSuperAdmin() || (user.getPermissions() != null && user.getPermissions().contains(permission))) {
+            return;
+        }
+        throw new BizException(ErrorCode.FORBIDDEN, "无权限：" + permission);
     }
 
     private SensitiveWordVO sensitiveWordView(SensitiveWord row) {
