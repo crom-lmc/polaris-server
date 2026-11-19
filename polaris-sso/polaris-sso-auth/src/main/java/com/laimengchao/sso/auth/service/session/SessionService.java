@@ -64,6 +64,17 @@ public class SessionService {
     }
 
     /**
+     * 按 sid 直接删除服务端会话。
+     * <p>用于 cookie 不在当前域名、只能凭 sid 作废的跨应用登出场景，
+     * 以及清理「已进吊销名单但记录还在」的僵尸会话。
+     */
+    public void removeBySid(String sid) {
+        if (sid != null && !sid.isBlank()) {
+            sessionStore.remove(sid);
+        }
+    }
+
+    /**
      * 单点登出：删服务端会话 + 让浏览器立刻丢掉 cookie。
      *
      * @return 被销毁的 sid（cookie 不存在时为 null）。调用方还要拿它去作废

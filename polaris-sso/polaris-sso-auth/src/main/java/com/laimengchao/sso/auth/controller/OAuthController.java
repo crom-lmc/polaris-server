@@ -68,6 +68,15 @@ public class OAuthController {
                                                  @RequestHeader(value = "Authorization", required = false) String authorization) {
         Long accountId = sessionService.currentAccountId(request);
         String sid = sessionService.currentSid(request);
+        // cookie 指向的会话若已被作废（跨应用登出时只能按 sid 作废，删不掉这条记录），
+        // 就不能继续签码：签出来的令牌生下来就是 401，前端会陷入「登录成功→立刻失效」的死循环。
+        // 这里顺手删掉僵尸会话，让 SSO 前端按未登录处理、回落到登录页重建会话。
+        if (accountId != null && tokenService.isSessionRevoked(sid)) {
+            log.info("中心会话已作废，拒绝签发授权码：{}", sid);
+            sessionService.removeBySid(sid);
+            accountId = null;
+            sid = null;
+        }
         if (accountId == null) {
             Claims claims = accessClaims(authorization);
             if (claims != null) {

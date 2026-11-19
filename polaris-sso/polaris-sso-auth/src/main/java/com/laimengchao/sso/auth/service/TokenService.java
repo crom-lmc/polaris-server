@@ -4,6 +4,7 @@ import com.laimengchao.sso.auth.config.AuthProperties;
 import com.laimengchao.sso.auth.dto.AuthUser;
 import com.laimengchao.sso.auth.dto.TokenResponse;
 import com.laimengchao.sso.auth.service.revocation.RevocationStore;
+import com.laimengchao.sso.auth.service.session.SessionStore;
 import com.laimengchao.sso.common.BizException;
 import com.laimengchao.sso.common.ErrorCode;
 import com.laimengchao.sso.common.security.JwtClaims;
@@ -29,13 +30,15 @@ public class TokenService {
     private final AccountClient accountClient;
     private final AuthProperties props;
     private final RevocationStore revocationStore;
+    private final SessionStore sessionStore;
 
     public TokenService(JwtService jwtService, AccountClient accountClient, AuthProperties props,
-                        RevocationStore revocationStore) {
+                        RevocationStore revocationStore, SessionStore sessionStore) {
         this.jwtService = jwtService;
         this.accountClient = accountClient;
         this.props = props;
         this.revocationStore = revocationStore;
+        this.sessionStore = sessionStore;
     }
 
     /**
@@ -181,6 +184,10 @@ public class TokenService {
      * 作废整个中心会话。
      * <p>保留时长取 refresh 的有效期——超过这个时间，任何凭该会话签出的令牌都已自然过期，
      * 条目可以安全清理，不必无限堆积。
+     * <p><b>会话记录必须同步删除</b>：只写吊销名单的话，浏览器 cookie 仍指向一个「存在但已作废」
+     * 的会话，账号中心的 /authorize 会照样放行，签出「生下来就 401」的令牌，
+     * 前端表现为登录成功后立刻失效、无限重试（跨应用登出时尤其明显：
+     * 别的应用域名下拿不到 SSO cookie，只能按 sid 作废，删不掉会话记录）。
      */
     private void revokeSession(String sid) {
         if (sid == null || sid.isBlank()) {
@@ -188,10 +195,12 @@ public class TokenService {
         }
         revocationStore.revoke(JwtClaims.SID_REVOKE_PREFIX + sid,
                 Instant.now().plusSeconds(props.getRefreshTtlSeconds()));
+        sessionStore.remove(sid);
         log.info("中心会话已作废：{}", sid);
     }
 
-    private boolean isSessionRevoked(String sid) {
+    /** 会话是否已被作废；供授权码签发等入口在放行前自查 */
+    public boolean isSessionRevoked(String sid) {
         return sid != null && !sid.isBlank()
                 && revocationStore.isRevoked(JwtClaims.SID_REVOKE_PREFIX + sid);
     }
