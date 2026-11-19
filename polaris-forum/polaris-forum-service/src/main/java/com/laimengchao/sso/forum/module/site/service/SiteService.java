@@ -39,12 +39,12 @@ public class SiteService {
     }
 
     public SiteConfig adminConfig() {
-        guard.require("forum:site");
+        guard.require("forum:site:view");
         return config();
     }
 
     public SiteConfig updateConfig(SiteConfigRequest body) {
-        guard.require("forum:site");
+        guard.require("forum:site:edit");
         SiteConfig current = config();
         SiteConfig values = new SiteConfig();
         values.setAboutContent(value(body.isAboutContentPresent() ? body.getAboutContent() : current.getAboutContent(),
@@ -56,12 +56,12 @@ public class SiteService {
     }
 
     public List<FriendLinkVO> adminLinks() {
-        guard.require("forum:site");
+        guard.require("forum:site:view");
         return mapper.listLinks(false).stream().map(this::linkView).toList();
     }
 
     public FriendLinkVO createLink(FriendLinkRequest body) {
-        guard.require("forum:site");
+        guard.require("forum:site:link:manage");
         long id = IdWorker.getId();
         FriendLink values = new FriendLink();
         values.setId(id);
@@ -74,7 +74,7 @@ public class SiteService {
     }
 
     public FriendLinkVO updateLink(long id, FriendLinkRequest body) {
-        guard.require("forum:site");
+        guard.require("forum:site:link:manage");
         FriendLink current = requireLink(id);
         FriendLink values = new FriendLink();
         values.setId(id);

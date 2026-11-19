@@ -142,30 +142,152 @@ public final class PermissionConstants {
 
     public static final String FORUM_APP = "forum";
     public static final String FORUM_ADMIN_APP = "forum-admin";
+    /** 论坛管理总开关：后端 isForumAdmin 与论坛前台 canManageForum 的身份判断依据，保留 */
     public static final String FORUM_MENU_ADMIN = "forum:admin";
+    /* —— 业务菜单（与论坛管理端侧栏一一对应） —— */
     public static final String FORUM_CONTENT_MANAGE = "forum:content";
+    public static final String FORUM_COMMENT_MANAGE = "forum:comment";
+    public static final String FORUM_REPORT_MANAGE = "forum:report";
+    public static final String FORUM_TAXONOMY_MANAGE = "forum:taxonomy";
+    public static final String FORUM_SITE_MANAGE = "forum:site";
     public static final String FORUM_SENSITIVE_MANAGE = "forum:sensitive";
     public static final String FORUM_EXCHANGE_MANAGE = "forum:exchange";
     public static final String FORUM_BADGE_MANAGE = "forum:badge";
-    public static final String FORUM_TAXONOMY_MANAGE = "forum:taxonomy";
-    public static final String FORUM_REPORT_MANAGE = "forum:report";
-    public static final String FORUM_SITE_MANAGE = "forum:site";
+    /* —— 内容管理按钮 —— */
+    public static final String FORUM_CONTENT_VIEW = "forum:content:view";
+    public static final String FORUM_CONTENT_PIN = "forum:content:pin";
+    public static final String FORUM_CONTENT_RECOMMEND = "forum:content:recommend";
+    public static final String FORUM_CONTENT_SOLVE = "forum:content:solve";
+    public static final String FORUM_CONTENT_DELETE = "forum:content:delete";
+    /* —— 评论管理按钮 —— */
+    public static final String FORUM_COMMENT_VIEW = "forum:comment:view";
+    public static final String FORUM_COMMENT_DELETE = "forum:comment:delete";
+    /* —— 举报管理按钮 —— */
+    public static final String FORUM_REPORT_VIEW = "forum:report:view";
+    public static final String FORUM_REPORT_PROCESS = "forum:report:process";
+    /* —— 板块与标签按钮 —— */
+    public static final String FORUM_TAXONOMY_VIEW = "forum:taxonomy:view";
+    public static final String FORUM_TAXONOMY_BOARD_MANAGE = "forum:taxonomy:board:manage";
+    public static final String FORUM_TAXONOMY_TAG_MANAGE = "forum:taxonomy:tag:manage";
+    /* —— 站点管理按钮 —— */
+    public static final String FORUM_SITE_VIEW = "forum:site:view";
+    public static final String FORUM_SITE_EDIT = "forum:site:edit";
+    public static final String FORUM_SITE_LINK_MANAGE = "forum:site:link:manage";
+    /* —— 敏感词管理按钮 —— */
+    public static final String FORUM_SENSITIVE_VIEW = "forum:sensitive:view";
+    public static final String FORUM_SENSITIVE_ADD = "forum:sensitive:add";
+    public static final String FORUM_SENSITIVE_TOGGLE = "forum:sensitive:toggle";
+    public static final String FORUM_SENSITIVE_DELETE = "forum:sensitive:delete";
+    /* —— 礼品发放按钮 —— */
+    public static final String FORUM_EXCHANGE_VIEW = "forum:exchange:view";
+    public static final String FORUM_EXCHANGE_SHIP = "forum:exchange:ship";
+    public static final String FORUM_EXCHANGE_ISSUE = "forum:exchange:issue";
+    /* —— 勋章管理按钮 —— */
+    public static final String FORUM_BADGE_VIEW = "forum:badge:view";
+    public static final String FORUM_BADGE_CREATE = "forum:badge:create";
+    public static final String FORUM_BADGE_EDIT = "forum:badge:edit";
+    public static final String FORUM_BADGE_PUBLISH = "forum:badge:publish";
+    public static final String FORUM_BADGE_OFFLINE = "forum:badge:offline";
 
     public static final java.util.List<PermDef> FORUM_BUILTIN = java.util.List.of(
-            new PermDef("论坛管理", FORUM_MENU_ADMIN, PermissionType.MENU, null, 1),
-            new PermDef("内容与评论管理", FORUM_CONTENT_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 1),
-            new PermDef("敏感词维护", FORUM_SENSITIVE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 2),
-            new PermDef("礼品发放管理", FORUM_EXCHANGE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 3),
-            new PermDef("勋章管理", FORUM_BADGE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 4),
-            new PermDef("板块与标签管理", FORUM_TAXONOMY_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 5),
-            new PermDef("举报处理", FORUM_REPORT_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 6),
-            new PermDef("站点与友链管理", FORUM_SITE_MANAGE, PermissionType.BUTTON, FORUM_MENU_ADMIN, 7)
+            // —— 总开关与业务菜单 ——
+            new PermDef("论坛管理", FORUM_MENU_ADMIN, PermissionType.MENU, null, 0),
+            new PermDef("内容管理", FORUM_CONTENT_MANAGE, PermissionType.MENU, null, 1),
+            new PermDef("评论管理", FORUM_COMMENT_MANAGE, PermissionType.MENU, null, 2),
+            new PermDef("举报管理", FORUM_REPORT_MANAGE, PermissionType.MENU, null, 3),
+            new PermDef("板块与标签", FORUM_TAXONOMY_MANAGE, PermissionType.MENU, null, 4),
+            new PermDef("站点管理", FORUM_SITE_MANAGE, PermissionType.MENU, null, 5),
+            new PermDef("敏感词管理", FORUM_SENSITIVE_MANAGE, PermissionType.MENU, null, 6),
+            new PermDef("礼品发放", FORUM_EXCHANGE_MANAGE, PermissionType.MENU, null, 7),
+            new PermDef("勋章管理", FORUM_BADGE_MANAGE, PermissionType.MENU, null, 8),
+            // —— 内容管理按钮 ——
+            new PermDef("查看内容", FORUM_CONTENT_VIEW, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 1),
+            new PermDef("置顶/取消置顶", FORUM_CONTENT_PIN, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 2),
+            new PermDef("推荐/取消推荐", FORUM_CONTENT_RECOMMEND, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 3),
+            new PermDef("标记解决", FORUM_CONTENT_SOLVE, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 4),
+            new PermDef("删除/恢复内容", FORUM_CONTENT_DELETE, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 5),
+            // —— 评论管理按钮 ——
+            new PermDef("查看评论", FORUM_COMMENT_VIEW, PermissionType.BUTTON, FORUM_COMMENT_MANAGE, 1),
+            new PermDef("删除/恢复评论", FORUM_COMMENT_DELETE, PermissionType.BUTTON, FORUM_COMMENT_MANAGE, 2),
+            // —— 举报管理按钮 ——
+            new PermDef("查看举报", FORUM_REPORT_VIEW, PermissionType.BUTTON, FORUM_REPORT_MANAGE, 1),
+            new PermDef("处理举报", FORUM_REPORT_PROCESS, PermissionType.BUTTON, FORUM_REPORT_MANAGE, 2),
+            // —— 板块与标签按钮 ——
+            new PermDef("查看板块与标签", FORUM_TAXONOMY_VIEW, PermissionType.BUTTON, FORUM_TAXONOMY_MANAGE, 1),
+            new PermDef("板块增删改启停", FORUM_TAXONOMY_BOARD_MANAGE, PermissionType.BUTTON, FORUM_TAXONOMY_MANAGE, 2),
+            new PermDef("标签增删改排序启停", FORUM_TAXONOMY_TAG_MANAGE, PermissionType.BUTTON, FORUM_TAXONOMY_MANAGE, 3),
+            // —— 站点管理按钮 ——
+            new PermDef("查看站点信息", FORUM_SITE_VIEW, PermissionType.BUTTON, FORUM_SITE_MANAGE, 1),
+            new PermDef("保存站点信息", FORUM_SITE_EDIT, PermissionType.BUTTON, FORUM_SITE_MANAGE, 2),
+            new PermDef("友链增删改启停", FORUM_SITE_LINK_MANAGE, PermissionType.BUTTON, FORUM_SITE_MANAGE, 3),
+            // —— 敏感词管理按钮 ——
+            new PermDef("查看敏感词", FORUM_SENSITIVE_VIEW, PermissionType.BUTTON, FORUM_SENSITIVE_MANAGE, 1),
+            new PermDef("新增敏感词", FORUM_SENSITIVE_ADD, PermissionType.BUTTON, FORUM_SENSITIVE_MANAGE, 2),
+            new PermDef("启用/停用敏感词", FORUM_SENSITIVE_TOGGLE, PermissionType.BUTTON, FORUM_SENSITIVE_MANAGE, 3),
+            new PermDef("删除敏感词", FORUM_SENSITIVE_DELETE, PermissionType.BUTTON, FORUM_SENSITIVE_MANAGE, 4),
+            // —— 礼品发放按钮 ——
+            new PermDef("查看兑换记录", FORUM_EXCHANGE_VIEW, PermissionType.BUTTON, FORUM_EXCHANGE_MANAGE, 1),
+            new PermDef("登记物流", FORUM_EXCHANGE_SHIP, PermissionType.BUTTON, FORUM_EXCHANGE_MANAGE, 2),
+            new PermDef("确认签收", FORUM_EXCHANGE_ISSUE, PermissionType.BUTTON, FORUM_EXCHANGE_MANAGE, 3),
+            // —— 勋章管理按钮 ——
+            new PermDef("查看勋章", FORUM_BADGE_VIEW, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 1),
+            new PermDef("新建勋章", FORUM_BADGE_CREATE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 2),
+            new PermDef("编辑勋章草稿", FORUM_BADGE_EDIT, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 3),
+            new PermDef("发布勋章", FORUM_BADGE_PUBLISH, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 4),
+            new PermDef("下线勋章", FORUM_BADGE_OFFLINE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 5)
     );
 
     public static final String FORUM_ADMIN_ROLE_CODE = "FORUM_ADMIN";
     /** 首次创建论坛管理员角色时，默认授权的来源角色 */
     public static final java.util.List<String> FORUM_ADMIN_SOURCE_ROLE_CODES = java.util.List.of(
             "CONTENT_OPS", "CMS_OPS_MANAGER");
+
+    /* ---------- 论坛职能角色（运营中心按职能分工） ---------- */
+    /** 论坛内容运营：内容管理 + 评论管理 + 敏感词管理 */
+    public static final String FORUM_CONTENT_OPS_ROLE = "FORUM_CONTENT_OPS";
+    /** 论坛社区管理：举报管理 + 板块与标签 + 站点管理 */
+    public static final String FORUM_COMMUNITY_OPS_ROLE = "FORUM_COMMUNITY_OPS";
+    /** 论坛活动运营：礼品发放 + 勋章管理 */
+    public static final String FORUM_ACTIVITY_OPS_ROLE = "FORUM_ACTIVITY_OPS";
+
+    /** 论坛职能角色 -> 名称与拥有的菜单/按钮权限码（初始化与手工核对共用） */
+    public record ForumRoleDef(String code, String name, String remark, java.util.List<String> permissions) {
+    }
+
+    public static final java.util.List<ForumRoleDef> FORUM_OPERATION_ROLES = java.util.List.of(
+            new ForumRoleDef(FORUM_CONTENT_OPS_ROLE, "论坛内容运营", "运营中心-内容运营：内容、评论与敏感词管理",
+                    java.util.List.of(FORUM_CONTENT_MANAGE, FORUM_COMMENT_MANAGE, FORUM_SENSITIVE_MANAGE,
+                            FORUM_CONTENT_VIEW, FORUM_CONTENT_PIN, FORUM_CONTENT_RECOMMEND, FORUM_CONTENT_SOLVE, FORUM_CONTENT_DELETE,
+                            FORUM_COMMENT_VIEW, FORUM_COMMENT_DELETE,
+                            FORUM_SENSITIVE_VIEW, FORUM_SENSITIVE_ADD, FORUM_SENSITIVE_TOGGLE, FORUM_SENSITIVE_DELETE)),
+            new ForumRoleDef(FORUM_COMMUNITY_OPS_ROLE, "论坛社区管理", "运营中心-社区管理：举报、板块标签与站点管理",
+                    java.util.List.of(FORUM_REPORT_MANAGE, FORUM_TAXONOMY_MANAGE, FORUM_SITE_MANAGE,
+                            FORUM_REPORT_VIEW, FORUM_REPORT_PROCESS,
+                            FORUM_TAXONOMY_VIEW, FORUM_TAXONOMY_BOARD_MANAGE, FORUM_TAXONOMY_TAG_MANAGE,
+                            FORUM_SITE_VIEW, FORUM_SITE_EDIT, FORUM_SITE_LINK_MANAGE)),
+            new ForumRoleDef(FORUM_ACTIVITY_OPS_ROLE, "论坛活动运营", "运营中心-活动运营：礼品发放与勋章管理",
+                    java.util.List.of(FORUM_EXCHANGE_MANAGE, FORUM_BADGE_MANAGE,
+                            FORUM_EXCHANGE_VIEW, FORUM_EXCHANGE_SHIP, FORUM_EXCHANGE_ISSUE,
+                            FORUM_BADGE_VIEW, FORUM_BADGE_CREATE, FORUM_BADGE_EDIT, FORUM_BADGE_PUBLISH, FORUM_BADGE_OFFLINE))
+    );
+
+    /** 运营中心部门组织码 -> 该部门默认绑定的论坛职能角色（按部门职责分配） */
+    public static final java.util.Map<String, java.util.List<String>> FORUM_ROLE_ORG_BINDINGS =
+            java.util.Map.of(
+                    "XC00010008", java.util.List.of(FORUM_CONTENT_OPS_ROLE, FORUM_COMMUNITY_OPS_ROLE, FORUM_ACTIVITY_OPS_ROLE),
+                    "XC000100080001", java.util.List.of(FORUM_COMMUNITY_OPS_ROLE),
+                    "XC000100080002", java.util.List.of(FORUM_COMMUNITY_OPS_ROLE, FORUM_ACTIVITY_OPS_ROLE),
+                    "XC000100080003", java.util.List.of(FORUM_CONTENT_OPS_ROLE),
+                    "XC000100080004", java.util.List.of(FORUM_ACTIVITY_OPS_ROLE)
+            );
+
+    /** 组织码为空的运营中心新员工 -> 论坛职能角色（按员工实际所属部门分配） */
+    public static final java.util.Map<Long, java.util.List<String>> FORUM_ROLE_ACCOUNT_BINDINGS =
+            java.util.Map.of(
+                    2700000000000040061L, java.util.List.of(FORUM_COMMUNITY_OPS_ROLE),                       // 宁文韬-运营管理部
+                    2700000000000040062L, java.util.List.of(FORUM_COMMUNITY_OPS_ROLE, FORUM_ACTIVITY_OPS_ROLE), // 蒲安琪-用户运营部
+                    2700000000000040063L, java.util.List.of(FORUM_CONTENT_OPS_ROLE)                          // 赖瑞雪-内容运营部
+            );
 
     /** 通知中心默认授权角色：员工自助 */
     public static final java.util.List<String> NOTICE_ROLE_CODES = java.util.List.of("EMPLOYEE_SELF");

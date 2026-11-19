@@ -70,7 +70,7 @@ public class ReportService {
     }
 
     public List<ReportVO> list(String status, String targetType) {
-        guard.require("forum:report");
+        guard.require("forum:report:view");
         String value = status == null ? "" : status.trim().toUpperCase();
         if (!value.isBlank() && !STATUSES.contains(value)) throw param("举报状态不正确");
         String type = targetType == null ? "" : targetType.trim().toLowerCase();
@@ -80,7 +80,7 @@ public class ReportService {
 
     @Transactional
     public ReportVO handle(long id, ReportHandleRequest body) {
-        SecurityUser user = guard.require("forum:report");
+        SecurityUser user = guard.require("forum:report:process");
         if (!body.getUnsupportedFields().isEmpty()) throw param("举报处理仅支持 status 和 remark");
         String status = text(body.getStatus()).trim().toUpperCase();
         if (!Set.of("RESOLVED", "REJECTED").contains(status)) throw param("处理状态仅支持 RESOLVED 或 REJECTED");

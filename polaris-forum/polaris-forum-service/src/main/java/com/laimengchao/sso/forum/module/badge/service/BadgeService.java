@@ -48,7 +48,7 @@ public class BadgeService {
     }
 
     public List<BadgeAdminVO> adminList(String status) {
-        guard.require("forum:badge");
+        guard.require("forum:badge:view");
         String value = status == null ? "" : status.trim().toUpperCase();
         if (!value.isBlank() && !STATUSES.contains(value)) throw param("勋章状态不正确");
         return mapper.listAdmin(value).stream()
@@ -56,7 +56,7 @@ public class BadgeService {
     }
 
     public BadgeVO create(BadgeRequest body) {
-        SecurityUser user = guard.require("forum:badge");
+        SecurityUser user = guard.require("forum:badge:create");
         Badge values = validated(body, null);
         values.setId(IdWorker.getId());
         values.setCreatedBy(user.getAccountId());
@@ -66,7 +66,7 @@ public class BadgeService {
 
     @Transactional
     public BadgeVO update(long id, BadgeRequest body) {
-        guard.require("forum:badge");
+        guard.require("forum:badge:edit");
         Badge current = requireBadge(id);
         if (!"DRAFT".equals(current.getStatus())) throw new BizException(ErrorCode.CONFLICT, "仅草稿勋章可以修改");
         Badge values = validated(body, current);
@@ -77,7 +77,7 @@ public class BadgeService {
 
     @Transactional
     public BadgeAdminVO publish(long id) {
-        guard.require("forum:badge");
+        guard.require("forum:badge:publish");
         Badge badge = requireBadge(id);
         if (!"DRAFT".equals(badge.getStatus())) throw new BizException(ErrorCode.CONFLICT, "仅草稿勋章可以发布");
         validated(null, badge);
@@ -93,7 +93,7 @@ public class BadgeService {
 
     @Transactional
     public BadgeVO offline(long id) {
-        guard.require("forum:badge");
+        guard.require("forum:badge:offline");
         Badge badge = requireBadge(id);
         if (!"PUBLISHED".equals(badge.getStatus())) throw new BizException(ErrorCode.CONFLICT, "仅已发布勋章可以下线");
         if (mapper.offline(id) != 1) throw new BizException(ErrorCode.CONFLICT, "勋章状态已变化");

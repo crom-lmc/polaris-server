@@ -26,4 +26,5 @@ public class ForumAdminGuard {
         return user != null && (user.isSuperAdmin() || user.getPermissions() != null
                 && user.getPermissions().stream().anyMatch(ADMIN_PERMISSIONS::contains));
     }
+
 }

@@ -68,6 +68,7 @@ public class BootstrapInitializer implements ApplicationRunner {
         initPermissions();
         initNoticeRoleBindings();
         initForumAdmin();
+        initForumOperationRoles();
         initForumAdminApplication();
         initSuperAdmin();
         initBuiltinApplication();
@@ -356,6 +357,92 @@ public class BootstrapInitializer implements ApplicationRunner {
             bindAccountApp(accountId, forumAdminApp);
         }
         log.info("论坛管理员首次默认授权完成：来源角色成员去重后共 {} 个账号", accountIds.size());
+    }
+
+    /**
+     * 初始化论坛职能角色（内容运营/社区管理/活动运营），供运营中心按部门职能分工使用。
+     * 角色权限每次启动按内置清单补齐（幂等）；账号角色与应用授权只在角色首次创建时绑定一次，
+     * 之后尊重管理员在「权限管理」里的手工调整。部门映射见 PermissionConstants.FORUM_ROLE_ORG_BINDINGS。
+     */
+    private void initForumOperationRoles() {
+        boolean anyCreated = false;
+        for (PermissionConstants.ForumRoleDef def : PermissionConstants.FORUM_OPERATION_ROLES) {
+            SsoRole role = roleMapper.selectByCode(def.code());
+            if (role == null) {
+                role = new SsoRole();
+                role.setCode(def.code());
+                role.setAppCode(PermissionConstants.FORUM_APP);
+                role.setName(def.name());
+                role.setRemark(def.remark());
+                roleMapper.insert(role);
+                log.info("已播种论坛职能角色：{} {}", def.code(), def.name());
+                anyCreated = true;
+            }
+
+            // 权限每次启动都补齐：双应用域下按权限码关联出 id
+            String[] permCodes = def.permissions().toArray(String[]::new);
+            boolean changed = bindRolePermissions(List.of(def.code()), PermissionConstants.FORUM_APP, permCodes);
+            changed |= bindRolePermissions(List.of(def.code()), PermissionConstants.FORUM_ADMIN_APP, permCodes);
+            if (changed) {
+                log.info("论坛职能角色权限已补齐：{}", def.code());
+            }
+        }
+        if (!anyCreated) {
+            return;
+        }
+
+        // 首次创建：按部门组织码精确分配角色（一个部门可对应多个角色）
+        int bound = 0;
+        for (java.util.Map.Entry<String, java.util.List<String>> e : PermissionConstants.FORUM_ROLE_ORG_BINDINGS.entrySet()) {
+            String orgCode = e.getKey();
+            for (String roleCode : e.getValue()) {
+                SsoRole role = roleMapper.selectByCode(roleCode);
+                if (role == null) {
+                    continue;
+                }
+                bound += jdbcTemplate.update(
+                        "INSERT IGNORE INTO sso_account_role (account_id, role_id) "
+                                + "SELECT a.id, ? FROM sso_account a "
+                                + "WHERE a.deleted=0 AND a.data_scope_org_code = ?",
+                        role.getId(), orgCode);
+            }
+        }
+        // 组织码为空的新员工按账号 ID 兜底分配
+        for (java.util.Map.Entry<Long, java.util.List<String>> e : PermissionConstants.FORUM_ROLE_ACCOUNT_BINDINGS.entrySet()) {
+            long accountId = e.getKey();
+            for (String roleCode : e.getValue()) {
+                SsoRole role = roleMapper.selectByCode(roleCode);
+                if (role == null) {
+                    continue;
+                }
+                bound += jdbcTemplate.update(
+                        "INSERT IGNORE INTO sso_account_role (account_id, role_id) SELECT ?, ? "
+                                + "WHERE EXISTS (SELECT 1 FROM sso_account WHERE id=? AND deleted=0)",
+                        accountId, role.getId(), accountId);
+            }
+        }
+        log.info("论坛职能角色首次授权完成：运营中心按部门分配共新增 {} 条账号角色", bound);
+
+        // 运营中心全员（含组织码为空的新员工）补论坛双应用访问权
+        SsoApplication forumApp = applicationMapper.selectByCode(PermissionConstants.FORUM_APP);
+        SsoApplication forumAdminApp = applicationMapper.selectByCode(PermissionConstants.FORUM_ADMIN_APP);
+        for (SsoApplication app : List.of(forumApp, forumAdminApp)) {
+            if (app == null) {
+                continue;
+            }
+            jdbcTemplate.update(
+                    "INSERT IGNORE INTO sso_account_app (account_id, app_id) "
+                            + "SELECT a.id, ? FROM sso_account a "
+                            + "WHERE a.deleted=0 AND a.data_scope_org_code LIKE 'XC00010008%'",
+                    app.getId());
+            for (long accountId : PermissionConstants.FORUM_ROLE_ACCOUNT_BINDINGS.keySet()) {
+                jdbcTemplate.update(
+                        "INSERT IGNORE INTO sso_account_app (account_id, app_id) SELECT ?, ? "
+                                + "WHERE EXISTS (SELECT 1 FROM sso_account WHERE id=? AND deleted=0)",
+                        accountId, app.getId(), accountId);
+            }
+        }
+        log.info("运营中心全员论坛双应用访问权已补齐");
     }
 
     /** 管理端应用仅首次创建时给现有论坛管理员补授权，之后尊重管理员的手工调整。 */

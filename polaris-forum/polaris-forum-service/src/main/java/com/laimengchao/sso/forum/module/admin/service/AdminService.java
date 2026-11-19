@@ -46,7 +46,7 @@ public class AdminService {
     private final TaxonomyService taxonomyService;
 
     public List<AdminThreadVO> threads(String kind, String board, String keyword, Boolean deleted) {
-        guard.require("forum:content");
+        guard.require("forum:content:view");
         if (kind != null && !kind.isBlank() && !KINDS.contains(kind)) throw param("不支持的内容类型");
         if (board != null && !board.isBlank()) taxonomyService.requireBoard(board, false);
         String q = keyword == null ? "" : keyword.trim();
@@ -56,9 +56,22 @@ public class AdminService {
     }
 
     public AdminThreadVO updateThread(long id, ThreadStatusUpdateRequest body) {
-        guard.require("forum:content");
-        ForumThread thread = requireThread(id);
         if (body.fieldCount() != 1) throw param("每次只能更新一种内容状态");
+        // 先按操作字段定权限码并校验，再读取内容，避免无权限请求探测内容是否存在
+        String permission;
+        if (body.isDeletedPresent()) {
+            permission = "forum:content:delete";
+        } else if (body.isPinnedPresent()) {
+            permission = "forum:content:pin";
+        } else if (body.isSolvedPresent()) {
+            permission = "forum:content:solve";
+        } else if (body.isRecommendedPresent()) {
+            permission = "forum:content:recommend";
+        } else {
+            throw param("不支持的内容状态字段");
+        }
+        guard.require(permission);
+        ForumThread thread = requireThread(id);
         if (body.isDeletedPresent()) {
             mapper.setThreadDeleted(id, bool(body.getDeleted(), "deleted"));
         } else if (body.isPinnedPresent()) {
@@ -67,16 +80,14 @@ public class AdminService {
             boolean solved = bool(body.getSolved(), "solved");
             if (solved && !"question".equals(thread.getKind())) throw param("仅问题可以标记为已解决");
             mapper.setThreadSolved(id, solved);
-        } else if (body.isRecommendedPresent()) {
-            mapper.setThreadRecommended(id, bool(body.getRecommended(), "recommended"));
         } else {
-            throw param("不支持的内容状态字段");
+            mapper.setThreadRecommended(id, bool(body.getRecommended(), "recommended"));
         }
         return threadView(forumMapper.findThreadAny(id));
     }
 
     public List<AdminCommentVO> comments(Long threadId, String keyword, Boolean deleted) {
-        guard.require("forum:content");
+        guard.require("forum:comment:view");
         String q = keyword == null ? "" : keyword.trim();
         if (q.length() > 80) throw param("搜索关键词不能超过 80 个字符");
         return mapper.listComments(threadId, q, deleted).stream().map(this::commentView).toList();
@@ -84,7 +95,7 @@ public class AdminService {
 
     @Transactional
     public AdminCommentVO setCommentDeleted(long id, CommentDeleteRequest body) {
-        guard.require("forum:content");
+        guard.require("forum:comment:delete");
         boolean deleted = bool(body.getDeleted(), "deleted");
         ForumComment comment = mapper.commentForUpdate(id);
         if (comment == null) throw new BizException(ErrorCode.NOT_FOUND, "评论不存在");
@@ -97,12 +108,12 @@ public class AdminService {
     }
 
     public List<SensitiveWordVO> sensitiveWords() {
-        guard.require("forum:sensitive");
+        guard.require("forum:sensitive:view");
         return sensitiveWordMapper.listAll().stream().map(this::sensitiveWordView).toList();
     }
 
     public SensitiveWordVO addSensitiveWord(SensitiveWordRequest body) {
-        guard.require("forum:sensitive");
+        guard.require("forum:sensitive:add");
         String word = text(body.getWord()).trim();
         if (word.isBlank() || word.length() > 100) throw param("敏感词长度应为 1-100 个字符");
         SensitiveWord values = new SensitiveWord();
@@ -118,19 +129,19 @@ public class AdminService {
     }
 
     public void setSensitiveWordEnabled(long id, SensitiveWordEnabledRequest body) {
-        guard.require("forum:sensitive");
+        guard.require("forum:sensitive:toggle");
         if (sensitiveWordMapper.setEnabled(id, bool(body.getEnabled(), "enabled")) != 1) {
             throw new BizException(ErrorCode.NOT_FOUND, "敏感词不存在");
         }
     }
 
     public void deleteSensitiveWord(long id) {
-        guard.require("forum:sensitive");
+        guard.require("forum:sensitive:delete");
         if (sensitiveWordMapper.delete(id) != 1) throw new BizException(ErrorCode.NOT_FOUND, "敏感词不存在");
     }
 
     public List<ForumExchange> exchanges(String status) {
-        guard.require("forum:exchange");
+        guard.require("forum:exchange:view");
         String value = status == null ? "" : status.trim().toUpperCase();
         if (!value.isBlank() && !Set.of("PENDING_ISSUE", "SHIPPING", "ISSUED").contains(value)) throw param("兑换状态不正确");
         return mapper.listExchanges(value);
@@ -138,7 +149,7 @@ public class AdminService {
 
     @Transactional
     public ForumExchange shipExchange(long id, ExchangeFulfillmentRequest body) {
-        guard.require("forum:exchange");
+        guard.require("forum:exchange:ship");
         String trackingNo = text(body.getTrackingNo()).trim();
         String remark = remark(body);
         if (trackingNo.isBlank()) throw param("快递单号不能为空");
@@ -157,7 +168,7 @@ public class AdminService {
 
     @Transactional
     public ForumExchange issueExchange(long id, ExchangeFulfillmentRequest body) {
-        SecurityUser user = guard.require("forum:exchange");
+        SecurityUser user = guard.require("forum:exchange:issue");
         String remark = remark(body);
         if (remark.length() > 500) throw param("发放备注不能超过 500 个字符");
         ForumExchange exchange = mapper.exchangeForUpdate(id);
