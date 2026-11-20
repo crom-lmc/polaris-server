@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.level.mapper.LevelMapper">
+
+    <resultMap id="levelMap" type="com.laimengchao.sso.forum.module.level.entity.Level">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="levelNo" column="levelNo"/>
+        <result property="name" column="name"/>
+        <result property="minExperience" column="minExperience"/>
+        <result property="color" column="color"/>
+        <result property="icon" column="icon"/>
+        <result property="description" column="description"/>
+        <result property="privileges" column="privileges"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled" javaType="java.lang.Boolean"/>
+        <result property="builtin" column="builtin" javaType="java.lang.Boolean"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="levelColumns">
+        CAST(l.id AS CHAR) AS id,l.level_no AS levelNo,l.name,l.min_experience AS minExperience,l.color,l.icon,
+        l.description,l.privileges,l.sort_no AS sortNo,l.enabled,l.builtin,
+        DATE_FORMAT(l.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(l.updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <select id="listAll" resultMap="levelMap">
+        SELECT <include refid="levelColumns"/> FROM forum_level l ORDER BY l.sort_no,l.level_no,l.id
+    </select>
+
+    <select id="listEnabled" resultMap="levelMap">
+        SELECT <include refid="levelColumns"/> FROM forum_level l WHERE l.enabled=1 ORDER BY l.level_no,l.id
+    </select>
+
+    <select id="findById" resultMap="levelMap">
+        SELECT <include refid="levelColumns"/> FROM forum_level l WHERE l.id=#{id}
+    </select>
+
+    <select id="findByNo" resultMap="levelMap">
+        SELECT <include refid="levelColumns"/> FROM forum_level l WHERE l.level_no=#{levelNo}
+    </select>
+
+    <select id="findForUpdate" resultMap="levelMap">
+        SELECT <include refid="levelColumns"/> FROM forum_level l WHERE l.id=#{id} FOR UPDATE
+    </select>
+
+    <insert id="insert">
+        INSERT INTO forum_level(id,level_no,name,min_experience,color,icon,description,privileges,sort_no,enabled)
+        VALUES(#{id},#{levelNo},#{name},#{minExperience},#{color},#{icon},#{description},#{privileges},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="update">
+        UPDATE forum_level SET level_no=#{levelNo},name=#{name},min_experience=#{minExperience},color=#{color},
+        icon=#{icon},description=#{description},privileges=#{privileges},sort_no=#{sortNo},enabled=#{enabled}
+        WHERE id=#{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM forum_level WHERE id=#{id}
+    </delete>
+</mapper>

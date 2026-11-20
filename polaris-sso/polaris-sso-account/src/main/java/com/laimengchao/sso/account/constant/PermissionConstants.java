@@ -153,6 +153,7 @@ public final class PermissionConstants {
     public static final String FORUM_SENSITIVE_MANAGE = "forum:sensitive";
     public static final String FORUM_EXCHANGE_MANAGE = "forum:exchange";
     public static final String FORUM_BADGE_MANAGE = "forum:badge";
+    public static final String FORUM_LOTTERY_MANAGE = "forum:lottery";
     /* —— 内容管理按钮 —— */
     public static final String FORUM_CONTENT_VIEW = "forum:content:view";
     public static final String FORUM_CONTENT_PIN = "forum:content:pin";
@@ -188,6 +189,9 @@ public final class PermissionConstants {
     public static final String FORUM_BADGE_EDIT = "forum:badge:edit";
     public static final String FORUM_BADGE_PUBLISH = "forum:badge:publish";
     public static final String FORUM_BADGE_OFFLINE = "forum:badge:offline";
+    /* —— 抽奖配置按钮 —— */
+    public static final String FORUM_LOTTERY_CONFIG_VIEW = "forum:lottery:config:view";
+    public static final String FORUM_LOTTERY_CONFIG_EDIT = "forum:lottery:config:edit";
 
     /**
      * 论坛管理端（forum-admin / 北极星核）的内置权限：8 个业务菜单 + 27 个按钮。
@@ -204,6 +208,7 @@ public final class PermissionConstants {
             new PermDef("敏感词管理", FORUM_SENSITIVE_MANAGE, PermissionType.MENU, null, 6),
             new PermDef("礼品发放", FORUM_EXCHANGE_MANAGE, PermissionType.MENU, null, 7),
             new PermDef("勋章管理", FORUM_BADGE_MANAGE, PermissionType.MENU, null, 8),
+            new PermDef("抽奖配置", FORUM_LOTTERY_MANAGE, PermissionType.MENU, null, 9),
             // —— 内容管理按钮 ——
             new PermDef("查看内容", FORUM_CONTENT_VIEW, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 1),
             new PermDef("置顶/取消置顶", FORUM_CONTENT_PIN, PermissionType.BUTTON, FORUM_CONTENT_MANAGE, 2),
@@ -238,7 +243,10 @@ public final class PermissionConstants {
             new PermDef("新建勋章", FORUM_BADGE_CREATE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 2),
             new PermDef("编辑勋章草稿", FORUM_BADGE_EDIT, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 3),
             new PermDef("发布勋章", FORUM_BADGE_PUBLISH, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 4),
-            new PermDef("下线勋章", FORUM_BADGE_OFFLINE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 5)
+            new PermDef("下线勋章", FORUM_BADGE_OFFLINE, PermissionType.BUTTON, FORUM_BADGE_MANAGE, 5),
+            // —— 抽奖配置按钮 ——
+            new PermDef("查看抽奖配置", FORUM_LOTTERY_CONFIG_VIEW, PermissionType.BUTTON, FORUM_LOTTERY_MANAGE, 1),
+            new PermDef("维护抽奖配置", FORUM_LOTTERY_CONFIG_EDIT, PermissionType.BUTTON, FORUM_LOTTERY_MANAGE, 2)
     );
 
     /**
@@ -316,10 +324,11 @@ public final class PermissionConstants {
                             FORUM_REPORT_VIEW, FORUM_REPORT_PROCESS,
                             FORUM_TAXONOMY_VIEW, FORUM_TAXONOMY_BOARD_MANAGE, FORUM_TAXONOMY_TAG_MANAGE,
                             FORUM_SITE_VIEW, FORUM_SITE_EDIT, FORUM_SITE_LINK_MANAGE)),
-            new ForumRoleDef(FORUM_ACTIVITY_OPS_ROLE, "论坛活动运营", "运营中心-活动运营：礼品发放与勋章管理",
-                    java.util.List.of(FORUM_EXCHANGE_MANAGE, FORUM_BADGE_MANAGE,
+            new ForumRoleDef(FORUM_ACTIVITY_OPS_ROLE, "论坛活动运营", "运营中心-活动运营：礼品发放、勋章与抽奖配置",
+                    java.util.List.of(FORUM_EXCHANGE_MANAGE, FORUM_BADGE_MANAGE, FORUM_LOTTERY_MANAGE,
                             FORUM_EXCHANGE_VIEW, FORUM_EXCHANGE_SHIP, FORUM_EXCHANGE_ISSUE,
-                            FORUM_BADGE_VIEW, FORUM_BADGE_CREATE, FORUM_BADGE_EDIT, FORUM_BADGE_PUBLISH, FORUM_BADGE_OFFLINE))
+                            FORUM_BADGE_VIEW, FORUM_BADGE_CREATE, FORUM_BADGE_EDIT, FORUM_BADGE_PUBLISH, FORUM_BADGE_OFFLINE,
+                            FORUM_LOTTERY_CONFIG_VIEW, FORUM_LOTTERY_CONFIG_EDIT))
     );
 
     /** 运营中心部门组织码 -> 该部门默认绑定的论坛职能角色（按部门职责分配） */

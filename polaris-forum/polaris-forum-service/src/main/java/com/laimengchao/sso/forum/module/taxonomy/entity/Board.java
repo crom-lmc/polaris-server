@@ -6,6 +6,7 @@ import lombok.Data;
 public class Board {
 
     private String boardKey;
+    private String parentKey;
     private String name;
     private String description;
     private String color;

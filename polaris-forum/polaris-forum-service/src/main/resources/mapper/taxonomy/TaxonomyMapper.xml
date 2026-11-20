@@ -5,6 +5,7 @@
 
     <resultMap id="boardMap" type="com.laimengchao.sso.forum.module.taxonomy.entity.Board">
         <id property="boardKey" column="boardKey"/>
+        <result property="parentKey" column="parentKey"/>
         <result property="name" column="name"/>
         <result property="description" column="description"/>
         <result property="color" column="color"/>
@@ -23,7 +24,7 @@
     </resultMap>
 
     <sql id="boardColumns">
-        board_key AS boardKey,name,description,color,sort_no AS sortNo,enabled,
+        board_key AS boardKey,parent_key AS parentKey,name,description,color,sort_no AS sortNo,enabled,
         DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
         DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
     </sql>
@@ -43,8 +44,8 @@
     </select>
 
     <insert id="insertBoard">
-        INSERT INTO forum_board(board_key,name,description,color,sort_no,enabled)
-        VALUES(#{boardKey},#{name},#{description},#{color},#{sortNo},#{enabled})
+        INSERT INTO forum_board(board_key,parent_key,name,description,color,sort_no,enabled)
+        VALUES(#{boardKey},#{parentKey},#{name},#{description},#{color},#{sortNo},#{enabled})
     </insert>
 
     <update id="updateBoard">

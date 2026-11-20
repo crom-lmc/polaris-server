@@ -1541,16 +1541,8 @@ JOIN `sso_role` r ON r.`id` = ar.`role_id` AND r.`code` = 'FORUM_ADMIN' AND r.`d
 JOIN `sso_application` app ON app.`code` = 'forum-admin' AND app.`deleted` = 0
 WHERE @forum_admin_app_created = 1;
 
--- 应用类型只初始化空值，保留管理员在应用管理中设置的分类。
-UPDATE `sso_application`
-SET `app_type` = CASE
-  WHEN `code` IN ('sso-center', 'settings', 'job') THEN 'SYSTEM'
-  WHEN `code` IN ('cms', 'blog', 'ehr') THEN 'MANAGEMENT'
-  WHEN `code` = 'portal' THEN 'PORTAL'
-  WHEN `code` IN ('forum', 'forum-admin') THEN 'COMMUNITY'
-  ELSE 'OTHER'
-END
-WHERE `app_type` IS NULL OR `app_type` = '';
+-- 应用类型回填见 BootstrapInitializer.ensureApplicationAppType()：
+-- 它在启动时先补 app_type 列再只填空值，避免 data.sql 在早期阶段引用尚未存在的列。
 
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519940,374983598257868800);
 INSERT IGNORE INTO `sso_role_permission` (`role_id`, `permission_id`) VALUES (2116193763556519948,374983598257868800);
@@ -2755,7 +2747,7 @@ FROM (
   UNION ALL SELECT 'forum:gift:redeem','兑换礼品','forum:ops',13
 ) d
 LEFT JOIN `sso_permission` parent ON parent.`app_code`='forum' AND parent.`code`=d.`parent_code` AND parent.`deleted`=0;
--- 管理端一级菜单：论坛管理总开关 + 8 个业务菜单
+-- 管理端一级菜单：论坛管理总开关 + 10 个业务菜单
 INSERT IGNORE INTO `sso_permission` (`id`,`code`,`name`,`type`,`parent_id`,`sort`,`remark`,`created_at`,`updated_at`,`deleted`,`app_code`)
 SELECT (@forum_permission_id := @forum_permission_id + 1),d.`code`,d.`name`,1,0,d.`sort_no`,'',NOW(),NOW(),0,'forum-admin'
 FROM (
@@ -2768,12 +2760,17 @@ FROM (
   UNION ALL SELECT 'forum:sensitive','敏感词管理',6
   UNION ALL SELECT 'forum:exchange','礼品发放',7
   UNION ALL SELECT 'forum:badge','勋章管理',8
+  UNION ALL SELECT 'forum:gift','礼品管理',9
+  UNION ALL SELECT 'forum:level','等级晋升',10
+  UNION ALL SELECT 'forum:overview','社区概览',11
+  UNION ALL SELECT 'forum:lottery','抽奖配置',12
 ) d;
 -- 管理端二级按钮：parent_code 指向所属菜单，按 app_code + code 关联出菜单 id
 INSERT IGNORE INTO `sso_permission` (`id`,`code`,`name`,`type`,`parent_id`,`sort`,`remark`,`created_at`,`updated_at`,`deleted`,`app_code`)
 SELECT (@forum_permission_id := @forum_permission_id + 1),d.`code`,d.`name`,2,COALESCE(parent.`id`,0),d.`sort_no`,'',NOW(),NOW(),0,'forum-admin'
 FROM (
-  SELECT 'forum:content:view' AS `code`,'查看内容' AS `name`,'forum:content' AS `parent_code`,1 AS `sort_no`
+  SELECT 'forum:overview:view' AS `code`,'查看社区概览' AS `name`,'forum:overview' AS `parent_code`,1 AS `sort_no`
+  UNION ALL SELECT 'forum:content:view','查看内容','forum:content',1
   UNION ALL SELECT 'forum:content:pin','置顶/取消置顶','forum:content',2
   UNION ALL SELECT 'forum:content:recommend','推荐/取消推荐','forum:content',3
   UNION ALL SELECT 'forum:content:solve','标记解决','forum:content',4
@@ -2800,6 +2797,14 @@ FROM (
   UNION ALL SELECT 'forum:badge:edit','编辑勋章草稿','forum:badge',3
   UNION ALL SELECT 'forum:badge:publish','发布勋章','forum:badge',4
   UNION ALL SELECT 'forum:badge:offline','下线勋章','forum:badge',5
+  UNION ALL SELECT 'forum:gift:view','查看礼品','forum:gift',1
+  UNION ALL SELECT 'forum:gift:edit','新增/编辑礼品','forum:gift',2
+  UNION ALL SELECT 'forum:level:view','查看等级','forum:level',1
+  UNION ALL SELECT 'forum:level:create','新建等级','forum:level',2
+  UNION ALL SELECT 'forum:level:edit','编辑等级','forum:level',3
+  UNION ALL SELECT 'forum:level:delete','删除等级','forum:level',4
+  UNION ALL SELECT 'forum:lottery:config:view','查看抽奖配置','forum:lottery',1
+  UNION ALL SELECT 'forum:lottery:config:edit','维护抽奖配置','forum:lottery',2
 ) d
 LEFT JOIN `sso_permission` parent ON parent.`app_code`='forum-admin' AND parent.`code`=d.`parent_code` AND parent.`deleted`=0;
 -- FORUM_ADMIN 角色授权全部管理端权限码（只在 forum-admin 应用域内）
@@ -2833,19 +2838,19 @@ INSERT IGNORE INTO `sso_role` (`id`,`code`,`app_code`,`name`,`remark`,`created_a
 INSERT IGNORE INTO `sso_role_permission` (`role_id`,`permission_id`)
 SELECT r.`id`,p.`id` FROM `sso_role` r
 JOIN `sso_permission` p ON p.`app_code`='forum-admin' AND p.`deleted`=0
-  AND (p.`code` IN ('forum:content','forum:comment','forum:sensitive') OR p.`code` LIKE 'forum:content:%' OR p.`code` LIKE 'forum:comment:%' OR p.`code` LIKE 'forum:sensitive:%')
+  AND (p.`code` IN ('forum:content','forum:comment','forum:sensitive','forum:overview') OR p.`code` LIKE 'forum:content:%' OR p.`code` LIKE 'forum:comment:%' OR p.`code` LIKE 'forum:sensitive:%' OR p.`code` LIKE 'forum:overview:%')
 WHERE r.`code`='FORUM_CONTENT_OPS' AND r.`deleted`=0;
 -- 社区管理 = 举报/板块标签/站点
 INSERT IGNORE INTO `sso_role_permission` (`role_id`,`permission_id`)
 SELECT r.`id`,p.`id` FROM `sso_role` r
 JOIN `sso_permission` p ON p.`app_code`='forum-admin' AND p.`deleted`=0
-  AND (p.`code` IN ('forum:report','forum:taxonomy','forum:site') OR p.`code` LIKE 'forum:report:%' OR p.`code` LIKE 'forum:taxonomy:%' OR p.`code` LIKE 'forum:site:%')
+  AND (p.`code` IN ('forum:report','forum:taxonomy','forum:site','forum:overview') OR p.`code` LIKE 'forum:report:%' OR p.`code` LIKE 'forum:taxonomy:%' OR p.`code` LIKE 'forum:site:%' OR p.`code` LIKE 'forum:overview:%')
 WHERE r.`code`='FORUM_COMMUNITY_OPS' AND r.`deleted`=0;
--- 活动运营 = 礼品发放/勋章
+-- 活动运营 = 礼品发放/勋章/礼品管理/等级晋升/抽奖配置（均含社区概览首页）
 INSERT IGNORE INTO `sso_role_permission` (`role_id`,`permission_id`)
 SELECT r.`id`,p.`id` FROM `sso_role` r
 JOIN `sso_permission` p ON p.`app_code`='forum-admin' AND p.`deleted`=0
-  AND (p.`code` IN ('forum:exchange','forum:badge') OR p.`code` LIKE 'forum:exchange:%' OR p.`code` LIKE 'forum:badge:%')
+  AND (p.`code` IN ('forum:exchange','forum:badge','forum:gift','forum:level','forum:lottery','forum:overview') OR p.`code` LIKE 'forum:exchange:%' OR p.`code` LIKE 'forum:badge:%' OR p.`code` LIKE 'forum:gift:%' OR p.`code` LIKE 'forum:level:%' OR p.`code` LIKE 'forum:lottery:%' OR p.`code` LIKE 'forum:overview:%')
 WHERE r.`code`='FORUM_ACTIVITY_OPS' AND r.`deleted`=0;
 -- 运营中心按部门组织码精确分配职能角色：
 --   运营中心本级 XC00010008 -> 全部 3 个（负责人统筹）

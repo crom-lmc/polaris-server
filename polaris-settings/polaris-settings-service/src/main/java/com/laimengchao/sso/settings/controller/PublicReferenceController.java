@@ -32,7 +32,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PublicReferenceController {
 
-    /** 允许跨应用读取的纯枚举字典（民族/婚姻/政治面貌/性别/内部通知类型/招聘经验/职位标签/面试方式/沟通方式） */
+    /** 允许跨应用读取的纯枚举字典（民族/婚姻/政治面貌/性别/内部通知类型/招聘经验/职位标签/面试方式/沟通方式/礼品分类） */
     private static final Set<String> DICT_ALLOWED = Set.of(
             "general.nation",
             "sso.application_type",
@@ -45,7 +45,8 @@ public class PublicReferenceController {
             "ehr.job_city",
             "ehr.interview_method",
             "ehr.candidate_comm_type",
-            "ehr.recruit_source"
+            "ehr.recruit_source",
+            "forum.gift_category"
     );
 
     /** 允许跨应用读取的业务主数据（银行/学历/职位/请假类型/离职原因/家庭成员关系） */

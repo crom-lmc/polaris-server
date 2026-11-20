@@ -69,6 +69,9 @@ ehr:
   self-base-url: ${EHR_SELF_URL:http://127.0.0.1:9006}
   # EHR 前端地址：离职/减员审批通过的「关闭账号」待办点击后跳人员列表并打开档案
   web-base-url: ${EHR_WEB_URL:http://127.0.0.1:5179}
+  # 论坛服务地址：开户成功后联动登记论坛成员（凭 X-Internal-Token，登记失败不阻断开户）
+  forum:
+    base-url: ${FORUM_URL:http://127.0.0.1:9009}
   # 业务开关 / 规则参数已全部迁到配置中心埋点（配置中心 → 埋点管理）：
   #   ehr.attendance.mock.enabled         模拟考勤定时任务开关（{"enabled":false}）
   #   ehr.reminder.probation-offsets      试用期到期提醒节点（{"offsets":[30,7,1]}）

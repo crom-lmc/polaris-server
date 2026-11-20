@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,14 @@ public class TaxonomyService {
     private final ObjectMapper objectMapper;
 
     public List<BoardVO> boards() {
-        return mapper.listBoards(true).stream().map(this::publicBoard).toList();
+        List<Board> all = mapper.listBoards(true);
+        Map<String, List<Board>> children = all.stream()
+                .filter(row -> row.getParentKey() != null && !row.getParentKey().isBlank())
+                .collect(Collectors.groupingBy(Board::getParentKey));
+        return all.stream()
+                .filter(row -> row.getParentKey() == null || row.getParentKey().isBlank())
+                .map(row -> publicBoard(row, children.getOrDefault(row.getBoardKey(), List.of())))
+                .toList();
     }
 
     public List<TagVO> tags(String boardKey) {
@@ -64,8 +72,19 @@ public class TaxonomyService {
         String key = text(body.getKey()).trim();
         if (!BOARD_KEY.matcher(key).matches()) throw param("板块标识应为 2-32 位小写字母、数字或连字符，且以字母开头");
         String name = requiredText(body.getName(), "板块名称", 80);
+        String parentKey = text(body.getParentKey()).trim();
+        if (!parentKey.isBlank()) {
+            Board parent = mapper.findBoard(parentKey);
+            if (parent == null) throw param("父级板块不存在");
+            if (parent.getParentKey() != null && !parent.getParentKey().isBlank()) {
+                throw param("二级板块下不能再创建子板块");
+            }
+        } else {
+            parentKey = "";
+        }
         Board values = new Board();
         values.setBoardKey(key);
+        values.setParentKey(parentKey);
         values.setName(name);
         values.setDescription(limitedText(body.getDescription(), "板块描述", 300));
         values.setColor(color(body.getColor()));
@@ -153,6 +172,10 @@ public class TaxonomyService {
     }
 
     private BoardVO publicBoard(Board row) {
+        return publicBoard(row, List.of());
+    }
+
+    private BoardVO publicBoard(Board row, List<Board> children) {
         BoardVO view = new BoardVO();
         String key = row.getBoardKey();
         view.setName(row.getName());
@@ -160,9 +183,27 @@ public class TaxonomyService {
         view.setColor(row.getColor());
         view.setSortNo(row.getSortNo());
         view.setKey(key);
+        view.setParentKey(row.getParentKey() == null ? "" : row.getParentKey());
         view.setCount(forumMapper.countBoard(key));
         Map<String, Integer> counts = tagCounts(key);
         view.setTags(mapper.listTags(key, true).stream().map(tag -> tagView(tag, counts)).toList());
+        // 二级板块归属一级板块，帖子 board_key 仍为一级 key、二级栏目名写入 tags，故用父级 counts 统计使用次数
+        view.setChildren(children.stream()
+                .map(child -> childBoardView(child, counts))
+                .toList());
+        return view;
+    }
+
+    private BoardVO childBoardView(Board row, Map<String, Integer> counts) {
+        BoardVO view = new BoardVO();
+        view.setKey(row.getBoardKey());
+        view.setParentKey(row.getParentKey() == null ? "" : row.getParentKey());
+        view.setName(row.getName());
+        view.setDescription(row.getDescription());
+        view.setColor(row.getColor());
+        view.setSortNo(row.getSortNo());
+        view.setEnabled(Boolean.TRUE.equals(row.getEnabled()));
+        view.setCount(counts.getOrDefault(row.getName(), 0));
         return view;
     }
 

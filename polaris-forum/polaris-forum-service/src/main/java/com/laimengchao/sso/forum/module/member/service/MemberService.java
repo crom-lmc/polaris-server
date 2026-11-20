@@ -12,6 +12,8 @@ import com.laimengchao.sso.forum.module.forum.service.ForumService;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadVO;
 import com.laimengchao.sso.forum.module.interaction.service.FavoriteService;
 import com.laimengchao.sso.forum.module.interaction.service.FollowService;
+import com.laimengchao.sso.forum.module.level.dto.LevelProgress;
+import com.laimengchao.sso.forum.module.level.service.LevelService;
 import com.laimengchao.sso.forum.module.member.dto.MemberDetailDTO;
 import com.laimengchao.sso.forum.module.member.dto.MemberProfileUpdateRequest;
 import com.laimengchao.sso.forum.module.member.dto.MemberStatsDTO;
@@ -42,6 +44,7 @@ public class MemberService {
     private final BadgeMapper badgeMapper;
     private final FavoriteService favoriteService;
     private final FollowService followService;
+    private final LevelService levelService;
 
     public PublicMemberVO publicMember(long accountId) {
         MemberDetailDTO member = mapper.findById(accountId);
@@ -72,7 +75,28 @@ public class MemberService {
             view.setName(displayName(row.getNickname(), row.getUsername()));
             view.setPoints(longValue(row.getPoints()));
             view.setTotalPoints(longValue(row.getTotalPoints()));
-            view.setLevel(level(longValue(row.getTotalPoints())));
+            long experience = longValue(row.getExperience());
+            view.setExperience(experience);
+            applyLevel(view, experience);
+            long avatarId = longValue(row.getAvatarAttachmentId());
+            view.setAvatarUrl(avatarId > 0 ? "/api/forum/public/attachments/" + avatarId : null);
+            return view;
+        }).toList();
+    }
+
+    /** 等级排行：按累计经验降序，复用积分排行的 VO 与等级换算 */
+    public List<PointRankingVO> levelRanking(Integer limit) {
+        int size = limit == null ? 10 : limit;
+        if (size < 1 || size > 50) throw param("排行数量范围为 1-50");
+        return mapper.levelRanking(size).stream().map(row -> {
+            PointRankingVO view = new PointRankingVO();
+            view.setAccountId(row.getAccountId());
+            view.setName(displayName(row.getNickname(), row.getUsername()));
+            view.setPoints(longValue(row.getPoints()));
+            view.setTotalPoints(longValue(row.getTotalPoints()));
+            long experience = longValue(row.getExperience());
+            view.setExperience(experience);
+            applyLevel(view, experience);
             long avatarId = longValue(row.getAvatarAttachmentId());
             view.setAvatarUrl(avatarId > 0 ? "/api/forum/public/attachments/" + avatarId : null);
             return view;
@@ -143,16 +167,27 @@ public class MemberService {
         view.setCommentsCount(stats.getCommentsCount());
         view.setLikesReceived(stats.getLikesReceived());
         view.setTotalPoints(stats.getTotalPoints());
-        view.setLevel(level(longValue(stats.getTotalPoints())));
+        long experience = stats.getExperience() == null ? 0 : stats.getExperience();
+        view.setExperience(experience);
+        LevelProgress progress = levelService.progress(experience);
+        view.setLevel(progress.getLevel());
+        view.setLevelName(progress.getLevelName());
+        view.setLevelColor(progress.getLevelColor());
+        view.setNextLevel(progress.getNextLevel());
+        view.setExperienceToNext(progress.getExperienceToNext());
+        view.setLevelProgress(progress.getProgress());
+    }
+
+    private void applyLevel(PointRankingVO view, long experience) {
+        LevelProgress progress = levelService.progress(experience);
+        view.setLevel(progress.getLevel());
+        view.setLevelName(progress.getLevelName());
+        view.setLevelColor(progress.getLevelColor());
     }
 
     private String displayName(String nickname, String username) {
         String value = text(nickname).trim();
         return value.isBlank() ? text(username) : value;
-    }
-
-    private int level(long totalPoints) {
-        return (int) Math.max(1, totalPoints / 500 + 1);
     }
 
     private void validateWebsite(String website) {

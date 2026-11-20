@@ -21,6 +21,12 @@
             <groupId>com.laimengchao.sso</groupId>
             <artifactId>polaris-sso-client</artifactId>
         </dependency>
+        <!-- 配置中心跨服客户端：等级上限等业务开关通过埋点配置，60s 缓存 + 故障兜底 -->
+        <dependency>
+            <groupId>com.laimengchao.sso</groupId>
+            <artifactId>polaris-settings-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>

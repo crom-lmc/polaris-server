@@ -39,7 +39,9 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, e) -> writeJson(response, 401, ErrorCode.UNAUTHORIZED))
                         .accessDeniedHandler((request, response, e) -> writeJson(response, 403, ErrorCode.FORBIDDEN)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/forum/public/**", "/api/forum/sso/**", "/actuator/health", "/error").permitAll()
+                        // /internal/** 放行登录校验，由 common 的 InternalTokenInterceptor 做 X-Internal-Token 准入
+                        .requestMatchers("/api/forum/public/**", "/api/forum/sso/**",
+                                "/internal/**", "/actuator/health", "/error").permitAll()
                         .anyRequest().authenticated())
                 .addFilterAfter(ssoHeaderAuthFilter, SecurityContextHolderFilter.class);
         return http.build();

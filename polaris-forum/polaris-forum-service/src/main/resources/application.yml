@@ -5,7 +5,10 @@ spring:
   application:
     name: forum
   config:
-    import: "optional:nacos:forum.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+    import: 
+      - "optional:nacos:forum.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+      # 本地开发兜底：SSO 换票密钥从用户主目录的固定文件读取，不依赖 IDEA 运行配置环境变量
+      - "optional:file:${user.home}/.polaris/forum-secrets.properties"
   cloud:
     nacos:
       server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
@@ -46,6 +49,18 @@ spring:
 forum:
   upload:
     root: ${FORUM_UPLOAD_ROOT:./uploads/forum}
+  overview:
+    # 社区概览「成员等级分布」的组织在册人数（未进论坛的组织成员按经验0计入Lv.1）。
+    # 与 EHR 在册口径一致；组织人数变化时改此配置即可，无需改代码。
+    org-member-count: ${FORUM_ORG_MEMBER_COUNT:205}
+
+# 配置中心跨服客户端（settings-client 的 Feign 接口，凭 X-Internal-Token 准入，
+# 60s 本地缓存 + 故障兜底；键名与 settings-client 模块约定一致）
+# 社区等级上限走配置中心埋点 forum.level.max-levels，不在此处配置
+settings:
+  client:
+    base-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

@@ -35,6 +35,7 @@ public class AccountClient {
 
     private final AccountApi accountApi;
     private final EmbedPointReader embedPointReader;
+    private final ForumMemberClient forumMemberClient;
 
     @Value("${sso.client.internal-token:${SSO_INTERNAL_TOKEN:}}")
     private String internalToken;
@@ -90,6 +91,8 @@ public class AccountClient {
             result.setCreated(data.isCreated());
             result.setApps(data.getApps());
             result.setRoles(data.getRoles());
+            // 开户成功即把账号登记为论坛成员（幂等、容错；失败不影响本次开户）
+            forumMemberClient.ensureMember(result.getAccountId(), result.getUsername());
             log.info("开户成功：username={} created={} apps={} roles={}",
                     result.getUsername(), result.isCreated(), result.getApps(), result.getRoles());
             return result;

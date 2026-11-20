@@ -9,6 +9,7 @@ import com.laimengchao.sso.forum.module.badge.entity.Badge;
 import com.laimengchao.sso.forum.module.forum.entity.ForumComment;
 import com.laimengchao.sso.forum.module.forum.entity.ForumThread;
 import com.laimengchao.sso.forum.module.notification.dto.NotificationListDTO;
+import com.laimengchao.sso.forum.module.notification.dto.NotificationUnreadDTO;
 import com.laimengchao.sso.forum.module.notification.entity.Notification;
 import com.laimengchao.sso.forum.module.notification.mapper.NotificationMapper;
 import com.laimengchao.sso.forum.module.notification.vo.NotificationCountVO;
@@ -18,14 +19,16 @@ import com.laimengchao.sso.forum.module.report.entity.Report;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private static final Set<String> TYPES = Set.of("THREAD_COMMENT", "COMMENT_REPLY", "BADGE_AWARDED", "REPORT_RESULT");
+    private static final Set<String> TYPES = Set.of("THREAD_COMMENT", "COMMENT_REPLY", "THREAD_LIKE", "BADGE_AWARDED", "REPORT_RESULT");
 
     private final NotificationMapper mapper;
 
@@ -45,6 +48,16 @@ public class NotificationService {
                 && (parent == null || threadAuthorId != longValue(parent.getAuthorAccountId()))) {
             insert(threadAuthorId, actorId, "THREAD_COMMENT", commentId, threadId, "帖子收到新的评论", summary);
         }
+    }
+
+    /** 点赞通知：帖子赞通知作者，评论赞通知评论作者；bizId 用点赞记录ID避免同一目标多条通知重复。 */
+    public void onLike(long actorId, String targetType, long targetId, long likeId,
+                       long threadAuthorId, long commentAuthorId, long threadId) {
+        long recipientId = "comment".equals(targetType) ? commentAuthorId : threadAuthorId;
+        if (recipientId <= 0 || recipientId == actorId) return;
+        String title = "comment".equals(targetType) ? "评论收到新的点赞" : "帖子收到新的点赞";
+        String summary = "comment".equals(targetType) ? "有人赞了你的评论" : "有人赞了你的帖子";
+        insert(recipientId, actorId, "THREAD_LIKE", likeId, threadId > 0 ? threadId : null, title, summary);
     }
 
     public void onBadgeAwarded(long accountId, long memberBadgeId, Badge badge) {
@@ -72,6 +85,19 @@ public class NotificationService {
 
     public NotificationCountVO unreadCount() {
         return new NotificationCountVO(mapper.unreadCount(requireUser().getAccountId()));
+    }
+
+    /** 各类型未读数（含全部合计），供消息中心分类角标展示。 */
+    public Map<String, Integer> unreadCounts() {
+        Map<String, Integer> result = new HashMap<>();
+        int total = 0;
+        for (NotificationUnreadDTO row : mapper.unreadCounts(requireUser().getAccountId())) {
+            int count = row.getCount() == null ? 0 : row.getCount();
+            result.put(row.getType(), count);
+            total += count;
+        }
+        result.put("ALL", total);
+        return result;
     }
 
     public void markRead(long id) {

@@ -27,14 +27,24 @@
         (SELECT COUNT(*) FROM forum_comment c WHERE c.author_account_id=#{accountId} AND c.deleted=0) AS commentsCount,
         (SELECT COALESCE(SUM(t.likes_count),0) FROM forum_thread t WHERE t.author_account_id=#{accountId} AND t.deleted=0) AS likesReceived,
         (SELECT 100+COALESCE(SUM(CASE WHEN p.change_points&gt;0 THEN p.change_points ELSE 0 END),0)
-        FROM forum_point_log p WHERE p.account_id=#{accountId}) AS totalPoints
+        FROM forum_point_log p WHERE p.account_id=#{accountId}) AS totalPoints,
+        (SELECT COALESCE(m.experience,0) FROM forum_member m WHERE m.account_id=#{accountId}) AS experience
     </select>
 
     <select id="pointRanking" resultType="com.laimengchao.sso.forum.module.member.dto.PointRankingDTO">
         SELECT CAST(m.account_id AS CHAR) AS accountId,m.username,m.nickname,m.points,CAST(m.avatar_attachment_id AS CHAR) AS avatarAttachmentId,
+        COALESCE(m.experience,0) AS experience,
         100+COALESCE(SUM(CASE WHEN p.change_points&gt;0 THEN p.change_points ELSE 0 END),0) AS totalPoints
         FROM forum_member m LEFT JOIN forum_point_log p ON p.account_id=m.account_id
         GROUP BY m.account_id ORDER BY m.points DESC,totalPoints DESC,m.account_id ASC LIMIT #{limit}
+    </select>
+
+    <select id="levelRanking" resultType="com.laimengchao.sso.forum.module.member.dto.PointRankingDTO">
+        SELECT CAST(m.account_id AS CHAR) AS accountId,m.username,m.nickname,m.points,CAST(m.avatar_attachment_id AS CHAR) AS avatarAttachmentId,
+        COALESCE(m.experience,0) AS experience,
+        100+COALESCE(SUM(CASE WHEN p.change_points&gt;0 THEN p.change_points ELSE 0 END),0) AS totalPoints
+        FROM forum_member m LEFT JOIN forum_point_log p ON p.account_id=m.account_id
+        GROUP BY m.account_id ORDER BY experience DESC,totalPoints DESC,m.points DESC,m.account_id ASC LIMIT #{limit}
     </select>
 
     <select id="memberThreads" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">

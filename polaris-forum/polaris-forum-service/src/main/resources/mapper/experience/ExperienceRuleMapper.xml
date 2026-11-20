@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.experience.mapper.ExperienceRuleMapper">
+
+    <resultMap id="ruleMap" type="com.laimengchao.sso.forum.module.experience.entity.ExperienceRule">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="ruleKey" column="ruleKey"/>
+        <result property="name" column="name"/>
+        <result property="experience" column="experience"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled" javaType="java.lang.Boolean"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="ruleColumns">
+        CAST(r.id AS CHAR) AS id,r.rule_key AS ruleKey,r.name,r.experience,r.sort_no AS sortNo,r.enabled,
+        DATE_FORMAT(r.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(r.updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <select id="listAll" resultMap="ruleMap">
+        SELECT <include refid="ruleColumns"/> FROM forum_experience_rule r ORDER BY r.sort_no,r.id
+    </select>
+
+    <select id="listEnabled" resultMap="ruleMap">
+        SELECT <include refid="ruleColumns"/> FROM forum_experience_rule r WHERE r.enabled=1 ORDER BY r.sort_no,r.id
+    </select>
+
+    <select id="findById" resultMap="ruleMap">
+        SELECT <include refid="ruleColumns"/> FROM forum_experience_rule r WHERE r.id=#{id}
+    </select>
+
+    <select id="findByKey" resultMap="ruleMap">
+        SELECT <include refid="ruleColumns"/> FROM forum_experience_rule r WHERE r.rule_key=#{ruleKey}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO forum_experience_rule(id,rule_key,name,experience,sort_no,enabled)
+        VALUES(#{id},#{ruleKey},#{name},#{experience},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="update">
+        UPDATE forum_experience_rule SET rule_key=#{ruleKey},name=#{name},experience=#{experience},
+        sort_no=#{sortNo},enabled=#{enabled} WHERE id=#{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM forum_experience_rule WHERE id=#{id}
+    </delete>
+</mapper>

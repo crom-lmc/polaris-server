@@ -59,6 +59,8 @@ public interface ForumMapper {
 
     int increaseMemberThreads(@Param("accountId") long accountId);
 
+    int increaseExperience(@Param("accountId") long accountId, @Param("delta") int delta);
+
     int insertPointLog(ForumPointLog values);
 
     List<ForumPointLog> pointLogs(@Param("accountId") long accountId);
@@ -75,7 +77,16 @@ public interface ForumMapper {
 
     List<ForumGift> listGifts();
 
+    /** 管理端礼品列表：含下架礼品，按 points/id 排序。 */
+    List<ForumGift> adminListGifts();
+
     ForumGift giftForUpdate(@Param("id") long id);
+
+    ForumGift findGiftById(@Param("id") long id);
+
+    int insertGift(ForumGift values);
+
+    int updateGift(ForumGift values);
 
     int decreaseGiftStock(@Param("id") long id);
 

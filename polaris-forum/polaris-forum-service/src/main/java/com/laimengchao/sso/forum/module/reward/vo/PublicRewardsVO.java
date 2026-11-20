@@ -10,6 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PublicRewardsVO {
 
+    private String mode;
     private List<PrizeVO> prizes;
     private List<ForumGift> gifts;
     private Integer lotteryCost;

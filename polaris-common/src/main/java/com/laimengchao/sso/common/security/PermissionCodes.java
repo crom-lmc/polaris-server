@@ -400,6 +400,8 @@ public final class PermissionCodes {
     /* ---------- 管理端 forum-admin（北极星核）：菜单 ---------- */
     /** 论坛管理总开关，同时作为权限树根节点与「论坛管理员」角色标识 */
     public static final String FORUM_MENU_ADMIN = "forum:admin";
+    /** 社区概览：管理端首页看板，三个运营角色都可见 */
+    public static final String FORUM_OVERVIEW_MANAGE = "forum:overview";
     public static final String FORUM_CONTENT_MANAGE = "forum:content";
     public static final String FORUM_COMMENT_MANAGE = "forum:comment";
     public static final String FORUM_REPORT_MANAGE = "forum:report";
@@ -407,7 +409,13 @@ public final class PermissionCodes {
     public static final String FORUM_SITE_MANAGE = "forum:site";
     public static final String FORUM_SENSITIVE_MANAGE = "forum:sensitive";
     public static final String FORUM_EXCHANGE_MANAGE = "forum:exchange";
+    public static final String FORUM_GIFT_MANAGE = "forum:gift";
     public static final String FORUM_BADGE_MANAGE = "forum:badge";
+    public static final String FORUM_LEVEL_MANAGE = "forum:level";
+    public static final String FORUM_LOTTERY_MANAGE = "forum:lottery";
+
+    /* 管理端：社区概览按钮 */
+    public static final String FORUM_OVERVIEW_VIEW = "forum:overview:view";
 
     /* 管理端：内容管理按钮 */
     public static final String FORUM_CONTENT_VIEW = "forum:content:view";
@@ -445,12 +453,26 @@ public final class PermissionCodes {
     public static final String FORUM_EXCHANGE_SHIP = "forum:exchange:ship";
     public static final String FORUM_EXCHANGE_ISSUE = "forum:exchange:issue";
 
+    /* 管理端：礼品管理按钮 */
+    public static final String FORUM_GIFT_VIEW = "forum:gift:view";
+    public static final String FORUM_GIFT_EDIT = "forum:gift:edit";
+
     /* 管理端：勋章管理按钮 */
     public static final String FORUM_BADGE_VIEW = "forum:badge:view";
     public static final String FORUM_BADGE_CREATE = "forum:badge:create";
     public static final String FORUM_BADGE_EDIT = "forum:badge:edit";
     public static final String FORUM_BADGE_PUBLISH = "forum:badge:publish";
     public static final String FORUM_BADGE_OFFLINE = "forum:badge:offline";
+
+    /* 管理端：等级晋升路线按钮 */
+    public static final String FORUM_LEVEL_VIEW = "forum:level:view";
+    public static final String FORUM_LEVEL_CREATE = "forum:level:create";
+    public static final String FORUM_LEVEL_EDIT = "forum:level:edit";
+    public static final String FORUM_LEVEL_DELETE = "forum:level:delete";
+
+    /* 管理端：抽奖配置按钮 */
+    public static final String FORUM_LOTTERY_CONFIG_VIEW = "forum:lottery:config:view";
+    public static final String FORUM_LOTTERY_CONFIG_EDIT = "forum:lottery:config:edit";
 
     /* ---------- 前台 forum（北极星空）：只控制需要登录才能操作的按钮 ---------- */
     /** 前台操作权限的分组节点（权限管理里平铺展示，前台没有对应路由） */

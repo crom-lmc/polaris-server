@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS forum_member (
   website VARCHAR(255) NOT NULL DEFAULT '' COMMENT '个人网站',
   avatar_attachment_id BIGINT NULL COMMENT '头像附件ID',
   cover_attachment_id BIGINT NULL COMMENT '个人主页封面附件ID',
-  points INT NOT NULL DEFAULT 100 COMMENT '当前积分余额',
+  points INT NOT NULL DEFAULT 100 COMMENT '当前积分余额（可消费）',
+  experience INT NOT NULL DEFAULT 0 COMMENT '累计经验值（只增不减，用于等级晋升）',
   threads_count INT NOT NULL DEFAULT 0 COMMENT '发帖数',
   likes_received INT NOT NULL DEFAULT 0 COMMENT '帖子获赞总数',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -105,6 +106,32 @@ CREATE TABLE IF NOT EXISTS forum_lottery_log (
   KEY idx_lottery_account (account_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分抽奖记录';
 
+CREATE TABLE IF NOT EXISTS forum_lottery_config (
+  id TINYINT NOT NULL COMMENT '配置ID，固定为1',
+  mode VARCHAR(16) NOT NULL DEFAULT 'SQUARE' COMMENT '抽奖形态：SQUARE方形九宫格、WHEEL转盘',
+  lottery_cost INT NOT NULL DEFAULT 50 COMMENT '每次抽奖消耗积分',
+  daily_limit INT NOT NULL DEFAULT 3 COMMENT '每日抽奖次数上限',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛抽奖配置';
+
+CREATE TABLE IF NOT EXISTS forum_lottery_prize (
+  id BIGINT NOT NULL COMMENT '主键ID',
+  prize_key VARCHAR(32) NOT NULL COMMENT '奖项标识',
+  prize_type VARCHAR(16) NOT NULL DEFAULT 'POINTS' COMMENT '奖项类型：POINTS积分、GIFT礼品',
+  gift_id BIGINT NULL COMMENT '礼品ID，仅GIFT类型有效，关联forum_gift.id',
+  name VARCHAR(80) NOT NULL COMMENT '奖项名称',
+  points INT NOT NULL DEFAULT 0 COMMENT '中奖积分，0表示谢谢参与',
+  color VARCHAR(16) NOT NULL DEFAULT '#eef0ff' COMMENT '展示背景色',
+  weight INT NOT NULL DEFAULT 1 COMMENT '中奖权重，越大概率越高',
+  sort_no INT NOT NULL DEFAULT 0 COMMENT '排序号，决定展示位置与转动顺序',
+  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0否、1是',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_prize_sort (enabled, sort_no, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛抽奖奖项';
+
 CREATE TABLE IF NOT EXISTS forum_gift (
   id BIGINT NOT NULL COMMENT '主键ID',
   name VARCHAR(100) NOT NULL COMMENT '礼品名称',
@@ -113,6 +140,8 @@ CREATE TABLE IF NOT EXISTS forum_gift (
   points INT NOT NULL COMMENT '兑换所需积分',
   stock INT NOT NULL DEFAULT 0 COMMENT '当前库存',
   icon VARCHAR(32) NOT NULL DEFAULT 'gift' COMMENT '前端图标标识',
+  image_url VARCHAR(500) NOT NULL DEFAULT '' COMMENT '礼品展示图片地址，支持站内路径或 http(s) 外链',
+  min_level INT NOT NULL DEFAULT 1 COMMENT '兑换所需最低社区等级，1-20',
   status TINYINT NOT NULL DEFAULT 1 COMMENT '上架状态：0下架、1上架',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (id)
@@ -123,7 +152,8 @@ CREATE TABLE IF NOT EXISTS forum_exchange (
   account_id BIGINT NOT NULL COMMENT '兑换账号ID',
   gift_id BIGINT NOT NULL COMMENT '礼品ID',
   gift_name VARCHAR(100) NOT NULL COMMENT '礼品名称快照',
-  points INT NOT NULL COMMENT '兑换消耗积分',
+  points INT NOT NULL COMMENT '兑换消耗积分，抽奖中奖礼品为0',
+  source VARCHAR(16) NOT NULL DEFAULT 'EXCHANGE' COMMENT '来源：EXCHANGE兑换、LOTTERY抽奖',
   status VARCHAR(24) NOT NULL DEFAULT 'PENDING_ISSUE' COMMENT '状态：PENDING_ISSUE待发放、SHIPPING物流运输中、ISSUED已发放',
   tracking_no VARCHAR(100) NOT NULL DEFAULT '' COMMENT '快递单号',
   issued_by BIGINT NULL COMMENT '签收确认管理员账号ID',
@@ -244,6 +274,39 @@ CREATE TABLE IF NOT EXISTS forum_badge (
   KEY idx_badge_status (status, sort_no, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛勋章规则';
 
+CREATE TABLE IF NOT EXISTS forum_level (
+  id BIGINT NOT NULL COMMENT '主键ID',
+  level_no INT NOT NULL COMMENT '等级序号，从1开始',
+  name VARCHAR(80) NOT NULL COMMENT '等级名称',
+  min_experience INT NOT NULL COMMENT '达到该等级所需累计经验',
+  color VARCHAR(16) NOT NULL DEFAULT '#5b67f1' COMMENT '等级展示颜色',
+  icon VARCHAR(64) NOT NULL DEFAULT '' COMMENT '等级图标文本',
+  description VARCHAR(500) NOT NULL DEFAULT '' COMMENT '等级说明',
+  privileges VARCHAR(500) NOT NULL DEFAULT '' COMMENT '等级权益',
+  sort_no INT NOT NULL DEFAULT 0 COMMENT '排序号，越小越靠前',
+  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：1启用、0停用',
+  builtin TINYINT NOT NULL DEFAULT 0 COMMENT '是否内置等级：1系统内置(不可删除)、0用户新建',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_level_no (level_no),
+  KEY idx_level_enabled (enabled, sort_no, level_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='社区等级晋升路线';
+
+CREATE TABLE IF NOT EXISTS forum_experience_rule (
+  id BIGINT NOT NULL COMMENT '主键ID',
+  rule_key VARCHAR(32) NOT NULL COMMENT '行为标识：POST发帖/COMMENT回复等',
+  name VARCHAR(80) NOT NULL COMMENT '行为名称',
+  experience INT NOT NULL DEFAULT 0 COMMENT '每次行为增加的经验值',
+  sort_no INT NOT NULL DEFAULT 0 COMMENT '排序号',
+  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：1启用、0停用',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_exp_rule_key (rule_key),
+  KEY idx_exp_rule_enabled (enabled, sort_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='社区经验获取规则';
+
 CREATE TABLE IF NOT EXISTS forum_member_badge (
   id BIGINT NOT NULL COMMENT '主键ID',
   account_id BIGINT NOT NULL COMMENT '获得勋章的成员账号ID',
@@ -273,6 +336,7 @@ CREATE TABLE IF NOT EXISTS forum_notification (
 
 CREATE TABLE IF NOT EXISTS forum_board (
   board_key VARCHAR(32) NOT NULL COMMENT '板块唯一标识',
+  parent_key VARCHAR(32) NOT NULL DEFAULT '' COMMENT '父级板块标识，为空表示一级板块',
   name VARCHAR(80) NOT NULL COMMENT '板块名称',
   description VARCHAR(300) NOT NULL DEFAULT '' COMMENT '板块描述',
   color VARCHAR(16) NOT NULL DEFAULT '#5b67f1' COMMENT '板块展示颜色',
@@ -280,8 +344,9 @@ CREATE TABLE IF NOT EXISTS forum_board (
   enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0否、1是',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (board_key)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛板块';
+  PRIMARY KEY (board_key),
+  KEY idx_board_parent (parent_key, enabled, sort_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛板块（一二级）';
 
 CREATE TABLE IF NOT EXISTS forum_tag (
   id BIGINT NOT NULL COMMENT '主键ID',
@@ -344,6 +409,19 @@ CREATE TABLE IF NOT EXISTS forum_friend_link (
   PRIMARY KEY (id),
   KEY idx_friend_link (enabled, sort_no, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛友情链接';
+
+CREATE TABLE IF NOT EXISTS forum_banner (
+  id BIGINT NOT NULL COMMENT '主键ID',
+  title VARCHAR(120) NOT NULL DEFAULT '' COMMENT '轮播图标题',
+  image_attachment_id BIGINT NULL COMMENT '轮播图片附件ID',
+  link_url VARCHAR(500) NOT NULL DEFAULT '' COMMENT '点击跳转地址，http/https 或站内路径',
+  sort_no INT NOT NULL DEFAULT 0 COMMENT '排序号，越小越靠前',
+  enabled TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0否、1是',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  KEY idx_banner (enabled, sort_no, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛首页轮播图';
 
 CREATE TABLE IF NOT EXISTS forum_id_migration (
   table_name VARCHAR(64) NOT NULL COMMENT '论坛表名',

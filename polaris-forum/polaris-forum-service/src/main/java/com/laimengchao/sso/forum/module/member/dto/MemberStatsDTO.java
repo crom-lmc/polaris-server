@@ -9,4 +9,6 @@ public class MemberStatsDTO {
     private Long commentsCount;
     private Long likesReceived;
     private Long totalPoints;
+    /** 累计经验值，用于等级晋升（与积分相互独立） */
+    private Long experience;
 }

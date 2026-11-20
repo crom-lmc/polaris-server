@@ -2,6 +2,8 @@ package com.laimengchao.sso.forum.module.forum.controller;
 
 import com.laimengchao.sso.common.R;
 import com.laimengchao.sso.forum.module.attachment.service.AttachmentService;
+import com.laimengchao.sso.forum.module.banner.service.BannerService;
+import com.laimengchao.sso.forum.module.banner.vo.BannerVO;
 import com.laimengchao.sso.forum.module.badge.service.BadgeService;
 import com.laimengchao.sso.forum.module.badge.vo.BadgeVO;
 import com.laimengchao.sso.forum.module.forum.service.ForumService;
@@ -14,6 +16,7 @@ import com.laimengchao.sso.forum.module.member.service.MemberService;
 import com.laimengchao.sso.forum.module.member.vo.PointRankingVO;
 import com.laimengchao.sso.forum.module.member.vo.PublicMemberVO;
 import com.laimengchao.sso.forum.module.reward.service.RewardService;
+import com.laimengchao.sso.forum.module.reward.vo.FeatureFlagsVO;
 import com.laimengchao.sso.forum.module.reward.vo.PublicRewardsVO;
 import com.laimengchao.sso.forum.module.site.service.SiteService;
 import com.laimengchao.sso.forum.module.site.vo.PublicSiteConfigVO;
@@ -44,10 +47,16 @@ public class PublicForumController {
     private final FollowService followService;
     private final TaxonomyService taxonomyService;
     private final SiteService siteService;
+    private final BannerService bannerService;
 
     @GetMapping("/site")
     public R<PublicSiteConfigVO> site() {
         return R.ok(siteService.publicConfig());
+    }
+
+    @GetMapping("/banners")
+    public R<List<BannerVO>> banners() {
+        return R.ok(bannerService.publicBanners());
     }
 
     @GetMapping("/boards")
@@ -88,6 +97,12 @@ public class PublicForumController {
         return R.ok(rewardService.publicRewards());
     }
 
+    /** 功能开关（抽奖/兑换）来自配置中心埋点，供前台隐藏入口、后台置灰按钮 */
+    @GetMapping("/features")
+    public R<FeatureFlagsVO> features() {
+        return R.ok(rewardService.featureFlags());
+    }
+
     @GetMapping("/members/{accountId}")
     public R<PublicMemberVO> member(@PathVariable long accountId) {
         return R.ok(memberService.publicMember(accountId));
@@ -107,6 +122,11 @@ public class PublicForumController {
     @GetMapping("/ranking/points")
     public R<List<PointRankingVO>> pointRanking(@RequestParam(defaultValue = "10") Integer limit) {
         return R.ok(memberService.pointRanking(limit));
+    }
+
+    @GetMapping("/ranking/level")
+    public R<List<PointRankingVO>> levelRanking(@RequestParam(defaultValue = "10") Integer limit) {
+        return R.ok(memberService.levelRanking(limit));
     }
 
     @GetMapping("/badges")

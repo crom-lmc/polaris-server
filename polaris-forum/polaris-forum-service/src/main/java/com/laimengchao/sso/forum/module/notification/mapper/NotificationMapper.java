@@ -1,6 +1,7 @@
 package com.laimengchao.sso.forum.module.notification.mapper;
 
 import com.laimengchao.sso.forum.module.notification.dto.NotificationListDTO;
+import com.laimengchao.sso.forum.module.notification.dto.NotificationUnreadDTO;
 import com.laimengchao.sso.forum.module.notification.entity.Notification;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,6 +15,8 @@ public interface NotificationMapper {
                                    @Param("unread") Boolean unread);
 
     int unreadCount(@Param("accountId") long accountId);
+
+    List<NotificationUnreadDTO> unreadCounts(@Param("accountId") long accountId);
 
     int markRead(@Param("id") long id, @Param("accountId") long accountId);
 

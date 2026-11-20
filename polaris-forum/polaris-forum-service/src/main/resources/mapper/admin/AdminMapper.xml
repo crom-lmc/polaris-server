@@ -9,8 +9,8 @@
     </resultMap>
 
     <sql id="exchangeColumns">
-        CAST(e.id AS CHAR) AS id,CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,
-        e.points,e.status,e.tracking_no AS trackingNo,DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        CAST(e.id AS CHAR) AS id,        CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,
+        e.points,COALESCE(e.source,'EXCHANGE') AS source,e.status,e.tracking_no AS trackingNo,DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
         e.issued_by_name AS issuedByName,DATE_FORMAT(e.issued_at,'%Y-%m-%d %H:%i:%s') AS issuedAt,e.issue_remark AS issueRemark
     </sql>
 
@@ -20,7 +20,7 @@
         <if test="board != null and board != ''">AND board_key=#{board}</if>
         <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR content LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
         <if test="deleted != null">AND deleted=#{deleted}</if>
-        ORDER BY created_at DESC LIMIT 200
+        ORDER BY created_at DESC
     </select>
 
     <update id="setThreadDeleted">
@@ -46,7 +46,7 @@
         <if test="threadId != null">AND c.thread_id=#{threadId}</if>
         <if test="keyword != null and keyword != ''">AND (c.content LIKE CONCAT('%',#{keyword},'%') OR c.author_name LIKE CONCAT('%',#{keyword},'%'))</if>
         <if test="deleted != null">AND c.deleted=#{deleted}</if>
-        ORDER BY c.created_at DESC LIMIT 200
+        ORDER BY c.created_at DESC
     </select>
 
     <select id="findComment" resultMap="commentDetailResultMap">

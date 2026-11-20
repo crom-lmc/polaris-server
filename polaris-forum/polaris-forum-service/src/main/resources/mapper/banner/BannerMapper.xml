@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.banner.mapper.BannerMapper">
+
+    <resultMap id="bannerMap" type="com.laimengchao.sso.forum.module.banner.entity.Banner">
+        <id property="id" column="id" javaType="java.lang.Long"/>
+        <result property="title" column="title"/>
+        <result property="imageAttachmentId" column="imageAttachmentId" javaType="java.lang.Long"/>
+        <result property="linkUrl" column="linkUrl"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="bannerColumns">
+        CAST(id AS CHAR) AS id,title,CAST(image_attachment_id AS CHAR) AS imageAttachmentId,link_url AS linkUrl,
+        sort_no AS sortNo,enabled,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <select id="listBanners" resultMap="bannerMap">
+        SELECT <include refid="bannerColumns"/> FROM forum_banner
+        <if test="enabledOnly">WHERE enabled=1</if>
+        ORDER BY sort_no,id
+    </select>
+
+    <select id="findBanner" resultMap="bannerMap">
+        SELECT <include refid="bannerColumns"/> FROM forum_banner WHERE id=#{id}
+    </select>
+
+    <insert id="insertBanner">
+        INSERT INTO forum_banner(id,title,image_attachment_id,link_url,sort_no,enabled)
+        VALUES(#{id},#{title},#{imageAttachmentId},#{linkUrl},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="updateBanner">
+        UPDATE forum_banner SET title=#{title},image_attachment_id=#{imageAttachmentId},
+        link_url=#{linkUrl},sort_no=#{sortNo},enabled=#{enabled} WHERE id=#{id}
+    </update>
+</mapper>

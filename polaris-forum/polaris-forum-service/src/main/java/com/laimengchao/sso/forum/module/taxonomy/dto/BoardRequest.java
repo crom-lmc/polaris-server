@@ -7,12 +7,15 @@ import lombok.Data;
 public class BoardRequest {
 
     private Object key;
+    private Object parentKey;
     private Object name;
     private Object description;
     private Object color;
     private Object sortNo;
     private Object enabled;
 
+    @JsonIgnore
+    private boolean parentKeyPresent;
     @JsonIgnore
     private boolean namePresent;
     @JsonIgnore
@@ -23,6 +26,11 @@ public class BoardRequest {
     private boolean sortNoPresent;
     @JsonIgnore
     private boolean enabledPresent;
+
+    public void setParentKey(Object parentKey) {
+        this.parentKey = parentKey;
+        this.parentKeyPresent = true;
+    }
 
     public void setName(Object name) {
         this.name = name;

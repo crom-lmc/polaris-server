@@ -45,7 +45,8 @@
         LEFT JOIN forum_member pm ON pm.account_id=a.profile_account_id AND (
         (a.usage_type='AVATAR' AND pm.avatar_attachment_id=a.id) OR
         (a.usage_type='PROFILE_COVER' AND pm.cover_attachment_id=a.id))
-        WHERE a.id=#{id} AND (t.id IS NOT NULL OR pm.account_id IS NOT NULL)
+        LEFT JOIN forum_banner b ON b.image_attachment_id=a.id AND b.enabled=1
+        WHERE a.id=#{id} AND (t.id IS NOT NULL OR pm.account_id IS NOT NULL OR b.id IS NOT NULL)
     </select>
 
     <select id="listByThread" resultMap="attachmentMap">

@@ -15,6 +15,7 @@ public class ForumMember {
     private String location;
     private String website;
     private Integer points;
+    private Integer experience;
     private Integer threadsCount;
     private Integer likesReceived;
     @JsonSerialize(using = ToStringSerializer.class)

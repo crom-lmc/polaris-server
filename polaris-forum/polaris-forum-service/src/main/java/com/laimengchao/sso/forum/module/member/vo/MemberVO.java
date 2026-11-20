@@ -27,5 +27,12 @@ public class MemberVO {
     private String coverUrl;
     private Long commentsCount;
     private Long totalPoints;
+    /** 累计经验值，用于等级晋升 */
+    private Long experience;
     private Integer level;
+    private String levelName;
+    private String levelColor;
+    private Integer nextLevel;
+    private Integer experienceToNext;
+    private Integer levelProgress;
 }

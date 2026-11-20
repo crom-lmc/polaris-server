@@ -46,6 +46,7 @@
         <result property="location" column="location"/>
         <result property="website" column="website"/>
         <result property="points" column="points"/>
+        <result property="experience" column="experience"/>
         <result property="threadsCount" column="threadsCount"/>
         <result property="likesReceived" column="likesReceived"/>
         <result property="avatarAttachmentId" column="avatarAttachmentId"/>
@@ -70,6 +71,8 @@
         <result property="points" column="points"/>
         <result property="stock" column="stock"/>
         <result property="icon" column="icon"/>
+        <result property="imageUrl" column="imageUrl"/>
+        <result property="minLevel" column="minLevel"/>
         <result property="status" column="status"/>
     </resultMap>
 
@@ -79,6 +82,7 @@
         <result property="username" column="username"/>
         <result property="giftName" column="giftName"/>
         <result property="points" column="points"/>
+        <result property="source" column="source"/>
         <result property="status" column="status"/>
         <result property="trackingNo" column="trackingNo"/>
         <result property="createdAt" column="createdAt"/>
@@ -95,7 +99,7 @@
     </sql>
 
     <sql id="memberColumns">
-        CAST(account_id AS CHAR) AS accountId,username,nickname,bio,location,website,points,threads_count AS threadsCount,
+        CAST(account_id AS CHAR) AS accountId,username,nickname,bio,location,website,points,experience,threads_count AS threadsCount,
         likes_received AS likesReceived,CAST(avatar_attachment_id AS CHAR) AS avatarAttachmentId,CAST(cover_attachment_id AS CHAR) AS coverAttachmentId
     </sql>
 
@@ -109,9 +113,8 @@
         <choose>
             <when test="sort == 'hot'">ORDER BY (likes_count+replies_count*2) DESC,created_at DESC</when>
             <when test="sort == 'recommended'">ORDER BY recommended_at DESC,created_at DESC</when>
-            <otherwise>ORDER BY pinned DESC,created_at DESC</otherwise>
+            <otherwise>ORDER BY created_at DESC,id DESC</otherwise>
         </choose>
-        LIMIT 100
     </select>
 
     <select id="findThread" resultMap="threadResultMap">
@@ -208,6 +211,10 @@
         UPDATE forum_member SET threads_count=threads_count+1 WHERE account_id=#{accountId}
     </update>
 
+    <update id="increaseExperience">
+        UPDATE forum_member SET experience=experience+#{delta} WHERE account_id=#{accountId}
+    </update>
+
     <insert id="insertPointLog" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumPointLog">
         INSERT INTO forum_point_log(id,account_id,change_points,balance,biz_type,biz_id,remark)
         VALUES(#{id},#{accountId},#{changePoints},#{balance},#{bizType},#{bizId},#{remark})
@@ -237,28 +244,49 @@
 
     <insert id="insertLottery" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumLotteryLog">
         INSERT INTO forum_lottery_log(id,account_id,prize_key,prize_name,cost_points,award_points)
-        VALUES(#{id},#{accountId},#{prizeKey},#{prizeName},50,#{awardPoints})
+        VALUES(#{id},#{accountId},#{prizeKey},#{prizeName},COALESCE(#{costPoints},50),#{awardPoints})
     </insert>
 
     <select id="listGifts" resultMap="giftResultMap">
-        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon FROM forum_gift WHERE status=1 ORDER BY points,id
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,image_url AS imageUrl,min_level AS minLevel FROM forum_gift WHERE status=1 ORDER BY points,id
+    </select>
+
+    <select id="adminListGifts" resultMap="giftResultMap">
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,image_url AS imageUrl,min_level AS minLevel,status FROM forum_gift ORDER BY status DESC,points,id
     </select>
 
     <select id="giftForUpdate" resultMap="giftResultMap">
-        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,status FROM forum_gift WHERE id=#{id} FOR UPDATE
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,image_url AS imageUrl,min_level AS minLevel,status FROM forum_gift WHERE id=#{id} FOR UPDATE
     </select>
+
+    <select id="findGiftById" resultMap="giftResultMap">
+        SELECT CAST(id AS CHAR) AS id,name,category,description,points,stock,icon,image_url AS imageUrl,min_level AS minLevel,status FROM forum_gift WHERE id=#{id}
+    </select>
+
+    <insert id="insertGift">
+        INSERT INTO forum_gift(id,name,category,description,points,stock,icon,image_url,min_level,status)
+        VALUES(#{id},#{name},#{category},#{description},#{points},#{stock},#{icon},#{imageUrl},#{minLevel},#{status})
+    </insert>
+
+    <update id="updateGift">
+        UPDATE forum_gift
+        SET name=#{name},category=#{category},description=#{description},points=#{points},
+        stock=#{stock},icon=#{icon},image_url=#{imageUrl},min_level=#{minLevel},status=#{status}
+        WHERE id=#{id}
+    </update>
 
     <update id="decreaseGiftStock">
         UPDATE forum_gift SET stock=stock-1 WHERE id=#{id} AND status=1 AND stock&gt;0
     </update>
 
     <insert id="insertExchange" parameterType="com.laimengchao.sso.forum.module.forum.entity.ForumExchange">
-        INSERT INTO forum_exchange(id,account_id,gift_id,gift_name,points,status)
-        VALUES(#{id},#{accountId},#{giftId},#{giftName},#{points},'PENDING_ISSUE')
+        INSERT INTO forum_exchange(id,account_id,gift_id,gift_name,points,source,status)
+        VALUES(#{id},#{accountId},#{giftId},#{giftName},#{points},COALESCE(#{source},'EXCHANGE'),'PENDING_ISSUE')
     </insert>
 
     <select id="listExchanges" resultMap="exchangeResultMap">
-        SELECT CAST(e.id AS CHAR) AS id,CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,e.points,e.status,
+        SELECT CAST(e.id AS CHAR) AS id,CAST(e.account_id AS CHAR) AS accountId,COALESCE(m.username,'') AS username,e.gift_name AS giftName,e.points,
+        COALESCE(e.source,'EXCHANGE') AS source,e.status,
         e.tracking_no AS trackingNo,DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,e.issued_by_name AS issuedByName,
         DATE_FORMAT(e.issued_at,'%Y-%m-%d %H:%i:%s') AS issuedAt,e.issue_remark AS issueRemark
         FROM forum_exchange e LEFT JOIN forum_member m ON m.account_id=e.account_id

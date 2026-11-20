@@ -7,6 +7,7 @@ import com.laimengchao.sso.common.security.SecurityUser;
 import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.forum.module.admin.dto.CommentDeleteRequest;
 import com.laimengchao.sso.forum.module.admin.dto.ExchangeFulfillmentRequest;
+import com.laimengchao.sso.forum.module.admin.dto.GiftRequest;
 import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordEnabledRequest;
 import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordRequest;
 import com.laimengchao.sso.forum.module.admin.dto.ThreadStatusUpdateRequest;
@@ -19,10 +20,12 @@ import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordVO;
 import com.laimengchao.sso.forum.module.forum.dto.ForumCommentDetailDTO;
 import com.laimengchao.sso.forum.module.forum.entity.ForumComment;
 import com.laimengchao.sso.forum.module.forum.entity.ForumExchange;
+import com.laimengchao.sso.forum.module.forum.entity.ForumGift;
 import com.laimengchao.sso.forum.module.forum.entity.ForumThread;
 import com.laimengchao.sso.forum.module.forum.mapper.ForumMapper;
 import com.laimengchao.sso.forum.module.forum.service.ForumService;
 import com.laimengchao.sso.forum.module.forum.vo.CommentVO;
+import com.laimengchao.sso.forum.module.level.service.LevelService;
 import com.laimengchao.sso.forum.module.taxonomy.service.TaxonomyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -43,6 +46,7 @@ public class AdminService {
     private final SensitiveWordMapper sensitiveWordMapper;
     private final ForumService forumService;
     private final TaxonomyService taxonomyService;
+    private final LevelService levelService;
 
     public List<AdminThreadVO> threads(String kind, String board, String keyword, Boolean deleted) {
         if (kind != null && !kind.isBlank() && !KINDS.contains(kind)) throw param("不支持的内容类型");
@@ -130,6 +134,108 @@ public class AdminService {
 
     public void deleteSensitiveWord(long id) {
         if (sensitiveWordMapper.delete(id) != 1) throw new BizException(ErrorCode.NOT_FOUND, "敏感词不存在");
+    }
+
+    /* ==================== 礼品管理 ==================== */
+
+    public List<ForumGift> adminGifts() {
+        return forumMapper.adminListGifts();
+    }
+
+    public ForumGift createGift(GiftRequest body) {
+        ForumGift values = new ForumGift();
+        values.setId(IdWorker.getId());
+        applyGift(values, body, true);
+        forumMapper.insertGift(values);
+        return requireGift(values.getId());
+    }
+
+    public ForumGift updateGift(long id, GiftRequest body) {
+        ForumGift current = requireGift(id);
+        ForumGift values = new ForumGift();
+        values.setId(id);
+        values.setName(body.isNamePresent() ? giftName(body.getName()) : current.getName());
+        values.setCategory(body.isCategoryPresent() ? giftCategory(body.getCategory()) : current.getCategory());
+        values.setDescription(body.isDescriptionPresent() ? giftDescription(body.getDescription()) : current.getDescription());
+        values.setPoints(body.isPointsPresent() ? giftNonNegative(body.getPoints(), "所需积分") : nvl(current.getPoints()));
+        values.setStock(body.isStockPresent() ? giftNonNegative(body.getStock(), "库存") : nvl(current.getStock()));
+        values.setIcon(body.isIconPresent() ? giftIcon(body.getIcon()) : current.getIcon());
+        values.setImageUrl(body.isImageUrlPresent() ? giftImageUrl(body.getImageUrl()) : current.getImageUrl());
+        values.setMinLevel(body.isMinLevelPresent() ? giftMinLevel(body.getMinLevel()) : nvl(current.getMinLevel()));
+        values.setStatus(body.isStatusPresent() ? giftStatus(body.getStatus()) : nvl(current.getStatus()));
+        forumMapper.updateGift(values);
+        return requireGift(id);
+    }
+
+    /** 新增时必填字段校验；编辑时逐字段可选，故只有 create 传 required=true。 */
+    private void applyGift(ForumGift values, GiftRequest body, boolean required) {
+        if (required || body.isNamePresent()) values.setName(giftName(body.getName()));
+        if (required || body.isCategoryPresent()) values.setCategory(giftCategory(body.getCategory()));
+        if (required || body.isDescriptionPresent()) values.setDescription(giftDescription(body.getDescription()));
+        if (required || body.isPointsPresent()) values.setPoints(giftNonNegative(body.getPoints(), "所需积分"));
+        if (required || body.isStockPresent()) values.setStock(giftNonNegative(body.getStock(), "库存"));
+        if (required || body.isIconPresent()) values.setIcon(giftIcon(body.getIcon()));
+        if (required || body.isImageUrlPresent()) values.setImageUrl(giftImageUrl(body.getImageUrl()));
+        if (required || body.isMinLevelPresent()) values.setMinLevel(giftMinLevel(body.getMinLevel()));
+        if (required || body.isStatusPresent()) values.setStatus(giftStatus(body.getStatus()));
+    }
+
+    private ForumGift requireGift(long id) {
+        ForumGift row = forumMapper.findGiftById(id);
+        if (row == null) throw new BizException(ErrorCode.NOT_FOUND, "礼品不存在");
+        return row;
+    }
+
+    private String giftName(Object value) {
+        String name = text(value).trim();
+        if (name.isBlank() || name.length() > 100) throw param("礼品名称应为 1-100 个字符");
+        return name;
+    }
+
+    private String giftCategory(Object value) {
+        String category = text(value).trim();
+        if (category.isBlank() || category.length() > 32) throw param("礼品分类应为 1-32 个字符");
+        return category;
+    }
+
+    private String giftDescription(Object value) {
+        String description = text(value).trim();
+        if (description.length() > 300) throw param("礼品描述不能超过 300 个字符");
+        return description;
+    }
+
+    private String giftIcon(Object value) {
+        String icon = text(value).trim();
+        return icon.isBlank() ? "gift" : (icon.length() > 32 ? icon.substring(0, 32) : icon);
+    }
+
+    private String giftImageUrl(Object value) {
+        String url = text(value).trim();
+        if (url.length() > 500) throw param("礼品图片地址不能超过 500 个字符");
+        return url;
+    }
+
+    private int giftStatus(Object value) {
+        int status = intValue(value);
+        if (status != 0 && status != 1) throw param("上架状态不正确");
+        return status;
+    }
+
+    private int giftMinLevel(Object value) {
+        int level = intValue(value);
+        if (level < 1 || level > levelService.maxLevel()) throw param("兑换等级应为 1-" + levelService.maxLevel());
+        return level;
+    }
+
+    private int giftNonNegative(Object value, String name) {
+        int number = intValue(value);
+        if (number < 0) throw param(name + "不能为负数");
+        if (number > 100000000) throw param(name + "超出范围");
+        return number;
+    }
+
+    private int nvl(Integer value) {
+        return value == null ? 0 : value;
     }
 
     public List<ForumExchange> exchanges(String status) {

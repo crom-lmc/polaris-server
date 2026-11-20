@@ -10,5 +10,6 @@ public class PointRankingDTO {
     private String nickname;
     private Long points;
     private Long totalPoints;
+    private Long experience;
     private Long avatarAttachmentId;
 }

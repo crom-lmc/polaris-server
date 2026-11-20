@@ -12,6 +12,10 @@ public class PointRankingVO {
     private String name;
     private Long points;
     private Long totalPoints;
+    /** 累计经验：等级排行按此排序，积分排行也一并返回便于展示 */
+    private Long experience;
     private Integer level;
+    private String levelName;
+    private String levelColor;
     private String avatarUrl;
 }

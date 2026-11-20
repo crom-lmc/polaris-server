@@ -17,5 +17,9 @@ public class ForumGift {
     private Integer stock;
     private String icon;
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String imageUrl;
+    /** 兑换所需最低社区等级，1-20 */
+    private Integer minLevel;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer status;
 }

@@ -1,6 +1,7 @@
 package com.laimengchao.sso.account.controller;
 
 import com.laimengchao.sso.account.constant.PermissionConstants;
+import com.laimengchao.sso.account.domain.entity.SsoApplication;
 import com.laimengchao.sso.account.dto.request.ApplicationRequest;
 import com.laimengchao.sso.account.dto.request.CreatePermissionRequest;
 import com.laimengchao.sso.account.dto.response.ApplicationVO;
@@ -48,6 +49,19 @@ public class ApplicationController {
     @Permit(PermissionConstants.APP_LIST)
     public R<List<ApplicationVO>> enabled() {
         return R.ok(applicationService.listEnabled());
+    }
+
+    /**
+     * 按应用编码查询应用名，给业务应用的浏览器标签标题用。
+     * <p>只返回 code/name，游客可访问；应用编码本身不是敏感信息，不能因此要求平台登录态。
+     */
+    @GetMapping("/public/{code}")
+    public R<Map<String, String>> publicInfo(@PathVariable String code) {
+        SsoApplication app = applicationService.requireEnabled(code);
+        Map<String, String> out = new LinkedHashMap<>();
+        out.put("code", app.getCode());
+        out.put("name", app.getName());
+        return R.ok(out);
     }
 
     @GetMapping("/{id}")

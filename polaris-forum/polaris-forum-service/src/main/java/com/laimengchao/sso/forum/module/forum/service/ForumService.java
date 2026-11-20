@@ -10,6 +10,7 @@ import com.laimengchao.sso.common.security.SecurityUtils;
 import com.laimengchao.sso.forum.module.admin.service.SensitiveWordService;
 import com.laimengchao.sso.forum.module.attachment.service.AttachmentService;
 import com.laimengchao.sso.forum.module.badge.service.BadgeService;
+import com.laimengchao.sso.forum.module.experience.service.ExperienceService;
 import com.laimengchao.sso.forum.module.forum.dto.CommentCreateRequest;
 import com.laimengchao.sso.forum.module.forum.dto.LikeToggleRequest;
 import com.laimengchao.sso.forum.module.forum.dto.ThreadPublishRequest;
@@ -25,6 +26,8 @@ import com.laimengchao.sso.forum.module.forum.vo.ForumMemberVO;
 import com.laimengchao.sso.forum.module.forum.vo.LikeToggleVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadDetailVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadVO;
+import com.laimengchao.sso.forum.module.level.dto.LevelProgress;
+import com.laimengchao.sso.forum.module.level.service.LevelService;
 import com.laimengchao.sso.forum.module.notification.service.NotificationService;
 import com.laimengchao.sso.forum.module.poll.dto.PollConfigDTO;
 import com.laimengchao.sso.forum.module.poll.service.PollService;
@@ -57,6 +60,8 @@ public class ForumService {
     private final NotificationService notificationService;
     private final BadgeService badgeService;
     private final TaxonomyService taxonomyService;
+    private final ExperienceService experienceService;
+    private final LevelService levelService;
 
     public List<BoardVO> boards() {
         return taxonomyService.boards();
@@ -169,6 +174,7 @@ public class ForumService {
         pollService.createPoll(id, pollConfig);
         mapper.increaseMemberThreads(user.getAccountId());
         changePoints(user.getAccountId(), 20, "PUBLISH", String.valueOf(id), "发布社区内容");
+        experienceService.grant(user.getAccountId(), "POST", String.valueOf(id));
         badgeService.evaluate(user.getAccountId(), "THREAD_COUNT", "TOTAL_POINTS");
         return detail(id);
     }
@@ -202,6 +208,7 @@ public class ForumService {
         mapper.increaseReplies(threadId);
         long id = values.getId();
         changePoints(user.getAccountId(), 5, "COMMENT", String.valueOf(id), "参与社区评论");
+        experienceService.grant(user.getAccountId(), "COMMENT", String.valueOf(id));
         ForumComment comment = mapper.findComment(id);
         notificationService.onComment(thread, parent, comment);
         badgeService.evaluate(user.getAccountId(), "COMMENT_COUNT", "TOTAL_POINTS");
@@ -215,8 +222,9 @@ public class ForumService {
         long targetId = longValue(body.getTargetId());
         if (!Set.of("thread", "comment").contains(targetType) || targetId <= 0) throw param("点赞目标不正确");
         ForumThread thread = "thread".equals(targetType) ? requiredThread(targetId) : null;
-        if ("comment".equals(targetType)) requiredComment(targetId);
-        int inserted = mapper.insertLike(IdWorker.getId(), user.getAccountId(), targetType, targetId);
+        ForumComment comment = "comment".equals(targetType) ? requiredComment(targetId) : null;
+        long likeId = IdWorker.getId();
+        int inserted = mapper.insertLike(likeId, user.getAccountId(), targetType, targetId);
         boolean liked = inserted > 0;
         int delta = liked ? 1 : -1;
         if (!liked) mapper.deleteLike(user.getAccountId(), targetType, targetId);
@@ -227,8 +235,12 @@ public class ForumService {
                 mapper.changeAuthorLikes(authorId, delta);
                 if (delta > 0) badgeService.evaluate(authorId, "LIKES_RECEIVED");
             }
+            if (liked) notificationService.onLike(user.getAccountId(), targetType, targetId, likeId, authorId, 0, targetId);
         } else {
             mapper.changeCommentLikes(targetId, delta);
+            long commentAuthorId = comment == null ? 0 : longValue(comment.getAuthorAccountId());
+            long commentThreadId = comment == null ? 0 : longValue(comment.getThreadId());
+            if (liked) notificationService.onLike(user.getAccountId(), targetType, targetId, likeId, 0, commentAuthorId, commentThreadId);
         }
         int likes = thread != null ? intValue(mapper.findThread(targetId).getLikes())
                 : intValue(mapper.findComment(targetId).getLikes());
@@ -247,7 +259,6 @@ public class ForumService {
         result.setMember(memberView(mapper.findMember(user.getAccountId())));
         return result;
     }
-
     public ThreadVO threadView(ForumThread row) {
         return threadView(row, new ThreadVO());
     }
@@ -302,6 +313,12 @@ public class ForumService {
         view.setLocation(row.getLocation());
         view.setWebsite(row.getWebsite());
         view.setPoints(row.getPoints());
+        long experience = row.getExperience() == null ? 0 : row.getExperience();
+        view.setExperience(experience);
+        LevelProgress progress = levelService.progress(experience);
+        view.setLevel(progress.getLevel());
+        view.setLevelName(progress.getLevelName());
+        view.setLevelColor(progress.getLevelColor());
         view.setThreadsCount(row.getThreadsCount());
         view.setLikesReceived(row.getLikesReceived());
         view.setAvatarAttachmentId(row.getAvatarAttachmentId());

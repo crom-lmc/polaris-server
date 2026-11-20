@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/forum/notifications")
@@ -32,6 +33,11 @@ public class NotificationController {
     @GetMapping("/unread-count")
     public R<NotificationCountVO> unreadCount() {
         return R.ok(notificationService.unreadCount());
+    }
+
+    @GetMapping("/unread-counts")
+    public R<Map<String, Integer>> unreadCounts() {
+        return R.ok(notificationService.unreadCounts());
     }
 
     @PatchMapping("/{id}/read")

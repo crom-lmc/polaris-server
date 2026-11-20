@@ -18,6 +18,8 @@ public class ForumExchange {
     private String username;
     private String giftName;
     private Integer points;
+    /** 来源：EXCHANGE 积分兑换、LOTTERY 抽奖中奖 */
+    private String source;
     private String status;
     private String trackingNo;
     private String createdAt;

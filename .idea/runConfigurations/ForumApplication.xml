@@ -1,0 +1,32 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ForumApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="polaris-forum-service" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.laimengchao.sso.forum.ForumApplication" />
+    <option name="VM_PARAMETERS" value="-Xms64m -Xmx256m -XX:MaxMetaspaceSize=256m" />
+    <envs>
+      <env name="SSO_NACOS_ENABLED" value="true" />
+      <env name="SSO_NACOS_DISCOVERY" value="false" />
+      <env name="SSO_NACOS_ADDR" value="127.0.0.1:18848" />
+      <env name="SSO_NACOS_NAMESPACE" value="sso-ms-local" />
+      <env name="SSO_NACOS_GROUP" value="SSO" />
+      <env name="SSO_CONF_KEY_FILE" value="$PROJECT_DIR$/polaris-nacos/.secrets/conf-key.txt" />
+      <env name="FORUM_DB_URL" value="jdbc:mysql://127.0.0.1:3306/forum?useUnicode=true&amp;characterEncoding=utf8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true&amp;createDatabaseIfNotExist=true" />
+      <env name="FORUM_DB_USER" value="root" />
+      <env name="FORUM_DB_PASSWORD" value="root" />
+      <env name="FORUM_SQL_INIT_MODE" value="always" />
+    </envs>
+    <extension name="net.ashald.envfile">
+      <option name="IS_ENABLED" value="false" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+      </ENTRIES>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

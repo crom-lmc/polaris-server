@@ -48,6 +48,8 @@ public class GatewayProperties {
             // 要靠它自校验令牌，不能要求先有令牌才能取
             "/api/auth/public/jwks",
             "/api/auth/public/public-key",
+            // 应用名查询：业务应用（含游客态）据此显示浏览器标签标题，只暴露 code/name
+            "/api/applications/public/**",
             // 业务应用（blog-admin）的读者端：前台不需要登录，公开接口按前缀放行
             "/api/blog/public/**",
             // 单点换票：此时用户还没有博客令牌，凭一次性 ticket 换（应用密钥在后端）

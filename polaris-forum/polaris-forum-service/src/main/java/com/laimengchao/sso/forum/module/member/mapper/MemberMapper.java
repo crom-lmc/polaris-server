@@ -19,5 +19,7 @@ public interface MemberMapper {
 
     List<PointRankingDTO> pointRanking(@Param("limit") int limit);
 
+    List<PointRankingDTO> levelRanking(@Param("limit") int limit);
+
     List<ForumThread> memberThreads(@Param("accountId") long accountId, @Param("kind") String kind);
 }

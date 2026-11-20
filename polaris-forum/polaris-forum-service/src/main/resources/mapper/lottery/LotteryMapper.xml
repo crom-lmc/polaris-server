@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.laimengchao.sso.forum.module.lottery.mapper.LotteryMapper">
+
+    <resultMap id="configResultMap" type="com.laimengchao.sso.forum.module.lottery.entity.LotteryConfig">
+        <id property="id" column="id"/>
+        <result property="mode" column="mode"/>
+        <result property="lotteryCost" column="lotteryCost"/>
+        <result property="dailyLimit" column="dailyLimit"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="prizeResultMap" type="com.laimengchao.sso.forum.module.lottery.entity.LotteryPrize">
+        <id property="id" column="id"/>
+        <result property="prizeKey" column="prizeKey"/>
+        <result property="prizeType" column="prizeType"/>
+        <result property="giftId" column="giftId"/>
+        <result property="name" column="name"/>
+        <result property="points" column="points"/>
+        <result property="color" column="color"/>
+        <result property="weight" column="weight"/>
+        <result property="sortNo" column="sortNo"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdAt" column="createdAt"/>
+        <result property="updatedAt" column="updatedAt"/>
+    </resultMap>
+
+    <sql id="prizeColumns">
+        CAST(id AS CHAR) AS id,prize_key AS prizeKey,prize_type AS prizeType,gift_id AS giftId,
+        name,points,color,weight,
+        sort_no AS sortNo,enabled,
+        DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+    </sql>
+
+    <select id="findConfig" resultMap="configResultMap">
+        SELECT id,mode,lottery_cost AS lotteryCost,daily_limit AS dailyLimit,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM forum_lottery_config WHERE id=1
+    </select>
+
+    <update id="updateConfig">
+        UPDATE forum_lottery_config
+        SET mode=#{mode},lottery_cost=#{lotteryCost},daily_limit=#{dailyLimit}
+        WHERE id=1
+    </update>
+
+    <select id="listPrizes" resultMap="prizeResultMap">
+        SELECT <include refid="prizeColumns"/> FROM forum_lottery_prize
+        <where>
+            <if test="enabledOnly">enabled=1</if>
+        </where>
+        ORDER BY sort_no,id
+    </select>
+
+    <select id="findPrize" resultMap="prizeResultMap">
+        SELECT <include refid="prizeColumns"/> FROM forum_lottery_prize WHERE id=#{id}
+    </select>
+
+    <select id="findPrizeByKey" resultMap="prizeResultMap">
+        SELECT <include refid="prizeColumns"/> FROM forum_lottery_prize WHERE prize_key=#{key}
+    </select>
+
+    <insert id="insertPrize">
+        INSERT INTO forum_lottery_prize(id,prize_key,prize_type,gift_id,name,points,color,weight,sort_no,enabled)
+        VALUES(#{id},#{prizeKey},#{prizeType},#{giftId},#{name},#{points},#{color},#{weight},#{sortNo},#{enabled})
+    </insert>
+
+    <update id="updatePrize">
+        UPDATE forum_lottery_prize
+        SET name=#{name},prize_type=#{prizeType},gift_id=#{giftId},points=#{points},color=#{color},
+            weight=#{weight},sort_no=#{sortNo},enabled=#{enabled}
+        WHERE id=#{id}
+    </update>
+
+    <update id="updatePrizeWeight">
+        UPDATE forum_lottery_prize SET weight=#{weight} WHERE id=#{id}
+    </update>
+
+    <delete id="deletePrize">
+        DELETE FROM forum_lottery_prize WHERE id=#{id}
+    </delete>
+
+    <select id="countEnabledPrizes" resultType="int">
+        SELECT COUNT(1) FROM forum_lottery_prize WHERE enabled=1
+    </select>
+
+    <select id="sumEnabledWeight" resultType="int">
+        SELECT COALESCE(SUM(weight),0) FROM forum_lottery_prize WHERE enabled=1
+    </select>
+</mapper>

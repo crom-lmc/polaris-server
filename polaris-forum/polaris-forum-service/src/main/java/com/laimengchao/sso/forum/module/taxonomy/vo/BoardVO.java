@@ -12,8 +12,10 @@ public class BoardVO {
     private String color;
     private Integer sortNo;
     private String key;
+    private String parentKey;
     private Integer count;
     private List<TagVO> tags;
+    private List<BoardVO> children;
     private Boolean enabled;
     private String createdAt;
     private String updatedAt;
