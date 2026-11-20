@@ -9,6 +9,7 @@ import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordEnabledRequest;
 import com.laimengchao.sso.forum.module.admin.dto.SensitiveWordRequest;
 import com.laimengchao.sso.forum.module.admin.dto.ThreadStatusUpdateRequest;
 import com.laimengchao.sso.forum.module.admin.service.AdminService;
+import com.laimengchao.sso.forum.module.admin.vo.AdminCommentPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminThreadVO;
 import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordVO;
@@ -179,6 +180,17 @@ public class AdminForumController {
                                             @RequestParam(required = false) String keyword,
                                             @RequestParam(required = false) Boolean deleted) {
         return R.ok(adminService.comments(threadId, keyword, deleted));
+    }
+
+    /** 评论分页查询，管理端列表走此接口，避免一次拉取全部评论正文。 */
+    @Permit(PermissionCodes.FORUM_COMMENT_VIEW)
+    @GetMapping("/comments/page")
+    public R<AdminCommentPageVO> commentsPage(@RequestParam(required = false) Long threadId,
+                                              @RequestParam(required = false) String keyword,
+                                              @RequestParam(required = false) Boolean deleted,
+                                              @RequestParam(defaultValue = "1") int page,
+                                              @RequestParam(defaultValue = "20") int size) {
+        return R.ok(adminService.commentsPage(threadId, keyword, deleted, page, size));
     }
 
     @Permit(PermissionCodes.FORUM_COMMENT_DELETE)

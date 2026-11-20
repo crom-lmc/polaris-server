@@ -25,6 +25,7 @@ import com.laimengchao.sso.forum.module.forum.vo.ForumMeVO;
 import com.laimengchao.sso.forum.module.forum.vo.ForumMemberVO;
 import com.laimengchao.sso.forum.module.forum.vo.LikeToggleVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadDetailVO;
+import com.laimengchao.sso.forum.module.forum.vo.ThreadPageVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadVO;
 import com.laimengchao.sso.forum.module.level.dto.LevelProgress;
 import com.laimengchao.sso.forum.module.level.service.LevelService;
@@ -68,6 +69,31 @@ public class ForumService {
     }
 
     public List<ThreadVO> list(String kind, String board, String keyword, String sort) {
+        ListQuery query = normalizedListQuery(kind, board, keyword, sort);
+        return mapper.listThreads(query.kind, query.board, query.keyword, query.sort, query.accountId)
+                .stream().map(this::threadView).toList();
+    }
+
+    /** 服务端分页列表：每页只查当前页且不查正文，避免一次返回全部内容导致接口慢、渲染卡。 */
+    public ThreadPageVO listPage(String kind, String board, String keyword, String sort, int page, int size) {
+        ListQuery query = normalizedListQuery(kind, board, keyword, sort);
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+        size = Math.min(size, 50); // 防止超大 size 拖慢接口
+        long total = mapper.countThreads(query.kind, query.board, query.keyword, query.sort, query.accountId);
+        long offset = (long) (page - 1) * size;
+        List<ThreadVO> records = mapper.listThreadsPaged(query.kind, query.board, query.keyword, query.sort,
+                query.accountId, offset, size).stream().map(this::threadView).toList();
+        ThreadPageVO result = new ThreadPageVO();
+        result.setRecords(records);
+        result.setTotal(total);
+        result.setPage(page);
+        result.setSize(size);
+        return result;
+    }
+
+    /** 列表接口参数校验与归一，list 与 listPage 共用，保证筛选口径一致。 */
+    private ListQuery normalizedListQuery(String kind, String board, String keyword, String sort) {
         if (kind != null && !kind.isBlank() && !KINDS.contains(kind)) throw param("不支持的内容类型");
         if (board != null && !board.isBlank()) taxonomyService.requireBoard(board, false);
         String q = keyword == null ? "" : keyword.trim();
@@ -76,9 +102,10 @@ public class ForumService {
         if (!Set.of("latest", "hot", "recommended", "following").contains(order)) throw param("不支持的排序方式");
         Long accountId = SecurityUtils.currentUserId();
         if ("following".equals(order) && accountId == null) throw new BizException(ErrorCode.UNAUTHORIZED);
-        return mapper.listThreads(kind, board, q, order, accountId)
-                .stream().map(this::threadView).toList();
+        return new ListQuery(kind, board, q, order, accountId);
     }
+
+    private record ListQuery(String kind, String board, String keyword, String sort, Long accountId) {}
 
     @Transactional
     public ThreadDetailVO detail(long id) {

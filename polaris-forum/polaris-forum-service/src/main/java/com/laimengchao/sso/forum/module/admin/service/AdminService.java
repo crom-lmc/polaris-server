@@ -14,6 +14,7 @@ import com.laimengchao.sso.forum.module.admin.dto.ThreadStatusUpdateRequest;
 import com.laimengchao.sso.forum.module.admin.entity.SensitiveWord;
 import com.laimengchao.sso.forum.module.admin.mapper.AdminMapper;
 import com.laimengchao.sso.forum.module.admin.mapper.SensitiveWordMapper;
+import com.laimengchao.sso.forum.module.admin.vo.AdminCommentPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminThreadVO;
 import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordVO;
@@ -89,9 +90,33 @@ public class AdminService {
     }
 
     public List<AdminCommentVO> comments(Long threadId, String keyword, Boolean deleted) {
+        String q = normalizedCommentKeyword(keyword);
+        return mapper.listComments(threadId, q, deleted).stream().map(this::commentView).toList();
+    }
+
+    /** 评论分页：服务端 LIMIT + 总数，避免一次返回上万条评论正文拖慢管理端。 */
+    public AdminCommentPageVO commentsPage(Long threadId, String keyword, Boolean deleted, int page, int size) {
+        String q = normalizedCommentKeyword(keyword);
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+        size = Math.min(size, 50);
+        long total = mapper.countComments(threadId, q, deleted);
+        long offset = (long) (page - 1) * size;
+        List<AdminCommentVO> records = mapper.listCommentsPaged(threadId, q, deleted, offset, size).stream()
+                .map(this::commentView).toList();
+        AdminCommentPageVO result = new AdminCommentPageVO();
+        result.setRecords(records);
+        result.setTotal(total);
+        result.setPage(page);
+        result.setSize(size);
+        return result;
+    }
+
+    /** 评论筛选关键词归一与校验，comments 与 commentsPage 共用，保证口径一致。 */
+    private String normalizedCommentKeyword(String keyword) {
         String q = keyword == null ? "" : keyword.trim();
         if (q.length() > 80) throw param("搜索关键词不能超过 80 个字符");
-        return mapper.listComments(threadId, q, deleted).stream().map(this::commentView).toList();
+        return q;
     }
 
     @Transactional

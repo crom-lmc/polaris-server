@@ -98,23 +98,51 @@
         DATE_FORMAT(recommended_at,'%Y-%m-%d %H:%i:%s') AS recommendedAt,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
     </sql>
 
+    <!-- 列表专用列：不查 content 正文（正文由详情接口单独返回），避免列表响应体过大、渲染慢 -->
+    <sql id="threadListColumns">
+        CAST(id AS CHAR) AS id,kind,board_key AS board,title,excerpt,tags,CAST(author_account_id AS CHAR) AS authorAccountId,
+        author_name AS authorName,reward,CAST(cover_attachment_id AS CHAR) AS coverAttachmentId,replies_count AS replies,
+        views_count AS views,likes_count AS likes,pinned,solved,recommended,
+        DATE_FORMAT(recommended_at,'%Y-%m-%d %H:%i:%s') AS recommendedAt,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt
+    </sql>
+
+    <!-- 列表公共筛选条件，分页查询与计数查询复用，保证 total 与 records 口径一致 -->
+    <sql id="threadListWhere">
+        FROM forum_thread WHERE deleted=0
+        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
+        <if test="board != null and board != ''">AND board_key=#{board}</if>
+        <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR excerpt LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
+        <if test="sort == 'recommended'">AND recommended=1</if>
+        <if test="sort == 'following'">AND EXISTS(SELECT 1 FROM forum_follow f WHERE f.account_id=#{accountId} AND f.followed_account_id=forum_thread.author_account_id)</if>
+    </sql>
+
+    <sql id="threadListOrder">
+        <choose>
+            <when test="sort == 'hot'">ORDER BY (likes_count+replies_count*2) DESC,created_at DESC</when>
+            <when test="sort == 'recommended'">ORDER BY recommended_at DESC,created_at DESC</when>
+            <otherwise>ORDER BY created_at DESC,id DESC</otherwise>
+        </choose>
+    </sql>
+
     <sql id="memberColumns">
         CAST(account_id AS CHAR) AS accountId,username,nickname,bio,location,website,points,experience,threads_count AS threadsCount,
         likes_received AS likesReceived,CAST(avatar_attachment_id AS CHAR) AS avatarAttachmentId,CAST(cover_attachment_id AS CHAR) AS coverAttachmentId
     </sql>
 
     <select id="listThreads" resultMap="threadResultMap">
-        SELECT <include refid="threadColumns"/> FROM forum_thread WHERE deleted=0
-        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
-        <if test="board != null and board != ''">AND board_key=#{board}</if>
-        <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR excerpt LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
-        <if test="sort == 'recommended'">AND recommended=1</if>
-        <if test="sort == 'following'">AND EXISTS(SELECT 1 FROM forum_follow f WHERE f.account_id=#{accountId} AND f.followed_account_id=forum_thread.author_account_id)</if>
-        <choose>
-            <when test="sort == 'hot'">ORDER BY (likes_count+replies_count*2) DESC,created_at DESC</when>
-            <when test="sort == 'recommended'">ORDER BY recommended_at DESC,created_at DESC</when>
-            <otherwise>ORDER BY created_at DESC,id DESC</otherwise>
-        </choose>
+        SELECT <include refid="threadColumns"/> <include refid="threadListWhere"/>
+        <include refid="threadListOrder"/>
+    </select>
+
+    <!-- 服务端分页列表：不查正文，按页返回 -->
+    <select id="listThreadsPaged" resultMap="threadResultMap">
+        SELECT <include refid="threadListColumns"/> <include refid="threadListWhere"/>
+        <include refid="threadListOrder"/>
+        LIMIT #{offset},#{size}
+    </select>
+
+    <select id="countThreads" resultType="long">
+        SELECT COUNT(*) <include refid="threadListWhere"/>
     </select>
 
     <select id="findThread" resultMap="threadResultMap">

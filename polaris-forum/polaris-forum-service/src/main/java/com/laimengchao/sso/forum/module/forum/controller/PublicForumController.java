@@ -9,6 +9,7 @@ import com.laimengchao.sso.forum.module.badge.vo.BadgeVO;
 import com.laimengchao.sso.forum.module.forum.service.ForumService;
 import com.laimengchao.sso.forum.module.forum.vo.CommentVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadDetailVO;
+import com.laimengchao.sso.forum.module.forum.vo.ThreadPageVO;
 import com.laimengchao.sso.forum.module.forum.vo.ThreadVO;
 import com.laimengchao.sso.forum.module.interaction.service.FollowService;
 import com.laimengchao.sso.forum.module.interaction.vo.FollowRelationVO;
@@ -75,6 +76,17 @@ public class PublicForumController {
                                      @RequestParam(required = false) String q,
                                      @RequestParam(defaultValue = "latest") String sort) {
         return R.ok(forumService.list(kind, board, q, sort));
+    }
+
+    /** 服务端分页列表：只返回当前页摘要（不含正文），供首页/内容列表快速渲染。 */
+    @GetMapping("/threads/page")
+    public R<ThreadPageVO> threadPage(@RequestParam(required = false) String kind,
+                                      @RequestParam(required = false) String board,
+                                      @RequestParam(required = false) String q,
+                                      @RequestParam(defaultValue = "latest") String sort,
+                                      @RequestParam(defaultValue = "1") int page,
+                                      @RequestParam(defaultValue = "20") int size) {
+        return R.ok(forumService.listPage(kind, board, q, sort, page, size));
     }
 
     @GetMapping("/threads/{id}")

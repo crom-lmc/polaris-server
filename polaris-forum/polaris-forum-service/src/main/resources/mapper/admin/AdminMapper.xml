@@ -39,14 +39,32 @@
         UPDATE forum_thread SET recommended=#{recommended},recommended_at=IF(#{recommended},NOW(),NULL) WHERE id=#{id}
     </update>
 
-    <select id="listComments" resultMap="commentDetailResultMap">
-        SELECT CAST(c.id AS CHAR) AS id,CAST(c.thread_id AS CHAR) AS threadId,CAST(c.author_account_id AS CHAR) AS authorAccountId,c.author_name AS authorName,
+    <sql id="commentListColumns">
+        CAST(c.id AS CHAR) AS id,CAST(c.thread_id AS CHAR) AS threadId,CAST(c.author_account_id AS CHAR) AS authorAccountId,c.author_name AS authorName,
         c.content,CAST(c.parent_comment_id AS CHAR) AS parentCommentId,c.likes_count AS likes,c.deleted,DATE_FORMAT(c.created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,t.title AS threadTitle
-        FROM forum_comment c LEFT JOIN forum_thread t ON t.id=c.thread_id WHERE 1=1
-        <if test="threadId != null">AND c.thread_id=#{threadId}</if>
-        <if test="keyword != null and keyword != ''">AND (c.content LIKE CONCAT('%',#{keyword},'%') OR c.author_name LIKE CONCAT('%',#{keyword},'%'))</if>
-        <if test="deleted != null">AND c.deleted=#{deleted}</if>
-        ORDER BY c.created_at DESC
+    </sql>
+
+    <sql id="commentListWhere">
+        FROM forum_comment c LEFT JOIN forum_thread t ON t.id=c.thread_id
+        <where>
+            <if test="threadId != null">AND c.thread_id=#{threadId}</if>
+            <if test="keyword != null and keyword != ''">AND (c.content LIKE CONCAT('%',#{keyword},'%') OR c.author_name LIKE CONCAT('%',#{keyword},'%'))</if>
+            <if test="deleted != null">AND c.deleted=#{deleted}</if>
+        </where>
+    </sql>
+
+    <select id="listComments" resultMap="commentDetailResultMap">
+        SELECT <include refid="commentListColumns"/> <include refid="commentListWhere"/>
+        ORDER BY c.created_at DESC,c.id DESC
+    </select>
+
+    <select id="listCommentsPaged" resultMap="commentDetailResultMap">
+        SELECT <include refid="commentListColumns"/> <include refid="commentListWhere"/>
+        ORDER BY c.created_at DESC,c.id DESC LIMIT #{offset},#{size}
+    </select>
+
+    <select id="countComments" resultType="long">
+        SELECT COUNT(*) <include refid="commentListWhere"/>
     </select>
 
     <select id="findComment" resultMap="commentDetailResultMap">

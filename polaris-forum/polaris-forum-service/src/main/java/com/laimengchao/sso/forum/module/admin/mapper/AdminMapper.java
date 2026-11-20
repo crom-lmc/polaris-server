@@ -25,6 +25,13 @@ public interface AdminMapper {
     List<ForumCommentDetailDTO> listComments(@Param("threadId") Long threadId, @Param("keyword") String keyword,
                                              @Param("deleted") Boolean deleted);
 
+    List<ForumCommentDetailDTO> listCommentsPaged(@Param("threadId") Long threadId, @Param("keyword") String keyword,
+                                                  @Param("deleted") Boolean deleted,
+                                                  @Param("offset") long offset, @Param("size") int size);
+
+    long countComments(@Param("threadId") Long threadId, @Param("keyword") String keyword,
+                       @Param("deleted") Boolean deleted);
+
     ForumCommentDetailDTO findComment(@Param("id") long id);
 
     ForumComment commentForUpdate(@Param("id") long id);

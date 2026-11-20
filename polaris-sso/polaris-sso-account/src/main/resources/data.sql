@@ -1,9 +1,8 @@
 -- ACCOUNT 全量数据基线（MySQL 5.7）
 -- 2026-11-16 从本地 sso_ms 数据库导出；不含过程备份表。
 -- 全部使用带完整列名的 INSERT IGNORE，可重复执行。
+-- 注意：admin / ceshi 两个种子账号不在 EHR，已按账号清理规则从基线移除，请勿补回。
 
-INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2116367567649972226,'admin','王浩然','admin@laimengchao.site',NULL,'','$2a$10$7LlIKwcOCdxban72BY/i.uYmebq8PBmfTwOdlTH.wh6amCSveFgl2','',1,'local',0,2,NULL,'2026-11-07 14:44:26',NULL,'2026-10-31 11:12:03','2026-11-05 13:39:29',0);
-INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2118896521678127106,'ceshi','测试','ceshi@xckj.com',NULL,'17602939249','$2a$10$jYutEgkFRNT9yiIwWTrCZeuwR3Pby//BPMdnMJRO9tflIfJW3btCC','',1,'ehr',1,0,NULL,'2026-11-07 15:15:03',NULL,'2026-11-07 10:41:13','2026-11-07 10:41:13',0);
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2119703016825098241,'wanghaoran','王浩然','wanghaoran@xckj.com','XC0001','13800000005','$2a$10$vfX.yXuggSjylVU6kTv1ReJlmdzKPvYZlvWEDZTxZWC5bQIkDPTSK','',1,'ehr',0,0,NULL,'2026-11-16 00:27:30',NULL,'2026-11-09 16:05:56','2026-11-09 20:36:17',0);
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2120188758001094658,'laimengchao@xckj.com','赖梦超','laimengchao@xckj.com','XC000100010001','17602939249','$2a$10$zFc4IJ0B04RtH0tfisXc..fl.eY0D6QKcp.rQyzsr5slrS6IVOaFa','',1,'ehr',1,0,NULL,NULL,NULL,'2026-11-11 00:16:06','2026-11-11 00:16:06',0);
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2500000000000000001,'wugangna@xckj.com','吴刚娜','wugangna@xckj.com','XC0001','17319578505','$2a$10$qsjVpm/vU3.SukrHaBMer.juNjnYkcn3PWW1XvIDAOmJ3DsJrTSdS','',1,'ehr',1,0,NULL,'2026-11-09 15:45:04',NULL,'2026-11-05 13:39:29','2026-11-05 13:39:29',0);
@@ -168,9 +167,7 @@ INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_s
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2640000000000000048,'zhunan@xckj.com','朱楠','zhunan@xckj.com','XC000100080004','15595836959','$2a$10$7LlIKwcOCdxban72BY/i.uYmebq8PBmfTwOdlTH.wh6amCSveFgl2','',1,'ehr',0,0,NULL,NULL,NULL,'2026-11-05 19:44:29','2026-11-05 19:44:29',0);
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2640000000000000049,'zhengyun@xckj.com','郑云','zhengyun@xckj.com','XC000100080004','17855766443','$2a$10$7LlIKwcOCdxban72BY/i.uYmebq8PBmfTwOdlTH.wh6amCSveFgl2','',1,'ehr',0,0,NULL,NULL,NULL,'2026-11-05 19:44:29','2026-11-05 19:44:29',0);
 INSERT IGNORE INTO `sso_account` (`id`, `username`, `nickname`, `email`, `data_scope_org_code`, `phone`, `password_hash`, `avatar_url`, `status`, `source`, `pwd_reset_required`, `login_fail_count`, `locked_until`, `last_login_at`, `user_id`, `created_at`, `updated_at`, `deleted`) VALUES (2640000000000000050,'zhangweili@xckj.com','张伟丽','zhangweili@xckj.com','XC000100080004','17797004496','$2a$10$7LlIKwcOCdxban72BY/i.uYmebq8PBmfTwOdlTH.wh6amCSveFgl2','',1,'ehr',0,0,NULL,NULL,NULL,'2026-11-05 19:44:29','2026-11-05 19:44:29',0);
-INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2116367567649972226,2116415893422415874);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,2116415893422415874);
-INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2118896521678127106,2116582503722446850);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,2116582503722446850);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2120188758001094658,2116582503722446850);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2500000000000000001,2116582503722446850);
@@ -356,7 +353,6 @@ INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000048,2116593781849407489);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000049,2116593781849407489);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000050,2116593781849407489);
-INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2118896521678127106,2116786084014661634);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,2116786084014661634);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2120188758001094658,2116786084014661634);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2500000000000000001,2116786084014661634);
@@ -521,7 +517,6 @@ INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000048,2116786084014661634);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000049,2116786084014661634);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000050,2116786084014661634);
-INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2116367567649972226,2116850135541460994);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,2116850135541460994);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000031,2116850135541460994);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000032,2116850135541460994);
@@ -544,7 +539,6 @@ INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000049,2116850135541460994);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2640000000000000050,2116850135541460994);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,2116999000000000001);
-INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2118896521678127106,4997626274347468456);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2119703016825098241,4997626274347468456);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2120188758001094658,4997626274347468456);
 INSERT IGNORE INTO `sso_account_app` (`account_id`, `app_id`) VALUES (2500000000000000001,4997626274347468456);
@@ -731,9 +725,7 @@ INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (26400000
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000048,2026110800000000010);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000049,2026110800000000010);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000050,2026110800000000010);
-INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2116367567649972226,2116193763556519940);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2119703016825098241,2116193763556519940);
-INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2118896521678127106,2116193763556519941);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2119703016825098241,2116193763556519941);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2120188758001094658,2116193763556519941);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2500000000000000001,2116193763556519941);
@@ -1012,7 +1004,6 @@ INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (26400000
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000048,2116193763556519952);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000049,2116193763556519952);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2640000000000000050,2116193763556519952);
-INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2118896521678127106,2116193763556519953);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2500000000000000009,2116193763556519953);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2500000000000000010,2116193763556519953);
 INSERT IGNORE INTO `sso_account_role` (`account_id`, `role_id`) VALUES (2500000000000000011,2116193763556519953);

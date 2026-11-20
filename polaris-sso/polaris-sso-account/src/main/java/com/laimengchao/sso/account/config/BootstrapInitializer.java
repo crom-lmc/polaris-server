@@ -556,6 +556,17 @@ public class BootstrapInitializer implements ApplicationRunner {
             }
         }
 
+        // 已有超级管理员账号（例如管理员 wanghaoran）时不再创建内置 admin。
+        // 内置 admin 不在 EHR，按账号清理规则删除后不能被重启复活；角色与权限仍照常补齐。
+        Integer superAdminCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM sso_account_role ar "
+                        + "JOIN sso_account a ON a.id = ar.account_id AND a.deleted = 0 "
+                        + "WHERE ar.role_id = ?", Integer.class, role.getId());
+        if (superAdminCount != null && superAdminCount > 0) {
+            log.info("已存在超级管理员账号，跳过内置 admin 创建：role={}", role.getCode());
+            return;
+        }
+
         // 口令由配置中心下发；缺失时宁可跳过建号，也不要写进一个空口令的管理员
         if (adminPassword == null || adminPassword.isBlank()) {
             log.warn("未配置 sso.bootstrap.admin-password（应由 Nacos 的 sso-account.yaml 下发，"

@@ -17,6 +17,15 @@ public interface ForumMapper {
                                   @Param("board") String board, @Param("keyword") String keyword,
                                   @Param("sort") String sort, @Param("accountId") Long accountId);
 
+    List<ForumThread> listThreadsPaged(@Param("kind") String kind,
+                                       @Param("board") String board, @Param("keyword") String keyword,
+                                       @Param("sort") String sort, @Param("accountId") Long accountId,
+                                       @Param("offset") long offset, @Param("size") int size);
+
+    long countThreads(@Param("kind") String kind,
+                      @Param("board") String board, @Param("keyword") String keyword,
+                      @Param("sort") String sort, @Param("accountId") Long accountId);
+
     ForumThread findThread(@Param("id") long id);
 
     ForumThread findThreadAny(@Param("id") long id);
