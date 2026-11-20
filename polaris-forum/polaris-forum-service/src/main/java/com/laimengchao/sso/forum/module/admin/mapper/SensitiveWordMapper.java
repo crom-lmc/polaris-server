@@ -11,6 +11,11 @@ public interface SensitiveWordMapper {
 
     List<SensitiveWord> listAll();
 
+    /** 分页查询：服务端 LIMIT，避免一次返回全部敏感词。 */
+    List<SensitiveWord> listAllPaged(@Param("offset") long offset, @Param("size") int size);
+
+    long countAll();
+
     int insert(SensitiveWord values);
 
     int setEnabled(@Param("id") long id, @Param("enabled") boolean enabled);

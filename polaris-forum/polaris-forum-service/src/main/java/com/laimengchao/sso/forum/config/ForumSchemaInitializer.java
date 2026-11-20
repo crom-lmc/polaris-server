@@ -353,7 +353,6 @@ public class ForumSchemaInitializer implements ApplicationRunner {
     private void seedBoards() {
         seedBoard("general", "综合讨论", "技术之外，也聊聊工作与生活", "#5b67f1", 1);
         seedBoard("frontend", "前端开发", "Vue、React、工程化与用户体验", "#1677ff", 2);
-        seedBoard("backend", "后端架构", "Java、微服务、数据库与系统设计", "#13a8a8", 3);
         seedBoard("devops", "运维部署", "Docker、Linux、CI/CD 与可观测性", "#fa8c16", 4);
         seedBoard("design", "产品设计", "产品思考、设计方法与创意灵感", "#a855f7", 5);
         seedBoard("career", "职场成长", "经验分享、学习方法与职业发展", "#eb4b8d", 6);

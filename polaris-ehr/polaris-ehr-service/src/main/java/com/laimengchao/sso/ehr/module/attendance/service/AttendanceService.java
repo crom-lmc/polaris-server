@@ -54,6 +54,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -600,7 +602,38 @@ public class AttendanceService {
         if (employeeId != null) {
             return List.of(computeOne(requireAccessible(employeeId), ym));
         }
-        return accessibleEmployees().stream().map(emp -> computeOne(emp, ym)).toList();
+        List<Employee> emps = accessibleEmployees();
+        if (emps.isEmpty()) return List.of();
+        // 一次查出该月全部已落库月汇总，避免逐人 selectOne 的 N+1；按 employeeId 分组内存匹配
+        List<Long> ids = emps.stream().map(Employee::getId).toList();
+        Map<Long, AttendanceMonth> byEmp = new HashMap<>();
+        for (List<Long> batch : partition(ids, 500)) {
+            for (AttendanceMonth m : monthMapper.selectList(new LambdaQueryWrapper<AttendanceMonth>()
+                    .in(AttendanceMonth::getEmployeeId, batch)
+                    .eq(AttendanceMonth::getMonth, ym.toString()))) {
+                byEmp.put(m.getEmployeeId(), m);
+            }
+        }
+        List<AttendanceMonthVO> result = new ArrayList<>(emps.size());
+        for (Employee emp : emps) {
+            AttendanceMonth row = byEmp.get(emp.getId());
+            if (row != null) {
+                result.add(toVO(row, emp.getName()));
+            } else {
+                // 未落库的少数员工走原兜底（计算并落库），保持数据完整性
+                result.add(computeOne(emp, ym));
+            }
+        }
+        return result;
+    }
+
+    /** 将列表按固定大小切块，避免 IN 条件过长。 */
+    private <T> List<List<T>> partition(List<T> source, int size) {
+        List<List<T>> parts = new ArrayList<>();
+        for (int i = 0; i < source.size(); i += size) {
+            parts.add(new ArrayList<>(source.subList(i, Math.min(i + size, source.size()))));
+        }
+        return parts;
     }
 
     public AttendanceMonthVO confirm(String month, Long employeeId) {

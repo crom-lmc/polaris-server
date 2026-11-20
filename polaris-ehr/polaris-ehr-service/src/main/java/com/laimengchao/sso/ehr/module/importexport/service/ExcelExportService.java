@@ -19,7 +19,7 @@ import com.laimengchao.sso.ehr.security.DataScopeService;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class ExcelExportService {
         List<EmployeeVO> rows = employeeService.exportRows(keyword, orgId, status);
         String[] headers = {"工号", "姓名", "组织", "职位", "状态", "手机号", "身份证号",
                 "紧急联系人", "紧急联系电话", "邮箱", "入职日期", "预计转正日期", "备注"};
-        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(500)) {
             Sheet sheet = ExcelWriter.headerSheet(wb, "员工", headers);
             for (int i = 0; i < rows.size(); i++) {
                 EmployeeVO vo = rows.get(i);
@@ -95,7 +95,7 @@ public class ExcelExportService {
 
         String[] headers = {"合同编号", "员工工号", "员工姓名", "组织", "合同类型", "开始日期",
                 "结束日期", "签订日期", "状态", "备注"};
-        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(500)) {
             Sheet sheet = ExcelWriter.headerSheet(wb, "合同", headers);
             for (int i = 0; i < visible.size(); i++) {
                 Contract c = visible.get(i);
@@ -125,7 +125,7 @@ public class ExcelExportService {
         String[] headers = {"月份", "员工ID", "员工姓名", "应出勤天数", "实际出勤天数",
                 "迟到分钟", "早退分钟", "缺勤小时", "缺勤天数", "请假天数", "加班小时",
                 "实际出勤小时", "确认状态"};
-        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(500)) {
             Sheet sheet = ExcelWriter.headerSheet(wb, "月度考勤", headers);
             for (int i = 0; i < rows.size(); i++) {
                 AttendanceMonthVO vo = rows.get(i);

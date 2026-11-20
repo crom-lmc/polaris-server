@@ -20,6 +20,15 @@
         DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt FROM forum_sensitive_word ORDER BY id DESC
     </select>
 
+    <select id="listAllPaged" resultMap="sensitiveWordMap">
+        SELECT CAST(id AS CHAR) AS id,word,enabled,DATE_FORMAT(created_at,'%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s') AS updatedAt FROM forum_sensitive_word ORDER BY id DESC LIMIT #{offset},#{size}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM forum_sensitive_word
+    </select>
+
     <insert id="insert">
         INSERT INTO forum_sensitive_word(id,word,enabled) VALUES(#{id},#{word},1)
     </insert>

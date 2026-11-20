@@ -202,6 +202,16 @@
         SELECT COUNT(*) FROM forum_like WHERE account_id=#{accountId} AND target_type=#{targetType} AND target_id=#{targetId}
     </select>
 
+    <select id="likeExistsBatch" resultType="long">
+        SELECT target_id FROM forum_like
+        WHERE account_id=#{accountId} AND target_type=#{targetType}
+        <if test="targetIds != null and !targetIds.isEmpty()">
+        AND target_id IN
+        <foreach collection="targetIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="targetIds == null or targetIds.isEmpty()">AND 1=0</if>
+    </select>
+
     <select id="favoriteExists" resultType="int">
         SELECT COUNT(*) FROM forum_favorite WHERE account_id=#{accountId} AND thread_id=#{threadId}
     </select>
@@ -229,6 +239,15 @@
 
     <select id="findMember" resultMap="memberResultMap">
         SELECT <include refid="memberColumns"/> FROM forum_member WHERE account_id=#{accountId}
+    </select>
+
+    <select id="findMembers" resultMap="memberResultMap">
+        SELECT <include refid="memberColumns"/> FROM forum_member
+        WHERE 1=0
+        <if test="accountIds != null and !accountIds.isEmpty()">
+        OR account_id IN
+        <foreach collection="accountIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
     </select>
 
     <update id="changePoints">

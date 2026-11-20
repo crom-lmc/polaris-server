@@ -21,6 +21,9 @@ public interface AccountService {
 
     AccountVO detail(Long id);
 
+    /** 批量按 ID 取联系人字段（只含 id/username/nickname/email），替代逐条 detail 的 N+1。 */
+    java.util.List<SsoAccount> contactsByIds(java.util.List<Long> ids);
+
     AccountVO create(CreateAccountRequest req);
 
     AccountVO update(Long id, UpdateAccountRequest req);

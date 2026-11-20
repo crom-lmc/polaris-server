@@ -50,6 +50,10 @@ public interface ForumMapper {
 
     int likeExists(@Param("accountId") long accountId, @Param("targetType") String targetType, @Param("targetId") long targetId);
 
+    /** 批量查询已点赞的 targetId，替代列表里逐条 likeExists 的 N+1。 */
+    List<Long> likeExistsBatch(@Param("accountId") long accountId, @Param("targetType") String targetType,
+                               @Param("targetIds") List<Long> targetIds);
+
     int favoriteExists(@Param("accountId") long accountId, @Param("threadId") long threadId);
 
     int changeThreadLikes(@Param("id") long id, @Param("delta") int delta);
@@ -63,6 +67,9 @@ public interface ForumMapper {
     ForumMember memberForUpdate(@Param("accountId") long accountId);
 
     ForumMember findMember(@Param("accountId") long accountId);
+
+    /** 按账号 ID 批量取会员，替代列表里逐条 findMember 的 N+1。 */
+    List<ForumMember> findMembers(@Param("accountIds") List<Long> accountIds);
 
     int changePoints(@Param("accountId") long accountId, @Param("delta") int delta);
 

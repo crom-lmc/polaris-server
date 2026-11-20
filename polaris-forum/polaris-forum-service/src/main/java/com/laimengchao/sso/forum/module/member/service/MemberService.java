@@ -28,14 +28,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class MemberService {
 
     private static final Set<String> KINDS = Set.of("feed", "topic", "question", "article");
+    /** 排行榜本地缓存有效期：公开展示允许 60s 延迟，避免每次请求都全表 JOIN 积分流水。 */
+    private static final long RANK_CACHE_TTL_MS = 60_000L;
+
+    private final Map<String, RankCacheEntry> rankCache = new ConcurrentHashMap<>();
 
     private final MemberMapper mapper;
     private final ForumMapper forumMapper;
@@ -69,39 +77,53 @@ public class MemberService {
     public List<PointRankingVO> pointRanking(Integer limit) {
         int size = limit == null ? 10 : limit;
         if (size < 1 || size > 50) throw param("排行数量范围为 1-50");
-        return mapper.pointRanking(size).stream().map(row -> {
-            PointRankingVO view = new PointRankingVO();
-            view.setAccountId(row.getAccountId());
-            view.setName(displayName(row.getNickname(), row.getUsername()));
-            view.setPoints(longValue(row.getPoints()));
-            view.setTotalPoints(longValue(row.getTotalPoints()));
-            long experience = longValue(row.getExperience());
-            view.setExperience(experience);
-            applyLevel(view, experience);
-            long avatarId = longValue(row.getAvatarAttachmentId());
-            view.setAvatarUrl(avatarId > 0 ? "/api/forum/public/attachments/" + avatarId : null);
-            return view;
-        }).toList();
+        return cachedRanking("points:" + size, () -> mapper.pointRanking(size));
     }
 
     /** 等级排行：按累计经验降序，复用积分排行的 VO 与等级换算 */
     public List<PointRankingVO> levelRanking(Integer limit) {
         int size = limit == null ? 10 : limit;
         if (size < 1 || size > 50) throw param("排行数量范围为 1-50");
-        return mapper.levelRanking(size).stream().map(row -> {
-            PointRankingVO view = new PointRankingVO();
-            view.setAccountId(row.getAccountId());
-            view.setName(displayName(row.getNickname(), row.getUsername()));
-            view.setPoints(longValue(row.getPoints()));
-            view.setTotalPoints(longValue(row.getTotalPoints()));
-            long experience = longValue(row.getExperience());
-            view.setExperience(experience);
-            applyLevel(view, experience);
-            long avatarId = longValue(row.getAvatarAttachmentId());
-            view.setAvatarUrl(avatarId > 0 ? "/api/forum/public/attachments/" + avatarId : null);
-            return view;
-        }).toList();
+        return cachedRanking("level:" + size, () -> mapper.levelRanking(size));
     }
+
+    /**
+     * 排行榜缓存：命中直接返回，过期后按 key 原子回源（ConcurrentHashMap.compute 保证同一 key 只有一个线程查库）。
+     * totalPoints 语义与原 SQL 保持一致；等级换算改为一次查配置批量计算，消除逐行 listEnabled 的 N+1。
+     */
+    private List<PointRankingVO> cachedRanking(String key, java.util.function.Supplier<List<PointRankingDTO>> loader) {
+        long now = System.currentTimeMillis();
+        RankCacheEntry cached = rankCache.get(key);
+        if (cached != null && now < cached.expireAt) return cached.data;
+        return rankCache.compute(key, (k, old) -> {
+            long current = System.currentTimeMillis();
+            if (old != null && current < old.expireAt) return old;
+            List<PointRankingDTO> rows = loader.get();
+            List<Long> experiences = rows.stream().map(PointRankingDTO::getExperience).map(this::longValue).toList();
+            List<LevelProgress> progresses = levelService.progressBatch(experiences);
+            List<PointRankingVO> views = new ArrayList<>(rows.size());
+            for (int i = 0; i < rows.size(); i++) {
+                PointRankingDTO row = rows.get(i);
+                PointRankingVO view = new PointRankingVO();
+                view.setAccountId(row.getAccountId());
+                view.setName(displayName(row.getNickname(), row.getUsername()));
+                view.setPoints(longValue(row.getPoints()));
+                view.setTotalPoints(longValue(row.getTotalPoints()));
+                long experience = longValue(row.getExperience());
+                view.setExperience(experience);
+                LevelProgress progress = progresses.get(i);
+                view.setLevel(progress.getLevel());
+                view.setLevelName(progress.getLevelName());
+                view.setLevelColor(progress.getLevelColor());
+                long avatarId = longValue(row.getAvatarAttachmentId());
+                view.setAvatarUrl(avatarId > 0 ? "/api/forum/public/attachments/" + avatarId : null);
+                views.add(view);
+            }
+            return new RankCacheEntry(List.copyOf(views), current + RANK_CACHE_TTL_MS);
+        }).data;
+    }
+
+    private record RankCacheEntry(List<PointRankingVO> data, long expireAt) {}
 
     public MemberProfileVO profile() {
         SecurityUser user = requireUser();
@@ -176,13 +198,6 @@ public class MemberService {
         view.setNextLevel(progress.getNextLevel());
         view.setExperienceToNext(progress.getExperienceToNext());
         view.setLevelProgress(progress.getProgress());
-    }
-
-    private void applyLevel(PointRankingVO view, long experience) {
-        LevelProgress progress = levelService.progress(experience);
-        view.setLevel(progress.getLevel());
-        view.setLevelName(progress.getLevelName());
-        view.setLevelColor(progress.getLevelColor());
     }
 
     private String displayName(String nickname, String username) {

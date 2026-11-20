@@ -35,9 +35,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -103,39 +105,63 @@ public class ApprovalOpsService {
     public int scanSla() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime dayStart = LocalDate.now().atStartOfDay();
-        List<ApprInstance> running = instanceMapper.selectList(Wrappers.<ApprInstance>lambdaQuery()
-                .eq(ApprInstance::getStatus, InstanceStatus.RUNNING.getCode()));
         int count = 0;
-        for (ApprInstance inst : running) {
-            ApprovalSnapshot.Step step = currentStep(inst);
-            if (step == null || step.getSlaHours() == null || step.getSlaHours() <= 0) {
-                continue;
+        // 基于主键游标分批，替代一次性全表加载在途单；内存占用恒定、每批走主键索引
+        long lastId = 0L;
+        while (true) {
+            List<ApprInstance> batch = instanceMapper.selectList(Wrappers.<ApprInstance>lambdaQuery()
+                    .eq(ApprInstance::getStatus, InstanceStatus.RUNNING.getCode())
+                    .gt(ApprInstance::getId, lastId)
+                    .orderByAsc(ApprInstance::getId)
+                    .last("limit " + CHUNK));
+            if (batch.isEmpty()) break;
+            lastId = batch.get(batch.size() - 1).getId();
+
+            List<Long> batchIds = batch.stream().map(ApprInstance::getId).toList();
+            // 批量取本批所有待办任务，按实例分组，替代逐单 pendingTasks 的 N+1
+            Map<Long, List<ApprTask>> pendingByInst = tasksOf(batchIds, List.of(TaskStatus.PENDING.getCode()))
+                    .stream().collect(Collectors.groupingBy(ApprTask::getInstanceId));
+            // 批量取本批当天已提醒过的实例，替代逐单 selectCount 的 N+1
+            Set<Long> remindedIds = new HashSet<>();
+            for (int i = 0; i < batchIds.size(); i += CHUNK) {
+                List<Long> part = batchIds.subList(i, Math.min(i + CHUNK, batchIds.size()));
+                for (ApprAction action : actionMapper.selectList(Wrappers.<ApprAction>lambdaQuery()
+                        .in(ApprAction::getInstanceId, part)
+                        .eq(ApprAction::getAction, ActionType.SLA_REMIND.name())
+                        .ge(ApprAction::getCreatedAt, dayStart))) {
+                    remindedIds.add(action.getInstanceId());
+                }
             }
-            List<ApprTask> pending = pendingTasks(inst.getId());
-            if (pending.isEmpty()) {
-                continue;
+
+            for (ApprInstance inst : batch) {
+                ApprovalSnapshot.Step step = currentStep(inst);
+                if (step == null || step.getSlaHours() == null || step.getSlaHours() <= 0) {
+                    continue;
+                }
+                List<ApprTask> pending = pendingByInst.getOrDefault(inst.getId(), List.of());
+                if (pending.isEmpty()) {
+                    continue;
+                }
+                LocalDateTime since = pending.stream().map(ApprTask::getCreatedAt)
+                        .filter(x -> x != null).min(Comparator.naturalOrder())
+                        .orElse(inst.getCreatedAt());
+                if (since == null || hours(since, now) <= step.getSlaHours()) {
+                    continue;
+                }
+                if (remindedIds.contains(inst.getId())) {
+                    continue;
+                }
+                long waiting = (long) Math.floor(hours(since, now));
+                notifyApprovers(inst, pending, "approval.sla",
+                        "审批超时提醒：" + nullToEmpty(inst.getBizName()),
+                        "单据「" + nullToEmpty(inst.getTitle()) + "」在「" + nullToEmpty(step.getName())
+                                + "」已停留 " + waiting + " 小时，超过时效 " + step.getSlaHours() + " 小时，请尽快处理。", true);
+                // 同步写去重流水：保证同一实例当天不会被重复提醒（即使后续批次重扫也命中 remindedIds）
+                engine.logAction(inst.getId(), null, inst.getCurrentStep(), null, "系统",
+                        ActionType.SLA_REMIND, null, null, "停留 " + waiting + " 小时，超过 SLA " + step.getSlaHours() + " 小时");
+                remindedIds.add(inst.getId());
+                count++;
             }
-            LocalDateTime since = pending.stream().map(ApprTask::getCreatedAt)
-                    .filter(x -> x != null).min(Comparator.naturalOrder())
-                    .orElse(inst.getCreatedAt());
-            if (since == null || hours(since, now) <= step.getSlaHours()) {
-                continue;
-            }
-            Long reminded = actionMapper.selectCount(Wrappers.<ApprAction>lambdaQuery()
-                    .eq(ApprAction::getInstanceId, inst.getId())
-                    .eq(ApprAction::getAction, ActionType.SLA_REMIND.name())
-                    .ge(ApprAction::getCreatedAt, dayStart));
-            if (reminded != null && reminded > 0) {
-                continue;
-            }
-            long waiting = (long) Math.floor(hours(since, now));
-            notifyApprovers(inst, pending, "approval.sla",
-                    "审批超时提醒：" + nullToEmpty(inst.getBizName()),
-                    "单据「" + nullToEmpty(inst.getTitle()) + "」在「" + nullToEmpty(step.getName())
-                            + "」已停留 " + waiting + " 小时，超过时效 " + step.getSlaHours() + " 小时，请尽快处理。");
-            engine.logAction(inst.getId(), null, inst.getCurrentStep(), null, "系统",
-                    ActionType.SLA_REMIND, null, null, "停留 " + waiting + " 小时，超过 SLA " + step.getSlaHours() + " 小时");
-            count++;
         }
         if (count > 0) {
             log.info("审批 SLA 扫描：本次提醒 {} 张在途单", count);
@@ -468,6 +494,11 @@ public class ApprovalOpsService {
 
     private void notifyApprovers(ApprInstance inst, List<ApprTask> pending, String ruleCode,
                                  String title, String content) {
+        notifyApprovers(inst, pending, ruleCode, title, content, false);
+    }
+
+    private void notifyApprovers(ApprInstance inst, List<ApprTask> pending, String ruleCode,
+                                 String title, String content, boolean async) {
         for (ApprTask t : pending) {
             if (t.getApproverId() == null) {
                 continue;
@@ -490,7 +521,11 @@ public class ApprovalOpsService {
                 req.getVars().put("bizNo", nullToEmpty(inst.getApprNo()));
                 req.getVars().put("applicantName", nullToEmpty(inst.getApplicantName()));
                 req.getVars().put("stepName", nullToEmpty(t.getStepName()));
-                noticeService.send(req);
+                if (async) {
+                    noticeService.sendAsync(req);
+                } else {
+                    noticeService.send(req);
+                }
             } catch (Exception e) {
                 log.warn("审批提醒发送失败：instance={} approver={} err={}",
                         inst.getId(), t.getApproverId(), e.getMessage());

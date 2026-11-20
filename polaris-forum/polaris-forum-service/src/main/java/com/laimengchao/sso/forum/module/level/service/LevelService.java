@@ -100,6 +100,15 @@ public class LevelService {
         return progress(mapper.listEnabled(), experience);
     }
 
+    /**
+     * 批量按累计经验计算等级：只查一次等级配置，避免排行榜逐行调用 {@link #progress(long)}
+     * 造成 N+1（每行一次 listEnabled）。纯读+计算，天然幂等。
+     */
+    public List<LevelProgress> progressBatch(List<Long> experiences) {
+        List<Level> levels = mapper.listEnabled();
+        return experiences.stream().map(e -> progress(levels, e == null ? 0L : e)).toList();
+    }
+
     /** 指定账号当前等级序号，供礼品兑换门槛等场景校验（无会员记录按 1 级） */
     public int currentLevel(long accountId) {
         MemberStatsDTO stats = memberMapper.stats(accountId);

@@ -113,6 +113,12 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public List<SsoAccount> contactsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return accountMapper.selectContactsByIds(ids);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public AccountVO create(CreateAccountRequest req) {
         Asserts.notEmpty(req.getUsername(), ErrorCode.PARAM_ERROR, "登录名必填");

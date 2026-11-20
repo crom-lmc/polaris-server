@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,8 +71,9 @@ public class ForumService {
 
     public List<ThreadVO> list(String kind, String board, String keyword, String sort) {
         ListQuery query = normalizedListQuery(kind, board, keyword, sort);
-        return mapper.listThreads(query.kind, query.board, query.keyword, query.sort, query.accountId)
-                .stream().map(this::threadView).toList();
+        List<ForumThread> rows = mapper.listThreads(query.kind, query.board, query.keyword, query.sort, query.accountId);
+        Map<Long, ForumMember> members = memberCache(rows.stream().map(ForumThread::getAuthorAccountId).toList());
+        return rows.stream().map(row -> threadView(row, new ThreadVO(), members)).toList();
     }
 
     /** 服务端分页列表：每页只查当前页且不查正文，避免一次返回全部内容导致接口慢、渲染卡。 */
@@ -82,8 +84,10 @@ public class ForumService {
         size = Math.min(size, 50); // 防止超大 size 拖慢接口
         long total = mapper.countThreads(query.kind, query.board, query.keyword, query.sort, query.accountId);
         long offset = (long) (page - 1) * size;
-        List<ThreadVO> records = mapper.listThreadsPaged(query.kind, query.board, query.keyword, query.sort,
-                query.accountId, offset, size).stream().map(this::threadView).toList();
+        List<ForumThread> rows = mapper.listThreadsPaged(query.kind, query.board, query.keyword, query.sort,
+                query.accountId, offset, size);
+        Map<Long, ForumMember> members = memberCache(rows.stream().map(ForumThread::getAuthorAccountId).toList());
+        List<ThreadVO> records = rows.stream().map(row -> threadView(row, new ThreadVO(), members)).toList();
         ThreadPageVO result = new ThreadPageVO();
         result.setRecords(records);
         result.setTotal(total);
@@ -124,12 +128,16 @@ public class ForumService {
     public List<CommentVO> comments(long threadId) {
         requiredThread(threadId);
         Long accountId = SecurityUtils.currentUserId();
-        Map<Long, CommentVO> topLevel = new LinkedHashMap<>();
         List<ForumComment> rows = mapper.listComments(threadId);
+        Map<Long, ForumMember> members = memberCache(rows.stream().map(ForumComment::getAuthorAccountId).toList());
+        Set<Long> likedIds = accountId == null ? Set.of()
+                : Set.copyOf(mapper.likeExistsBatch(accountId, "comment",
+                        rows.stream().map(ForumComment::getId).toList()));
+        Map<Long, CommentVO> topLevel = new LinkedHashMap<>();
         for (ForumComment row : rows) {
             if (longValue(row.getParentCommentId()) == 0) {
-                CommentVO view = commentView(row);
-                view.setLiked(accountId != null && mapper.likeExists(accountId, "comment", row.getId()) > 0);
+                CommentVO view = commentView(row, members);
+                view.setLiked(likedIds.contains(row.getId()));
                 view.setReplies(new ArrayList<>());
                 topLevel.put(row.getId(), view);
             }
@@ -138,12 +146,23 @@ public class ForumService {
             long parentId = longValue(row.getParentCommentId());
             CommentVO parent = topLevel.get(parentId);
             if (parentId > 0 && parent != null && intValue(row.getDeleted()) == 0) {
-                CommentVO view = commentView(row);
-                view.setLiked(accountId != null && mapper.likeExists(accountId, "comment", row.getId()) > 0);
+                CommentVO view = commentView(row, members);
+                view.setLiked(likedIds.contains(row.getId()));
                 parent.getReplies().add(view);
             }
         }
         return new ArrayList<>(topLevel.values());
+    }
+
+    /** 列表预加载作者，把逐条 findMember 的 N+1 收敛为一次 IN 查询。 */
+    private Map<Long, ForumMember> memberCache(List<Long> accountIds) {
+        List<Long> ids = accountIds.stream().filter(id -> id != null && id > 0).distinct().toList();
+        if (ids.isEmpty()) return Map.of();
+        Map<Long, ForumMember> cache = new HashMap<>();
+        for (ForumMember member : mapper.findMembers(ids)) {
+            cache.put(member.getAccountId(), member);
+        }
+        return cache;
     }
 
     @Transactional
@@ -291,6 +310,11 @@ public class ForumService {
     }
 
     public <T extends ThreadVO> T threadView(ForumThread row, T view) {
+        return threadView(row, view, null);
+    }
+
+    /** memberCache 为列表预加载的作者映射；为 null 时逐条查（单条详情场景保持原行为）。 */
+    public <T extends ThreadVO> T threadView(ForumThread row, T view, Map<Long, ForumMember> memberCache) {
         view.setId(row.getId());
         view.setKind(row.getKind());
         view.setBoard(row.getBoard());
@@ -309,7 +333,7 @@ public class ForumService {
         view.setRecommended(intValue(row.getRecommended()) == 1);
         view.setRecommendedAt(row.getRecommendedAt());
         view.setCreatedAt(row.getCreatedAt());
-        view.setAuthor(author(authorAccountId, text(row.getAuthorName(), "社区成员")));
+        view.setAuthor(author(authorAccountId, text(row.getAuthorName(), "社区成员"), memberCache));
         long coverId = longValue(row.getCoverAttachmentId());
         view.setCoverAttachmentId(coverId > 0 ? coverId : null);
         view.setCoverUrl(coverId > 0 ? "/api/forum/public/attachments/" + coverId : null);
@@ -317,6 +341,10 @@ public class ForumService {
     }
 
     public CommentVO commentView(ForumComment row) {
+        return commentView(row, null);
+    }
+
+    public CommentVO commentView(ForumComment row, Map<Long, ForumMember> memberCache) {
         CommentVO view = new CommentVO();
         view.setId(row.getId());
         view.setThreadId(row.getThreadId());
@@ -327,7 +355,7 @@ public class ForumService {
         view.setDeleted(intValue(row.getDeleted()) == 1);
         view.setCreatedAt(row.getCreatedAt());
         view.setTime(row.getCreatedAt());
-        view.setAuthor(author(longValue(row.getAuthorAccountId()), text(row.getAuthorName(), "社区成员")));
+        view.setAuthor(author(longValue(row.getAuthorAccountId()), text(row.getAuthorName(), "社区成员"), memberCache));
         return view;
     }
 
@@ -354,7 +382,13 @@ public class ForumService {
     }
 
     private AuthorVO author(long accountId, String fallbackName) {
-        ForumMember member = accountId > 0 ? mapper.findMember(accountId) : null;
+        return author(accountId, fallbackName, null);
+    }
+
+    private AuthorVO author(long accountId, String fallbackName, Map<Long, ForumMember> memberCache) {
+        ForumMember member = accountId > 0
+                ? (memberCache != null ? memberCache.get(accountId) : mapper.findMember(accountId))
+                : null;
         String nickname = member == null ? "" : text(member.getNickname(), "").trim();
         String name = nickname.isBlank() && member != null ? text(member.getUsername(), fallbackName) : nickname;
         if (name.isBlank()) name = fallbackName;

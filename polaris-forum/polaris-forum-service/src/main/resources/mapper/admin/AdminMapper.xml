@@ -14,13 +14,29 @@
         e.issued_by_name AS issuedByName,DATE_FORMAT(e.issued_at,'%Y-%m-%d %H:%i:%s') AS issuedAt,e.issue_remark AS issueRemark
     </sql>
 
+    <sql id="adminThreadListWhere">
+        FROM forum_thread
+        <where>
+            <if test="kind != null and kind != ''">AND kind=#{kind}</if>
+            <if test="board != null and board != ''">AND board_key=#{board}</if>
+            <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR content LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
+            <if test="deleted != null">AND deleted=#{deleted}</if>
+        </where>
+    </sql>
+
     <select id="listThreads" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">
-        SELECT <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadColumns"/>,deleted FROM forum_thread WHERE 1=1
-        <if test="kind != null and kind != ''">AND kind=#{kind}</if>
-        <if test="board != null and board != ''">AND board_key=#{board}</if>
-        <if test="keyword != null and keyword != ''">AND (title LIKE CONCAT('%',#{keyword},'%') OR content LIKE CONCAT('%',#{keyword},'%') OR tags LIKE CONCAT('%',#{keyword},'%'))</if>
-        <if test="deleted != null">AND deleted=#{deleted}</if>
+        SELECT <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadColumns"/>,deleted <include refid="adminThreadListWhere"/>
         ORDER BY created_at DESC
+    </select>
+
+    <!-- 分页列表用 threadListColumns 不查正文，避免管理端一次拉取全部帖子正文 -->
+    <select id="listThreadsPaged" resultMap="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadResultMap">
+        SELECT <include refid="com.laimengchao.sso.forum.module.forum.mapper.ForumMapper.threadListColumns"/>,deleted <include refid="adminThreadListWhere"/>
+        ORDER BY created_at DESC,id DESC LIMIT #{offset},#{size}
+    </select>
+
+    <select id="countThreads" resultType="long">
+        SELECT COUNT(*) <include refid="adminThreadListWhere"/>
     </select>
 
     <update id="setThreadDeleted">

@@ -13,6 +13,7 @@ import com.laimengchao.sso.forum.security.ForumAdminGuard;
 import com.laimengchao.sso.forum.storage.ForumStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -81,12 +83,17 @@ public class AttachmentService {
         boolean inline = mimeType.startsWith("image/");
         ContentDisposition disposition = ContentDisposition.builder(inline ? "inline" : "attachment")
                 .filename(originalName, StandardCharsets.UTF_8).build();
-        return ResponseEntity.ok()
+        ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeType))
                 .contentLength(longValue(row.getSize()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                .header("X-Content-Type-Options", "nosniff")
-                .body(storage.read(text(row.getStoragePath())));
+                .header("X-Content-Type-Options", "nosniff");
+        if (publicOnly && inline) {
+            // 公开图片按附件ID寻址、内容不可变（上传后不覆盖），加长缓存避免轮播/头像每次进页面重复下载。
+            // 显式设置后 Spring Security 的 CacheControlHeadersWriter 不再注入 no-cache。
+            builder.cacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable());
+        }
+        return builder.body(storage.read(text(row.getStoragePath())));
     }
 
     public List<AttachmentVO> threadAttachments(long threadId) {

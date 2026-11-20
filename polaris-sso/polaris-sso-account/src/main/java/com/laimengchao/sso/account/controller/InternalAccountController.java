@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 服务间内部接口。**不经过网关**，仅供 sso-auth 直连调用，由 X-Internal-Token 拦截器把关。
@@ -90,17 +91,21 @@ public class InternalAccountController {
                 try { idList.add(Long.parseLong(v)); } catch (NumberFormatException ignored) {}
             }
         }
+        // 一次批量查询替代逐条 detail（原实现每个 id 触发 3 次 SQL），保持入参顺序、查不到跳过
+        Map<Long, com.laimengchao.sso.account.domain.entity.SsoAccount> byId = new java.util.HashMap<>();
+        for (com.laimengchao.sso.account.domain.entity.SsoAccount a : accountService.contactsByIds(idList)) {
+            byId.put(a.getId(), a);
+        }
         List<Contact> result = new java.util.ArrayList<>();
         for (Long id : idList) {
-            try {
-                var account = accountService.detail(id);
-                Contact c = new Contact();
-                c.setAccountId(account.getId());
-                c.setUsername(account.getUsername());
-                c.setNickname(account.getNickname());
-                c.setEmail(account.getEmail());
-                result.add(c);
-            } catch (BizException ignored) { /* 查不到的跳过 */ }
+            var a = byId.get(id);
+            if (a == null) continue;
+            Contact c = new Contact();
+            c.setAccountId(a.getId());
+            c.setUsername(a.getUsername());
+            c.setNickname(a.getNickname());
+            c.setEmail(a.getEmail());
+            result.add(c);
         }
         return R.ok(result);
     }
@@ -108,17 +113,15 @@ public class InternalAccountController {
     /** 联系人信息（邮箱），供设置中心的待办/消息邮件通道取收件人；查不到返回空 data */
     @GetMapping("/{id}/contact")
     public R<Contact> contact(@PathVariable Long id) {
-        try {
-            var account = accountService.detail(id);
-            Contact c = new Contact();
-            c.setAccountId(account.getId());
-            c.setUsername(account.getUsername());
-            c.setNickname(account.getNickname());
-            c.setEmail(account.getEmail());
-            return R.ok(c);
-        } catch (BizException e) {
-            return R.ok();
-        }
+        var list = accountService.contactsByIds(List.of(id));
+        if (list.isEmpty()) return R.ok();
+        var account = list.get(0);
+        Contact c = new Contact();
+        c.setAccountId(account.getId());
+        c.setUsername(account.getUsername());
+        c.setNickname(account.getNickname());
+        c.setEmail(account.getEmail());
+        return R.ok(c);
     }
 
     @lombok.Data

@@ -49,8 +49,10 @@ public class TaxonomyService {
 
     public List<TagVO> tags(String boardKey) {
         requireBoard(boardKey, false);
+        // 单次板块计数：原写法在每个标签上重复调用 tagCounts，导致同一板块全表扫描+JSON 解析 N 次
+        Map<String, Integer> counts = tagCounts(boardKey);
         return mapper.listTags(boardKey, true).stream()
-                .map(row -> tagView(row, tagCounts(boardKey))).toList();
+                .map(row -> tagView(row, counts)).toList();
     }
 
     public List<BoardVO> adminBoards() {

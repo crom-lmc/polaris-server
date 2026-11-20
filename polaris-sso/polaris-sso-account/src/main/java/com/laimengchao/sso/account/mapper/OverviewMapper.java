@@ -63,10 +63,14 @@ public interface OverviewMapper {
             """)
     List<Map<String, Object>> accountStatus();
 
-    /** 登录方式分布（按登录日志实际出现的类型聚合） */
+    /**
+     * 登录方式分布（按登录日志实际出现的类型聚合）。
+     * 只统计近 30 天，避免对持续增长的审计表全表 GROUP BY；走 created_at 索引，与 loginTrend 口径一致。
+     */
     @Select("""
             SELECT login_type AS `key`, COUNT(1) AS cnt
             FROM sso_login_log
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             GROUP BY login_type ORDER BY cnt DESC
             """)
     List<Map<String, Object>> loginTypes();
@@ -209,7 +213,7 @@ public interface OverviewMapper {
             <script>
             SELECT l.login_type AS `key`, COUNT(1) AS cnt
             FROM sso_login_log l
-            WHERE 1 = 1
+            WHERE l.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
               <if test="accountIds != null and accountIds.size() > 0">
               AND (
                 l.account_id IN

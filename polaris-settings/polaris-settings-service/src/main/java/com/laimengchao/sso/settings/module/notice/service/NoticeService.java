@@ -120,6 +120,22 @@ public class NoticeService {
     }
 
     /**
+     * 异步发送（专供 SLA 批量扫描等定时场景）：在 noticeAsyncExecutor 线程池执行 send，
+     * 避免定时任务线程被逐条站内信/邮件阻塞。调用方需从外部 bean 调用本方法才会走代理生效。
+     * 同步业务（审批引擎主流程）仍走 {@link #send(NoticeSendRequest)}，行为不变。
+     */
+    @org.springframework.scheduling.annotation.Async("noticeAsyncExecutor")
+    public void sendAsync(NoticeSendRequest req) {
+        try {
+            send(req);
+        } catch (Exception e) {
+            log.warn("异步通知发送失败：ruleCode={} accountId={} err={}",
+                    req == null ? null : req.getRuleCode(),
+                    req == null ? null : req.getAccountId(), e.getMessage());
+        }
+    }
+
+    /**
      * 群发：同一条业务待办发给多个账号（如「HR 部门全员」）。
      * 逐条落库，返回成功条数；单条失败不影响其它人。
      */

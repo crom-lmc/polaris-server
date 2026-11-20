@@ -16,7 +16,9 @@ import com.laimengchao.sso.forum.module.admin.mapper.AdminMapper;
 import com.laimengchao.sso.forum.module.admin.mapper.SensitiveWordMapper;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentVO;
+import com.laimengchao.sso.forum.module.admin.vo.AdminThreadPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminThreadVO;
+import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordVO;
 import com.laimengchao.sso.forum.module.forum.dto.ForumCommentDetailDTO;
 import com.laimengchao.sso.forum.module.forum.entity.ForumComment;
@@ -50,12 +52,38 @@ public class AdminService {
     private final LevelService levelService;
 
     public List<AdminThreadVO> threads(String kind, String board, String keyword, Boolean deleted) {
+        validateThreadQuery(kind, board, keyword);
+        return mapper.listThreads(kind, board, normalizedKeyword(keyword), deleted).stream()
+                .map(this::threadView).toList();
+    }
+
+    /** 内容分页：服务端 LIMIT + 总数，列表不查正文，避免一次返回全部帖子拖慢管理端。 */
+    public AdminThreadPageVO threadsPage(String kind, String board, String keyword, Boolean deleted, int page, int size) {
+        validateThreadQuery(kind, board, keyword);
+        String q = normalizedKeyword(keyword);
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+        size = Math.min(size, 50);
+        long total = mapper.countThreads(kind, board, q, deleted);
+        long offset = (long) (page - 1) * size;
+        List<AdminThreadVO> records = mapper.listThreadsPaged(kind, board, q, deleted, offset, size).stream()
+                .map(this::threadView).toList();
+        AdminThreadPageVO result = new AdminThreadPageVO();
+        result.setRecords(records);
+        result.setTotal(total);
+        result.setPage(page);
+        result.setSize(size);
+        return result;
+    }
+
+    private void validateThreadQuery(String kind, String board, String keyword) {
         if (kind != null && !kind.isBlank() && !KINDS.contains(kind)) throw param("不支持的内容类型");
         if (board != null && !board.isBlank()) taxonomyService.requireBoard(board, false);
-        String q = keyword == null ? "" : keyword.trim();
-        if (q.length() > 80) throw param("搜索关键词不能超过 80 个字符");
-        return mapper.listThreads(kind, board, q, deleted).stream()
-                .map(this::threadView).toList();
+        if (normalizedKeyword(keyword).length() > 80) throw param("搜索关键词不能超过 80 个字符");
+    }
+
+    private String normalizedKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim();
     }
 
     public AdminThreadVO updateThread(long id, ThreadStatusUpdateRequest body) {
@@ -134,6 +162,23 @@ public class AdminService {
 
     public List<SensitiveWordVO> sensitiveWords() {
         return sensitiveWordMapper.listAll().stream().map(this::sensitiveWordView).toList();
+    }
+
+    /** 敏感词分页：服务端 LIMIT + 总数，避免一次返回全部敏感词拖慢管理端。 */
+    public SensitiveWordPageVO sensitiveWordsPage(int page, int size) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+        size = Math.min(size, 50);
+        long total = sensitiveWordMapper.countAll();
+        long offset = (long) (page - 1) * size;
+        List<SensitiveWordVO> records = sensitiveWordMapper.listAllPaged(offset, size).stream()
+                .map(this::sensitiveWordView).toList();
+        SensitiveWordPageVO result = new SensitiveWordPageVO();
+        result.setRecords(records);
+        result.setTotal(total);
+        result.setPage(page);
+        result.setSize(size);
+        return result;
     }
 
     public SensitiveWordVO addSensitiveWord(SensitiveWordRequest body) {

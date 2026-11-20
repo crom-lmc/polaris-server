@@ -14,6 +14,14 @@ public interface AdminMapper {
                                   @Param("board") String board, @Param("keyword") String keyword,
                                   @Param("deleted") Boolean deleted);
 
+    List<ForumThread> listThreadsPaged(@Param("kind") String kind,
+                                       @Param("board") String board, @Param("keyword") String keyword,
+                                       @Param("deleted") Boolean deleted,
+                                       @Param("offset") long offset, @Param("size") int size);
+
+    long countThreads(@Param("kind") String kind, @Param("board") String board,
+                      @Param("keyword") String keyword, @Param("deleted") Boolean deleted);
+
     int setThreadDeleted(@Param("id") long id, @Param("deleted") boolean deleted);
 
     int setThreadPinned(@Param("id") long id, @Param("pinned") boolean pinned);

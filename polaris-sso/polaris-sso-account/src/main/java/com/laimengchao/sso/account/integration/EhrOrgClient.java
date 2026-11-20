@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 账号中心 → EHR 的组织维度反查客户端（Feign）。
@@ -23,7 +25,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EhrOrgClient {
 
+    /** 组织反查账号集合的本地缓存：概览等高频读场景 60s 内复用，避免每次 Feign 拉取全量账号 ID。 */
+    private static final long CODE_CACHE_TTL_MS = 60_000L;
+
     private final EhrOrgApi ehrOrgApi;
+    private final Map<String, CodeCacheEntry> codeCache = new ConcurrentHashMap<>();
 
     /**
      * 该组织及所有下级组织下的账号 ID。
@@ -69,6 +75,18 @@ public class EhrOrgClient {
      */
     public List<Long> accountIdsByCode(String scopeCode) {
         if (scopeCode == null || scopeCode.isBlank()) return List.of();
+        long now = System.currentTimeMillis();
+        CodeCacheEntry cached = codeCache.get(scopeCode);
+        if (cached != null && now < cached.expireAt) return cached.ids;
+        List<Long> out = fetchAccountIdsByCode(scopeCode);
+        // 只缓存成功且非空的结果；失败/空结果不写缓存，下次仍重试（与失败返回空的语义一致）
+        if (!out.isEmpty()) {
+            codeCache.put(scopeCode, new CodeCacheEntry(out, now + CODE_CACHE_TTL_MS));
+        }
+        return out;
+    }
+
+    private List<Long> fetchAccountIdsByCode(String scopeCode) {
         try {
             R<List<String>> resp = ehrOrgApi.accountIdsByCode(scopeCode);
             if (resp == null || !resp.ok()) {
@@ -88,4 +106,6 @@ public class EhrOrgClient {
             return List.of();
         }
     }
+
+    private record CodeCacheEntry(List<Long> ids, long expireAt) {}
 }

@@ -11,7 +11,9 @@ import com.laimengchao.sso.forum.module.admin.dto.ThreadStatusUpdateRequest;
 import com.laimengchao.sso.forum.module.admin.service.AdminService;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminCommentVO;
+import com.laimengchao.sso.forum.module.admin.vo.AdminThreadPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.AdminThreadVO;
+import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordPageVO;
 import com.laimengchao.sso.forum.module.admin.vo.SensitiveWordVO;
 import com.laimengchao.sso.forum.module.attachment.vo.AttachmentVO;
 import com.laimengchao.sso.forum.module.banner.dto.BannerRequest;
@@ -164,6 +166,18 @@ public class AdminForumController {
         return R.ok(adminService.threads(kind, board, keyword, deleted));
     }
 
+    /** 内容分页查询，管理端列表走此接口，列表不查正文，避免一次拉取全部帖子。 */
+    @Permit(PermissionCodes.FORUM_CONTENT_VIEW)
+    @GetMapping("/threads/page")
+    public R<AdminThreadPageVO> threadsPage(@RequestParam(required = false) String kind,
+                                            @RequestParam(required = false) String board,
+                                            @RequestParam(required = false) String keyword,
+                                            @RequestParam(required = false) Boolean deleted,
+                                            @RequestParam(defaultValue = "1") int page,
+                                            @RequestParam(defaultValue = "20") int size) {
+        return R.ok(adminService.threadsPage(kind, board, keyword, deleted, page, size));
+    }
+
     /**
      * 一个端点承载置顶/加精/已解决/删除四种状态变更，注解只能声明「任一即可」，
      * 具体字段对应的权限码由 {@link AdminService#updateThread} 精确判定。
@@ -203,6 +217,14 @@ public class AdminForumController {
     @GetMapping("/sensitive-words")
     public R<List<SensitiveWordVO>> sensitiveWords() {
         return R.ok(adminService.sensitiveWords());
+    }
+
+    /** 敏感词分页查询，管理端列表走此接口，避免一次拉取全部敏感词。 */
+    @Permit(PermissionCodes.FORUM_SENSITIVE_VIEW)
+    @GetMapping("/sensitive-words/page")
+    public R<SensitiveWordPageVO> sensitiveWordsPage(@RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "20") int size) {
+        return R.ok(adminService.sensitiveWordsPage(page, size));
     }
 
     @Permit(PermissionCodes.FORUM_SENSITIVE_ADD)

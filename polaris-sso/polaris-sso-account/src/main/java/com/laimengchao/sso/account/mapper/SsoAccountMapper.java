@@ -9,6 +9,16 @@ import java.util.List;
 
 public interface SsoAccountMapper extends BaseMapper<SsoAccount> {
 
+    /** 批量只取联系字段，替代逐个 detail 查询的 N+1（不查 password_hash 等敏感列）。 */
+    @Select("""
+            <script>
+            SELECT id, username, nickname, email FROM sso_account
+            WHERE deleted = 0 AND id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </script>
+            """)
+    List<SsoAccount> selectContactsByIds(@Param("ids") List<Long> ids);
+
     @Select("SELECT * FROM sso_account WHERE username = #{username} AND deleted = 0")
     SsoAccount selectByUsername(@Param("username") String username);
 
