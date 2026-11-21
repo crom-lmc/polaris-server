@@ -30,9 +30,7 @@
         <module>polaris-common</module>
         <!-- 统一账号平台：sso-auth + sso-account + sso-gateway -->
         <module>polaris-sso</module>
-        <!-- 业务应用：博客（聚合 blog-service）。接入方式即「新应用接入模板」，见 README §6.6 -->
-        <module>polaris-blog</module>
-        <!-- 业务应用：CMS 内容管理端，与 blog-admin 同一套接入模板 -->
+        <!-- 业务应用：CMS 内容管理端 -->
         <module>polaris-cms</module>
         <!-- 业务应用：内容门户（对外展示 CMS 内容），同一套接入模板 -->
         <module>polaris-portal</module>
@@ -72,7 +70,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- MyBatis-Plus（对齐 Blob-Backend，JDK17/Boot3.2 稳定版） -->
+            <!-- MyBatis-Plus（JDK17/Boot3.2 稳定版） -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>

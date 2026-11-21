@@ -14,7 +14,7 @@
     <artifactId>polaris-cms-service</artifactId>
     <name>cms-service</name>
     <description>
-        CMS 内容管理服务（端口 9004）：与 blog-admin 同一套接入模板——
+        CMS 内容管理服务（端口 9004）：标准接入模板——
         认证消费网关注入的可信头（X-Account-*），按钮级权限走 @Permit（权限码由统一账号中心维护），
         不自带登录与 JWT 签发。
     </description>

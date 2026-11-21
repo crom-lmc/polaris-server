@@ -1,4 +1,4 @@
-# 本地构建：打包 9 个后端 jar + 构建 8 个前端站点，产物集中到 deploy\jars 与 deploy\www
+# 本地构建：打包 8 个后端 jar + 构建 6 个前端站点，产物集中到 deploy\jars 与 deploy\www
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\build-all.ps1
 # 说明：服务器只有 2C4G，编译务必在本机/CI 完成，只把产物推上去。
 
@@ -18,8 +18,7 @@ $ErrorActionPreference = 'Stop'
 # 前端登录跳转地址是构建期写死进 dist 的（import.meta.env.VITE_SSO_ORIGIN），必须在这里注入
 
 $env:VITE_SSO_ORIGIN = "https://polaris-sso.$Domain"
-$env:VITE_WEB_ORIGIN = "https://portal-blog-web.$Domain"
-Write-Host "构建期环境：VITE_SSO_ORIGIN=$env:VITE_SSO_ORIGIN  VITE_WEB_ORIGIN=$env:VITE_WEB_ORIGIN"
+Write-Host "构建期环境：VITE_SSO_ORIGIN=$env:VITE_SSO_ORIGIN"
 $jarDir = Join-Path $DeployRoot 'jars'
 $wwwDir = Join-Path $DeployRoot 'www'
 New-Item -ItemType Directory -Force -Path $jarDir, $wwwDir | Out-Null
@@ -40,7 +39,6 @@ if (-not $SkipBackend) {
     'settings.jar'    = 'polaris-settings\polaris-settings-service\target\settings-service.jar'
     'ehr.jar'         = 'polaris-ehr\polaris-ehr-service\target\ehr-service.jar'
     'cms.jar'         = 'polaris-cms\polaris-cms-service\target\cms-service.jar'
-    'blog.jar'        = 'polaris-blog\polaris-blog-service\target\blog-service.jar'
     'portal.jar'      = 'polaris-portal\polaris-portal-service\target\portal-service.jar'
     'job.jar'         = 'polaris-job\polaris-job-service\target\job-service.jar'
   }
@@ -54,7 +52,7 @@ if (-not $SkipBackend) {
 
 if (-not $SkipWeb) {
   Write-Host '=== 2/2 构建前端 ===' -ForegroundColor Cyan
-  # app 目录 -> www 下的站点目录（blog 一仓两端，单独处理；cms 默认不构建）
+  # app 目录 -> www 下的站点目录（cms 默认不构建）
   $sites = @(
     @{ dir = 'polaris-sso-web';      out = 'sso' },
     @{ dir = 'polaris-settings-web'; out = 'settings' },
@@ -77,22 +75,6 @@ if (-not $SkipWeb) {
     Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
     Copy-Item (Join-Path $appDir 'dist') $target -Recurse
     Write-Host "  -> www\$($site.out)"
-  }
-
-  # 博客：根目录一次构建，产出 packages\web\dist 与 packages\admin\dist
-  $blogDir = Join-Path $WebRoot 'polaris-blog-web'
-  Push-Location $blogDir
-  try {
-    if (-not (Test-Path 'node_modules')) { & npm ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci 失败：polaris-blog-web' } }
-    & npm run build
-    if ($LASTEXITCODE -ne 0) { throw 'npm run build 失败：polaris-blog-web' }
-  } finally { Pop-Location }
-
-  foreach ($pair in @(@{ src = 'packages\web\dist'; out = 'blog-web' }, @{ src = 'packages\admin\dist'; out = 'blog-admin' })) {
-    $target = Join-Path $wwwDir $pair.out
-    Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
-    Copy-Item (Join-Path $blogDir $pair.src) $target -Recurse
-    Write-Host "  -> www\$($pair.out)"
   }
 }
 

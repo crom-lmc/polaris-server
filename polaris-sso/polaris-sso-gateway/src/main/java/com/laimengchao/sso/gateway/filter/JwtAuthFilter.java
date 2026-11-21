@@ -102,7 +102,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     /**
      * 白名单判定：精确匹配，或以 {@code /**} 结尾时按前缀匹配。
-     * 业务应用的读者端（如 /api/blog/public/**）必须能整段放行，
+     * 业务应用的读者端（如 /api/cms/public/**）必须能整段放行，
      * 否则每加一个公开接口都得回来改一次网关。
      */
     private boolean isWhitelisted(String path) {

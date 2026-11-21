@@ -22,14 +22,6 @@ spring:
           uri: lb://sso-account
           predicates:
             - Path=/api/accounts/**,/api/roles/**,/api/permissions/**,/api/applications/**
-        - id: blog-admin
-          uri: lb://blog-admin
-          predicates:
-            - Path=/api/blog/**
-        - id: blog-uploads
-          uri: lb://blog-admin
-          predicates:
-            - Path=/uploads/**
         - id: cms
           uri: lb://cms
           predicates:

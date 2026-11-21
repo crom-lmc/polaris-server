@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @TableName("sso_application")
 public class SsoApplication extends BaseEntity {
 
-    /** 应用编码，如 blog-admin（唯一，写入 ticket 与 JWT 的 apps claim） */
+    /** 应用编码，如 cms-admin（唯一，写入 ticket 与 JWT 的 apps claim） */
     private String code;
     private String name;
     /** 应用类型，取值来自配置中心字典 sso.application_type */

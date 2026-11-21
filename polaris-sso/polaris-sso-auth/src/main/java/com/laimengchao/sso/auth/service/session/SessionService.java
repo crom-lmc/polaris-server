@@ -19,7 +19,7 @@ import java.util.Set;
  * 中心会话的读写与 cookie 落地。
  * <p>
  * 为什么用 cookie 而不是 localStorage 存会话：单点要求「跨应用共享登录态」，
- * localStorage 是按 origin 隔离的，blog 站点永远看不到 sso 站点写进去的东西；
+ * localStorage 是按 origin 隔离的，业务站点永远看不到 sso 站点写进去的东西；
  * 而 cookie 只要 Domain 设到顶级域，所有子域都能带上。
  * <p>
  * cookie 只存一个随机 sessionId，真正的 accountId 在服务端（Redis），

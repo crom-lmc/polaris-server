@@ -220,7 +220,7 @@ public class InternalApprovalController {
         }
         return switch (app.trim().toLowerCase()) {
             case "ehr" -> "employeeId";
-            case "cms", "blog" -> "articleId";
+            case "cms" -> "articleId";
             default -> "id";
         };
     }

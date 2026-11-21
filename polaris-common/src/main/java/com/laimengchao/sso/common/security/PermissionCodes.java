@@ -23,7 +23,6 @@ public final class PermissionCodes {
     public static final String APP_EHR = "ehr";
     public static final String APP_JOB = "job";
     public static final String APP_SETTINGS = "settings";
-    public static final String APP_BLOG = "blog";
     public static final String APP_CMS = "cms";
     /** 北极星空（社区论坛前台） */
     public static final String APP_FORUM = "forum";
@@ -296,72 +295,15 @@ public final class PermissionCodes {
     public static final String BIZ_MANAGE = "biz:manage";
 
     /* ============================================================
-     * BLOG 博客（app_code = blog）
-     * ============================================================ */
-    /* 菜单 */
-    public static final String BLOG_DASHBOARD_MENU = "dashboard";
-    public static final String BLOG_ARTICLE_MENU = "article";
-    public static final String BLOG_CATEGORY_MENU = "category";
-    public static final String BLOG_TAG_MENU = "tag";
-    public static final String BLOG_COMMENT_MENU = "comment";
-    public static final String BLOG_MEDIA_MENU = "media";
-    public static final String BLOG_THEME_MENU = "theme";
-    public static final String BLOG_SETTING_MENU = "setting";
-    public static final String BLOG_LOG_MENU = "log";
-
-    /* 文章 */
-    public static final String ARTICLE_LIST = "article:list";
-    public static final String ARTICLE_CREATE = "article:create";
-    public static final String ARTICLE_EDIT = "article:edit";
-    public static final String ARTICLE_PUBLISH = "article:publish";
-    public static final String ARTICLE_DELETE = "article:delete";
-
-    /* 分类 */
-    public static final String CATEGORY_LIST = "category:list";
-    public static final String CATEGORY_EDIT = "category:edit";
-    public static final String CATEGORY_DELETE = "category:delete";
-
-    /* 标签 */
-    public static final String TAG_LIST = "tag:list";
-    public static final String TAG_EDIT = "tag:edit";
-    public static final String TAG_DELETE = "tag:delete";
-
-    /* 评论 */
-    public static final String COMMENT_LIST = "comment:list";
-    public static final String COMMENT_AUDIT = "comment:audit";
-    public static final String COMMENT_DELETE = "comment:delete";
-    public static final String COMMENT_REPLY = "comment:reply";
-
-    /* 媒体库 */
-    public static final String MEDIA_LIST = "media:list";
-    public static final String MEDIA_EDIT = "media:edit";
-    public static final String MEDIA_DELETE = "media:delete";
-    public static final String MEDIA_UPLOAD = "media:upload";
-
-    /* 主题 */
-    public static final String THEME_LIST = "theme:list";
-    public static final String THEME_EDIT = "theme:edit";
-    public static final String THEME_DELETE = "theme:delete";
-    public static final String THEME_PUBLISH = "theme:publish";
-
-    /* 站点设置 */
-    public static final String SETTING_VIEW = "setting:view";
-    public static final String SETTING_EDIT = "setting:edit";
-
-    /* 操作日志 */
-    public static final String LOG_LIST = "log:list";
-    public static final String LOG_CLEAN = "log:clean";
-
-    /* 统计 */
-    public static final String STAT_VIEW = "stat:view";
-
-    /* ============================================================
      * CMS 内容中心（app_code = cms）
      * ============================================================ */
     public static final String DASHBOARD_VIEW = "dashboard:view";
 
     /* 文章 */
-    /* ARTICLE_CREATE / ARTICLE_EDIT / ARTICLE_DELETE 已在 BLOG 组定义（字符串相同） */
+    public static final String ARTICLE_CREATE = "article:create";
+    public static final String ARTICLE_EDIT = "article:edit";
+    public static final String ARTICLE_PUBLISH = "article:publish";
+    public static final String ARTICLE_DELETE = "article:delete";
     public static final String ARTICLE_VIEW = "article:view";
     public static final String ARTICLE_AUDIT = "article:audit";
     public static final String ARTICLE_PIN = "article:pin";
@@ -369,17 +311,16 @@ public final class PermissionCodes {
     public static final String ARTICLE_VERSION = "article:version";
 
     /* 分类 */
-    /* CATEGORY_LIST 已在 BLOG 组定义 */
     public static final String CATEGORY_VIEW = "category:view";
     public static final String CATEGORY_MANAGE = "category:manage";
 
     /* 标签 */
-    /* TAG_LIST 已在 BLOG 组定义 */
     public static final String TAG_VIEW = "tag:view";
     public static final String TAG_MANAGE = "tag:manage";
 
     /* 媒体库 */
-    /* MEDIA_LIST / MEDIA_DELETE / MEDIA_UPLOAD 已在 BLOG 组定义 */
+    public static final String MEDIA_DELETE = "media:delete";
+    public static final String MEDIA_UPLOAD = "media:upload";
     public static final String MEDIA_VIEW = "media:view";
 
     /* Banner */

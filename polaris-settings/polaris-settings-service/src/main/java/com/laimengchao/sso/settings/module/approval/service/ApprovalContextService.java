@@ -174,7 +174,7 @@ public class ApprovalContextService {
      * 场景当前配置 {@code cfg_biz_scene.table_bindings}（补列前的老单兜底）。
      * 因此管理端事后改场景绑定（含所属应用）只影响新单，在途单继续按旧绑定渲染。
      * <p>
-     * <b>去哪个库取数</b>由绑定的 appCode 决定（ehr / cms / blog / sso-center / settings 各自一套库）：
+     * <b>去哪个库取数</b>由绑定的 appCode 决定（ehr / cms / sso-center / settings 各自一套库）：
      * 优先用快照里的 appCode，老单没有就回落场景的 appCode。表名只在各自库内唯一，
      * 所以这一步不能省，也不能拿当前场景配置去覆盖快照。
      * <p>
@@ -293,7 +293,7 @@ public class ApprovalContextService {
      * 各应用的「主体主键」默认键名（表单快照里的字段名）。
      * <p>
      * 绑定里没显式写 {@code subjectKey} 时按<b>所属应用</b>兜底：ehr 的单据快照带 employeeId，
-     * cms / blog 用 articleId，账号与配置类用 id。
+     * cms 用 articleId，账号与配置类用 id。
      * <p>
      * 历史上这里写死 employeeId——非 EHR 场景在没配 subjectKey 时主表根本取不到行，
      * 且管理端看不出到底按哪个键取。现在前端不再预填，这里也改成按应用兜底。
@@ -301,7 +301,6 @@ public class ApprovalContextService {
     private static final Map<String, String> DEFAULT_SUBJECT_KEYS = Map.of(
             "ehr", "employeeId",
             "cms", "articleId",
-            "blog", "articleId",
             "sso-center", "id",
             "settings", "id");
 

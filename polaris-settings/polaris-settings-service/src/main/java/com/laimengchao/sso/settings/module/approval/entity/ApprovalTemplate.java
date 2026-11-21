@@ -19,7 +19,7 @@ public class ApprovalTemplate extends BaseEntity {
     /** 模板编码，如 ehr_onboard_default */
     private String code;
     private String name;
-    /** 归属应用 ehr / cms / blog */
+    /** 归属应用 ehr / cms */
     private String appCode;
     /** 业务场景，如 ehr.onboard */
     private String bizType;

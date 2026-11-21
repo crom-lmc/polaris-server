@@ -38,7 +38,6 @@ if [ "$DO_BACKEND" = 1 ]; then
     [settings.jar]=polaris-settings/polaris-settings-service/target/settings-service.jar
     [ehr.jar]=polaris-ehr/polaris-ehr-service/target/ehr-service.jar
     [cms.jar]=polaris-cms/polaris-cms-service/target/cms-service.jar
-    [blog.jar]=polaris-blog/polaris-blog-service/target/blog-service.jar
     [portal.jar]=polaris-portal/polaris-portal-service/target/portal-service.jar
     [job.jar]=polaris-job/polaris-job-service/target/job-service.jar
     [forum.jar]=polaris-forum/polaris-forum-service/target/forum-service.jar
@@ -55,7 +54,6 @@ fi
 if [ "$DO_WEB" = 1 ]; then
   say "4/5 构建前端"
   export VITE_SSO_ORIGIN="https://polaris-sso.$DOMAIN"
-  export VITE_WEB_ORIGIN="https://portal-blog-web.$DOMAIN"
   export VITE_PORTAL_ORIGIN="https://polaris-portal.$DOMAIN"
   export VITE_FORUM_ORIGIN="https://polaris-forum.$DOMAIN"
   export VITE_FORUM_ADMIN_ORIGIN="https://polaris-forum.$DOMAIN/admin"
@@ -76,14 +74,6 @@ if [ "$DO_WEB" = 1 ]; then
   build_site polaris-forum-web    forum
   build_site polaris-forum-admin-web admin
 
-  # 博客是一仓两端
-  blog="$SRC/polaris-web/polaris-blog-web"
-  ( cd "$blog" && { [ -d node_modules ] || npm ci; } && npm run build )
-  for pair in "packages/web/dist:blog-web" "packages/admin/dist:blog-admin"; do
-    src="${pair%%:*}"; out="$ROOT/www/${pair##*:}"
-    rm -rf "$out" && mkdir -p "$out" && cp -r "$blog/$src/." "$out/"
-    echo "  -> www/${pair##*:}"
-  done
 fi
 
 if [ "$DO_SYNC" = 1 ]; then
@@ -113,10 +103,10 @@ if [ "$DO_SYNC" = 1 ]; then
   nginx -t && nginx -s reload
 
   # 发版自检：只告警、不自动回滚，保留现场
-  say "发版自检（10 站点 + tengine 8443）"
+  say "发版自检（8 站点 + tengine 8443）"
   FAIL=0
   for name in polaris-sso polaris-ehr polaris-cms polaris-settings polaris-job \
-              polaris-portal portal-blog-admin portal-blog-web polaris-forum vault; do
+              polaris-portal polaris-forum vault; do
     code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$name.$DOMAIN:443:127.0.0.1" "https://$name.$DOMAIN/" || echo 000)
     printf '  %-20s %s\n' "$name" "$code"
     [ "$code" = "200" ] || FAIL=1

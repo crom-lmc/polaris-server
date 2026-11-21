@@ -56,7 +56,7 @@ mybatis-plus:
   global-config:
     banner: false
     db-config:
-      # 自增主键，与 blog 一致；雪花 ID 序列化成字符串的坑这里没有
+      # 自增主键；雪花 ID 序列化成字符串的坑这里没有
       id-type: auto
 
 polaris:

@@ -14,7 +14,7 @@ $ErrorActionPreference = 'Stop'
 $target = "$User@$Server"
 
 Write-Host '=== 1/4 准备远端目录 ===' -ForegroundColor Cyan
-ssh $target "mkdir -p $Remote/logs $Remote/uploads/blog"
+ssh $target "mkdir -p $Remote/logs"
 
 Write-Host '=== 2/4 上传产物 ===' -ForegroundColor Cyan
 scp (Join-Path $DeployRoot 'docker-compose.yml')     "${target}:$Remote/"
@@ -82,10 +82,10 @@ nginx -t && nginx -s reload
 echo "nginx ok, domain=$DOMAIN"
 
 # 发版自检：只告警、不自动回滚，保留现场
-echo "=== 发版自检（9 站点 + tengine 8443） ==="
+echo "=== 发版自检（7 站点 + tengine 8443） ==="
 FAIL=0
 for name in polaris-sso polaris-ehr polaris-cms polaris-settings polaris-job \
-            polaris-portal portal-blog-admin portal-blog-web vault; do
+            polaris-portal vault; do
   code=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$name.$DOMAIN:443:127.0.0.1" "https://$name.$DOMAIN/" || echo 000)
   printf '  %-20s %s\n' "$name" "$code"
   [ "$code" = "200" ] || FAIL=1

@@ -20,7 +20,7 @@ public class GatewayProperties {
     /**
      * 免鉴权路径。
      * <p>
-     * 支持两种写法：精确路径（{@code /api/auth/login}）与前缀通配（{@code /api/blog/public/**}）。
+     * 支持两种写法：精确路径（{@code /api/auth/login}）与前缀通配（{@code /api/cms/public/**}）。
      * 业务应用的读者端接口天生不需要登录，必须能按前缀放行——否则每加一个公开接口
      * 都要改一次网关配置，早晚会漏。
      */
@@ -50,19 +50,15 @@ public class GatewayProperties {
             "/api/auth/public/public-key",
             // 应用名查询：业务应用（含游客态）据此显示浏览器标签标题，只暴露 code/name
             "/api/applications/public/**",
-            // 业务应用（blog-admin）的读者端：前台不需要登录，公开接口按前缀放行
-            "/api/blog/public/**",
-            // 单点换票：此时用户还没有博客令牌，凭一次性 ticket 换（应用密钥在后端）
-            "/api/blog/sso/**",
-            // 业务应用（cms）的读者端与换票端：同 blog 的口径
+            // 业务应用（cms）的读者端与换票端
             "/api/cms/public/**",
             "/api/cms/sso/**",
             // CMS 媒体文件：静态资源，读者端直接加载（经 /api/cms/** 路由转发到 9004）
             "/api/cms/media/file/**",
-            // 业务应用（portal）的读者端与换票端：同 cms/blog 口径
+            // 业务应用（portal）的读者端与换票端：同 cms 口径
             "/api/portal/public/**",
             "/api/portal/sso/**",
-            // 业务应用（ehr）的换票端：同 cms/blog/portal 口径
+            // 业务应用（ehr）的换票端：同 cms/portal 口径
             // 漏了这条 → /callback 拿授权码换令牌时被网关判「未登录」，登录页停在「登录失败」
             "/api/ehr/sso/**",
             // 门户招聘：职位列表/详情、投递、进度查询免登录

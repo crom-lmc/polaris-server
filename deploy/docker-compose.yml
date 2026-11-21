@@ -159,21 +159,6 @@ services:
       retries: 3
       start_period: 90s
 
-  blog:
-    <<: *base
-    container_name: polaris-blog
-    command: ["java", "-jar", "/jars/blog.jar"]
-    mem_limit: 400m
-    depends_on:
-      settings:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/127.0.0.1/9003' || exit 1"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 90s
-
   job:
     <<: *base
     container_name: polaris-job

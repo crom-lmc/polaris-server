@@ -30,7 +30,6 @@ polaris-sso-gateway :9080
         │  RS256 公钥验签、令牌吊销检查、路由、可信用户头
         ├──────────────► sso-auth :9001       登录、签发/刷新/吊销令牌
         ├──────────────► sso-account :9002    账号、角色、权限、应用、数据范围
-        ├──────────────► blog-service :9003   博客内容
         ├──────────────► cms-service :9004    内容与栏目管理
         ├──────────────► portal-service :9005 门户内容聚合、统一待办
         ├──────────────► ehr-service :9006    人力业务
@@ -64,8 +63,6 @@ polaris-server/
 │   ├── polaris-sso-auth/           # 认证服务 :9001
 │   ├── polaris-sso-account/        # 账号权限服务 :9002
 │   └── polaris-sso-client/         # 认证、账号跨服务客户端
-├── polaris-blog/
-│   └── polaris-blog-service/       # 博客服务 :9003
 ├── polaris-cms/
 │   └── polaris-cms-service/        # 内容服务 :9004
 ├── polaris-portal/
@@ -90,7 +87,7 @@ polaris-server/
 ### 4.1 Gateway：统一网关
 
 - 对外统一监听 `9080`，前端只需要配置一个后端入口。
-- 按路径把请求转发到 auth、account、blog、cms、portal、ehr、settings、job。
+- 按路径把请求转发到 auth、account、cms、portal、ehr、settings、job。
 - 使用 RS256 公钥验证 JWT，检查注销、踢下线产生的吊销记录。
 - 将认证后的用户信息转换为业务服务可信头，避免各服务重复实现登录。
 - 默认通过 `127.0.0.1:9001~9008` 直连服务；开启 Nacos Discovery 后可走服务发现。
@@ -157,18 +154,11 @@ EHR 同时应用“功能权限 + 组织数据权限”。没有数据范围时�
 - 聚合 settings 统一待办，作为员工工作入口。
 - 本身不保存独立业务库，重点是登录态接入、内容聚合和后续门户扩展。
 
-### 4.7 Blog：博客服务
-
-- 提供博客文章、分类、标签及后台管理接口。
-- 读者端内容可公开访问，管理端通过统一 SSO 登录。
-- 支持博客相关附件上传。
-- 使用独立 `blog` 数据库；**不会默认自动执行建表脚本**，首次启动前必须手工初始化。
-
-### 4.8 Job：调度中心
+### 4.7 Job：调度中心
 
 - 任务定义、Cron/调度配置、启停、手工触发和执行日志。
 - 执行器注册、Handler 清单、心跳和运行状态管理。
-- 调度中心只负责触发，具体业务 Handler 留在 EHR、settings、CMS、Blog 等业务应用中。
+- 调度中心只负责触发，具体业务 Handler 留在 EHR、settings、CMS 等业务应用中。
 - 支持失败报警，报警通知复用 settings 消息中心。
 - 默认开启调度扫描；本地不需要定时任务时可关闭 `JOB_SCHEDULER_ENABLED`。
 
@@ -186,7 +176,6 @@ EHR 同时应用“功能权限 + 组织数据权限”。没有数据范围时�
 | Gateway | 9080 | 无 | 不适用 | `SsoGatewayApplication` | `polaris-sso/polaris-sso-gateway/target/polaris-sso-gateway-1.0.0.jar` |
 | Auth | 9001 | 使用账号体系 | 不适用 | `SsoAuthApplication` | `polaris-sso/polaris-sso-auth/target/polaris-sso-auth-1.0.0.jar` |
 | Account | 9002 | `sso_ms` | `never` | `SsoAccountApplication` | `polaris-sso/polaris-sso-account/target/polaris-sso-account-1.0.0.jar` |
-| Blog | 9003 | `blog` | `never` | `BlogAdminApplication` | `polaris-blog/polaris-blog-service/target/blog-service.jar` |
 | CMS | 9004 | `cms` | `always` | `CmsApplication` | `polaris-cms/polaris-cms-service/target/cms-service.jar` |
 | Portal | 9005 | 无独立库 | 不适用 | `PortalApplication` | `polaris-portal/polaris-portal-service/target/portal-service.jar` |
 | EHR | 9006 | `ehr` | `always` | `EhrApplication` | `polaris-ehr/polaris-ehr-service/target/ehr-service.jar` |
@@ -232,15 +221,14 @@ CREATE DATABASE IF NOT EXISTS sso_ms DEFAULT CHARACTER SET utf8mb4 COLLATE utf8m
 CREATE DATABASE IF NOT EXISTS ehr DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS settings DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS cms DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-CREATE DATABASE IF NOT EXISTS blog DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS polaris_job DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
 
 只启动 SSO + EHR 时，先建 `sso_ms`、`ehr`、`settings` 即可。使用独立低权限数据库账号时，应提前授予对应库的权限。
 
-### 6.4 初始化六个业务库
+### 6.4 初始化五个业务库
 
-六个服务统一使用各自 `src/main/resources/` 下的 `schema.sql` 和 `data.sql`。全新空库必须先执行 `schema.sql`，再执行同目录的 `data.sql`；建议按 Account → Settings → EHR → CMS → Blog → Job 的顺序初始化。未启动的服务可以暂不初始化对应库。
+五个服务统一使用各自 `src/main/resources/` 下的 `schema.sql` 和 `data.sql`。全新空库必须先执行 `schema.sql`，再执行同目录的 `data.sql`；建议按 Account → Settings → EHR → CMS → Job 的顺序初始化。未启动的服务可以暂不初始化对应库。
 
 在仓库根目录使用 MySQL 客户端执行（以下为重定向命令，适用于 Bash、Git Bash 或 cmd）：
 
@@ -253,13 +241,11 @@ mysql -uroot -p --default-character-set=utf8mb4 ehr < polaris-ehr/polaris-ehr-se
 mysql -uroot -p --default-character-set=utf8mb4 ehr < polaris-ehr/polaris-ehr-service/src/main/resources/data.sql
 mysql -uroot -p --default-character-set=utf8mb4 cms < polaris-cms/polaris-cms-service/src/main/resources/schema.sql
 mysql -uroot -p --default-character-set=utf8mb4 cms < polaris-cms/polaris-cms-service/src/main/resources/data.sql
-mysql -uroot -p --default-character-set=utf8mb4 blog < polaris-blog/polaris-blog-service/src/main/resources/schema.sql
-mysql -uroot -p --default-character-set=utf8mb4 blog < polaris-blog/polaris-blog-service/src/main/resources/data.sql
 mysql -uroot -p --default-character-set=utf8mb4 polaris_job < polaris-job/polaris-job-service/src/main/resources/schema.sql
 mysql -uroot -p --default-character-set=utf8mb4 polaris_job < polaris-job/polaris-job-service/src/main/resources/data.sql
 ```
 
-这些基线只用于全新库，不承担存量库升级；已有数据的库不要重复导入全量 `data.sql`。完成首次初始化后再启动服务。Account、Blog 默认 `sql.init.mode=never`，其余四个服务本地默认 `always`；`always` 会在启动时执行相同基线，生产环境应统一设为 `never`。
+这些基线只用于全新库，不承担存量库升级；已有数据的库不要重复导入全量 `data.sql`。完成首次初始化后再启动服务。Account 默认 `sql.init.mode=never`，其余服务本地默认 `always`；`always` 会在启动时执行相同基线，生产环境应统一设为 `never`。
 
 Account 首次启动时可通过 `SSO_ADMIN_USERNAME`、`SSO_ADMIN_PASSWORD`、`SSO_ADMIN_EMAIL` 创建内置管理员。若管理员已存在，启动不会重置其密码；未提供 `SSO_ADMIN_PASSWORD` 时只跳过自动建号，不影响执行 SQL 中已有账号和权限数据。
 
@@ -319,7 +305,7 @@ $env:SSO_ADMIN_EMAIL = "admin@example.local"
 
 Redis 默认无密码、地址 `127.0.0.1:6379`。auth 默认使用 Redis database 2 保存吊销名单；如只是单实例开发且明确不需要 Redis，可将 `SSO_REVOCATION_STORE=memory`，但多实例和生产环境推荐使用 `redis`。
 
-其他应用启动时再设置对应的 `CMS_APP_SECRET`、`PORTAL_APP_SECRET`、`BLOG_APP_SECRET`、`JOB_APP_SECRET`，以及相应数据库配置。appSecret 不是任意服务私钥，必须和 account 中该应用的登记值匹配。
+其他应用启动时再设置对应的 `CMS_APP_SECRET`、`PORTAL_APP_SECRET`、`JOB_APP_SECRET`，以及相应数据库配置。appSecret 不是任意服务私钥，必须和 account 中该应用的登记值匹配。
 
 ### 6.7 编译项目
 
@@ -348,7 +334,7 @@ mvn -DskipTests compile
 | 3 | Auth | 必需 |
 | 4 | EHR | 使用 EHR 时必需 |
 | 5 | Gateway | 必需，前端统一入口 |
-| 6 | CMS、Portal、Blog、Job | 按业务需要启动 |
+| 6 | CMS、Portal、Job | 按业务需要启动 |
 
 无需严格等待每个服务完全启动后再启动下一个，但首次初始化时建议先确认 Account、Settings 日志没有数据库错误。
 
@@ -406,7 +392,6 @@ http://127.0.0.1:9080/actuator/health
 | 服务 | 数据库变量 | SQL 初始化变量 | 换票密钥 |
 |---|---|---|---|
 | Account | `SSO_DB_URL`、`SSO_DB_USER`、`SSO_DB_PASSWORD` | `SSO_SQL_INIT_MODE` | 不适用 |
-| Blog | `BLOG_DB_URL`、`BLOG_DB_USER`、`BLOG_DB_PASSWORD` | `BLOG_SQL_INIT_MODE` | `BLOG_APP_SECRET` |
 | CMS | `CMS_DB_URL`、`CMS_DB_USER`、`CMS_DB_PASSWORD` | `CMS_SQL_INIT_MODE` | `CMS_APP_SECRET` |
 | EHR | `EHR_DB_URL`、`EHR_DB_USER`、`EHR_DB_PASSWORD` | `EHR_SQL_INIT_MODE` | `EHR_APP_SECRET` |
 | Settings | `SETTINGS_DB_URL`、`SETTINGS_DB_USER`、`SETTINGS_DB_PASSWORD` | `SETTINGS_SQL_INIT_MODE` | `SETTINGS_APP_SECRET` |
@@ -495,11 +480,7 @@ local 配置通常使用命名空间 `sso-ms-local`、Group `SSO`，以实际导
 
 Account 默认 `SSO_SQL_INIT_MODE=never`。全新本地库需要显式改为 `always`，或先手工执行 account 的 `schema.sql`、`data.sql`。
 
-### 11.2 Blog 启动报表不存在
-
-Blog 同样默认不自动初始化。确认 JDBC 指向 `blog` 库，并已按 6.4 依次执行 `polaris-blog/polaris-blog-service/src/main/resources/schema.sql` 和 `data.sql`。
-
-### 11.3 登录成功但请求立即 401
+### 11.2 登录成功但请求立即 401
 
 重点检查：
 
@@ -508,22 +489,22 @@ Blog 同样默认不自动初始化。确认 JDBC 指向 `blog` 库，并已按 
 - auth 是否使用 Redis 吊销存储，Redis 地址、密码、database 是否正确。
 - 请求是否经过 Gateway，而不是直接请求业务服务。
 
-### 11.4 能登录但无法进入某应用或换票失败
+### 11.3 能登录但无法进入某应用或换票失败
 
 检查 account 中应用是否启用、账号是否有应用授权、`base_url` 是否与前端 origin 完全一致，以及业务服务 `*_APP_SECRET` 是否与登记值一致。`localhost` 和 `127.0.0.1` 在 origin 匹配中应视为不同地址。
 
-### 11.5 服务报内部接口无权限
+### 11.4 服务报内部接口无权限
 
 确认调用方和被调用方的 `SSO_INTERNAL_TOKEN` 一致，请求路径确实是 `/internal/**`，并检查是否错误地绕过了内部 Feign 客户端。
 
-### 11.6 页面只有菜单，没有数据或只有本部门数据
+### 11.5 页面只有菜单，没有数据或只有本部门数据
 
 这通常是角色权限或组织数据范围导致。分别检查功能权限码、应用授权、账号角色和数据范围；不要通过把空范围解释为全量来“修复”。
 
-### 11.7 审批通过但业务状态没有变化
+### 11.6 审批通过但业务状态没有变化
 
 检查 settings 日志中的回调结果，以及业务服务的 `EHR_SELF_URL`、`CMS_SELF_BASE_URL` 等地址是否从 settings 网络可达，同时核对内部令牌。
 
-### 11.8 邮件没有发送
+### 11.7 邮件没有发送
 
 未配置 SMTP 时系统只保存站内消息，这是预期行为。需要邮件时配置 `SETTINGS_SMTP_*`，并检查邮件服务商的认证、SSL 和发件人限制。

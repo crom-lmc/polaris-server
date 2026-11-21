@@ -222,7 +222,7 @@ public class AdminApprovalController {
     /**
      * 业务库表清单代理：前端「绑定数据表」清单的数据源。
      * <p>
-     * 按 appCode 路由到对应业务方（ehr / cms / blog / sso-center / settings 都提供
+     * 按 appCode 路由到对应业务方（ehr / cms / sso-center / settings 都提供
      * {@code /internal/entity/**}，实现同一份 common 基类）。路由表见
      * {@code approval.entity.base-urls}；没配的应用视为未开通，直接报错让界面说清楚。
      */

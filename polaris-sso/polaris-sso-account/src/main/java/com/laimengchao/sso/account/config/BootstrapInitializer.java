@@ -171,7 +171,7 @@ public class BootstrapInitializer implements ApplicationRunner {
         }
         int updated = jdbcTemplate.update("UPDATE sso_application SET app_type = CASE "
                 + "WHEN code IN ('sso-center', 'settings', 'job') THEN 'SYSTEM' "
-                + "WHEN code IN ('cms', 'blog', 'ehr') THEN 'MANAGEMENT' "
+                + "WHEN code IN ('cms', 'ehr') THEN 'MANAGEMENT' "
                 + "WHEN code = 'portal' THEN 'PORTAL' "
                 + "WHEN code IN ('forum', 'forum-admin') THEN 'COMMUNITY' "
                 + "ELSE 'OTHER' END WHERE app_type IS NULL OR app_type = ''");

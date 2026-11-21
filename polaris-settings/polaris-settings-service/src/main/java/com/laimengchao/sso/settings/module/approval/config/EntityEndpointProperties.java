@@ -11,7 +11,7 @@ import java.util.Map;
  * 审批「数据绑定」的<b>应用路由表</b>：appCode → 该应用的对内基址。
  * <p>
  * 为什么需要它：真绑定要按应用去各自的库拉表清单与真实行，而每个应用是独立进程、独立数据库。
- * 早期只有 ehr 提供 /internal/entity/**，代码里写死了一个 ehrBaseUrl；现在 cms / blog /
+ * 早期只有 ehr 提供 /internal/entity/**，代码里写死了一个 ehrBaseUrl；现在 cms /
  * sso-center / settings 都挂上了同一套端点，路由就必须是配置而不是常量——
  * 换环境（本机 → 生产）只改配置，不动代码。
  * <p>

@@ -78,7 +78,7 @@ public class AuthProperties {
 
     /**
      * 会话 cookie 的 Domain。
-     * <p>生产必须是顶级域（如 {@code .laimengchao.site}），否则 blog/sso 两个子域
+     * <p>生产必须是顶级域（如 {@code .laimengchao.site}），否则业务/sso 两个子域
      * 拿不到同一个 cookie，单点立刻退化成各登录各的。本地留空即可（host-only）。
      */
     private String sessionCookieDomain = "";

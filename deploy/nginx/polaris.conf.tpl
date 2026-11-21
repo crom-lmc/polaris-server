@@ -27,9 +27,6 @@ server {
         polaris-gateway.${DOMAIN}
         polaris-auth.${DOMAIN}
         polaris-account.${DOMAIN}
-        portal-blog-api.${DOMAIN}
-        portal-blog-web.${DOMAIN}
-        portal-blog-admin.${DOMAIN}
         polaris-forum.${DOMAIN};
     return 301 https://$host$request_uri;
 }
@@ -177,59 +174,7 @@ server {
     }
 }
 
-# 博客后台（hash 路由，回调 /#/sso/callback）
-server {
-    listen 443 ssl;
-    server_name portal-blog-admin.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/portal-blog-admin.${DOMAIN}/portal-blog-admin.${DOMAIN}_nginx/portal-blog-admin.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/portal-blog-admin.${DOMAIN}/portal-blog-admin.${DOMAIN}_nginx/portal-blog-admin.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-    gzip on;
-    gzip_types text/css application/javascript application/json image/svg+xml;
 
-    root /opt/polaris/www/blog-admin;
-    index index.html;
-
-    include /etc/nginx/snippets/polaris-api.inc;
-
-    location /uploads/ {
-        proxy_pass http://127.0.0.1:9080;
-        proxy_set_header Host $host;
-    }
-
-    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
-    location / {
-        include /etc/nginx/snippets/polaris-batch1-root.inc;
-    }
-}
-
-# 博客读者端（公开站点）
-server {
-    listen 443 ssl;
-    server_name portal-blog-web.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/portal-blog-web.${DOMAIN}/portal-blog-web.${DOMAIN}_nginx/portal-blog-web.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/portal-blog-web.${DOMAIN}/portal-blog-web.${DOMAIN}_nginx/portal-blog-web.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-    gzip on;
-    gzip_types text/css application/javascript application/json image/svg+xml;
-
-    root /opt/polaris/www/blog-web;
-    index index.html;
-
-    include /etc/nginx/snippets/polaris-api.inc;
-
-    location /uploads/ {
-        proxy_pass http://127.0.0.1:9080;
-        proxy_set_header Host $host;
-    }
-
-    # 默认经雷池 tengine(8443)；回滚时用 polaris-direct.inc 覆盖对应片段（直连静态）
-    location / {
-        include /etc/nginx/snippets/polaris-batch1-root.inc;
-    }
-}
 
 # 社区论坛：用户端使用 /，管理端使用 /admin，OAuth 回调分别为 /auth/callback 和 /admin/callback
 server {
@@ -316,23 +261,4 @@ server {
     }
 }
 
-# 博客服务直连（含 /uploads 静态图）
-server {
-    listen 443 ssl;
-    server_name portal-blog-api.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/portal-blog-api.${DOMAIN}/portal-blog-api.${DOMAIN}_nginx/portal-blog-api.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/portal-blog-api.${DOMAIN}/portal-blog-api.${DOMAIN}_nginx/portal-blog-api.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-
-    location / {
-        proxy_pass http://127.0.0.1:9003;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
-    }
-}
 

@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * 「业务实体」元数据 + 取数的<b>通用</b>底座——审批页面「与表真绑定」能力的服务端实现，一份代码全模块复用。
  * <p>
  * <b>为什么在 common</b>：早期只有 EHR 提供了这组接口，审批配置里的「数据绑定」也就只能绑 EHR 的表。
- * 要支持其它模块（cms / blog / settings / sso-center），每个模块都要能用<b>自己库</b>的
+ * 要支持其它模块（cms / settings / sso-center），每个模块都要能用<b>自己库</b>的
  * information_schema 自描述表结构，逻辑完全一致、只是连接的库不同。所以把实现上移成抽象基类，
  * 各服务只留一个几行的子类（标 {@code @RestController}），由各自的 {@code /internal/**} 准入策略
  * （X-Internal-Token 拦截器）把关——准入仍留在各服务，便于逐个审阅。

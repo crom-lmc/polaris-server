@@ -159,7 +159,7 @@ public class ApprovalEngine {
     }
 
     private static final Map<String, String> DEFAULT_SUBJECT_KEYS = Map.of(
-            "ehr", "employeeId", "cms", "articleId", "blog", "articleId",
+            "ehr", "employeeId", "cms", "articleId",
             "sso-center", "id", "settings", "id");
 
     /**

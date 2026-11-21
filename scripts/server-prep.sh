@@ -27,7 +27,7 @@ EOF
 sysctl --system >/dev/null
 
 echo "== 3. 目录 =="
-mkdir -p /opt/polaris/{jars,www,keys,logs,uploads/blog}
+mkdir -p /opt/polaris/{jars,www,keys,logs}
 chmod 700 /opt/polaris/keys
 
 echo "== 4. 限制 journald 占用（磁盘小的话很重要）=="

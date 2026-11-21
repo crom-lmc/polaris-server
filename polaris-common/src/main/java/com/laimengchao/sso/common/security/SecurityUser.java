@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * 统一后台用户主体：没有密码、没有本地角色，身份完全来自统一账号中心
  * （sso-auth 签发、sso-gateway 验签后写入可信头）。
- * <p>各业务服务（ehr / settings / portal / cms / blog）共用本类，避免各自复制一份。
+ * <p>各业务服务（ehr / settings / portal / cms）共用本类，避免各自复制一份。
  */
 @Data
 public class SecurityUser implements UserDetails {

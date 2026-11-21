@@ -36,17 +36,6 @@ spring:
           uri: ${SSO_ACCOUNT_ROUTE:http://127.0.0.1:9002}
           predicates:
             - Path=/api/accounts/**,/api/roles/**,/api/permissions/**,/api/applications/**
-        # 业务应用：博客管理端。后台接口（/api/blog/admin/**）必须带令牌，
-        # 读者端（/api/blog/public/**）在白名单里放行
-        - id: blog-admin
-          uri: ${BLOG_ADMIN_ROUTE:http://127.0.0.1:9003}
-          predicates:
-            - Path=/api/blog/**
-        # 上传的文件（图片/封面）：静态资源，同样由 blog-admin 提供
-        - id: blog-uploads
-          uri: ${BLOG_ADMIN_ROUTE:http://127.0.0.1:9003}
-          predicates:
-            - Path=/uploads/**
         # 业务应用：CMS 内容管理端
         - id: cms
           uri: ${CMS_ROUTE:http://127.0.0.1:9004}

@@ -26,7 +26,7 @@ sso:
     session-store: redis
     session-ttl-seconds: 604800
     session-cookie-name: SSO_SID
-    # MUST be the parent domain, otherwise sso/blog subdomains do not share the cookie
+    # MUST be the parent domain, otherwise subdomains do not share the cookie
     # and single sign-on silently degrades to "log in on every site"
     session-cookie-domain: ".laimengchao.site"
     session-cookie-secure: true

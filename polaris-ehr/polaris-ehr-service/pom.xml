@@ -15,7 +15,7 @@
     <name>ehr-service</name>
     <description>
         EHR 人力服务（端口 9006）：组织架构（集团/子公司/部门/项目/子项目）+ 人员 + 请假。
-        与 cms/blog-admin 同一套接入模板——认证消费网关注入的可信头，按钮级权限走 @Permit；
+        与 cms 同一套接入模板——认证消费网关注入的可信头，按钮级权限走 @Permit；
         创建人员时经 account 内部接口跨服务开户，默认授权 sso-center / portal / ehr 三个应用。
     </description>
 

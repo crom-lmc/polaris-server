@@ -80,7 +80,6 @@ approval:
     base-urls:
       ehr: ${EHR_URL:http://127.0.0.1:9006}
       cms: ${CMS_URL:http://127.0.0.1:9004}
-      blog: ${BLOG_URL:http://127.0.0.1:9003}
       "sso-center": ${SSO_ACCOUNT_URL:http://127.0.0.1:9002}
       settings: ${SETTINGS_SELF_URL:http://127.0.0.1:9007}
 

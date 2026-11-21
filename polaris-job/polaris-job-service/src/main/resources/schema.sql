@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `job_alarm_log` (
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE IF NOT EXISTS `job_info` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
-  `app_code` varchar(32) NOT NULL COMMENT '所属应用：ehr/settings/gateway/cms/blog',
+  `app_code` varchar(32) NOT NULL COMMENT '所属应用：ehr/settings/gateway/cms',
   `name` varchar(64) NOT NULL COMMENT '任务名称',
   `handler` varchar(128) NOT NULL COMMENT '应用内 JobHandler#name()',
   `description` varchar(255) DEFAULT '' COMMENT '描述',

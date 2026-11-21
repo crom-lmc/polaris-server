@@ -7,7 +7,6 @@ CREATE DATABASE IF NOT EXISTS sso_ms       DEFAULT CHARACTER SET utf8mb4 COLLATE
 CREATE DATABASE IF NOT EXISTS settings     DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS ehr          DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS cms          DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-CREATE DATABASE IF NOT EXISTS blog         DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 CREATE DATABASE IF NOT EXISTS polaris_job  DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
 -- 2) 业务账号（只给业务库权限，不给全局）
@@ -16,7 +15,6 @@ GRANT ALL PRIVILEGES ON sso_ms.*      TO 'polaris'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON settings.*    TO 'polaris'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON ehr.*         TO 'polaris'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON cms.*         TO 'polaris'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON blog.*        TO 'polaris'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON polaris_job.* TO 'polaris'@'127.0.0.1';
 
 -- 若服务后续以容器 127.0.0.1 之外的地址连库，再按需增加 'polaris'@'%'

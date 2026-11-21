@@ -320,7 +320,7 @@ CREATE TABLE IF NOT EXISTS `cfg_approval_template` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `code` varchar(64) NOT NULL COMMENT '模板编码，如 ehr_onboard_default',
   `name` varchar(64) NOT NULL COMMENT '模板名称',
-  `app_code` varchar(32) NOT NULL COMMENT '归属应用 ehr / cms / blog',
+  `app_code` varchar(32) NOT NULL COMMENT '归属应用 ehr / cms',
   `biz_type` varchar(64) NOT NULL COMMENT '业务场景，如 ehr.onboard',
   `biz_name` varchar(64) NOT NULL COMMENT '场景名快照',
   `enabled` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1启用 0停用',
