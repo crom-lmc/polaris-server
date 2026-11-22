@@ -51,8 +51,12 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        // 1) 不管后续走哪条分支，先清掉不可信的身份头
-        ServerWebExchange clean = stripTrustedHeaders(exchange);
+        // 1) 先清掉不可信的身份头。
+        // 开放平台第三方路径（签名模式）以 X-App-Code 作为应用标识参与 HMAC 验签，必须保留调用方自带值；
+        // 管理端 /api/open/admin/** 与其余业务路径绝不允许自带，仍按身份头剥离、由网关注入。
+        boolean openapiThirdParty = path.startsWith("/api/open/")
+                && !path.startsWith("/api/open/admin/");
+        ServerWebExchange clean = stripTrustedHeaders(exchange, openapiThirdParty);
 
         // 2) 内部接口只允许服务间内网直连，外部一律 403
         if (props.getInternalPrefixes().stream().anyMatch(path::startsWith)) {
@@ -118,8 +122,13 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         return false;
     }
 
-    /** 撕掉任何客户端自称的身份，杜绝伪造 X-Account-Id 冒充管理员。 */
-    private ServerWebExchange stripTrustedHeaders(ServerWebExchange exchange) {
+    /**
+     * 撕掉任何客户端自称的身份，杜绝伪造 X-Account-Id 冒充管理员。
+     *
+     * @param keepAppCode 开放平台第三方签名模式以 X-App-Code 标识调用方（签名材料的一部分），需原样透传；
+     *                    该路径由开放平台服务自行验签鉴权，网关保留此头不等于相信其身份。
+     */
+    private ServerWebExchange stripTrustedHeaders(ServerWebExchange exchange, boolean keepAppCode) {
         ServerHttpRequest sanitized = exchange.getRequest().mutate()
                 .headers(h -> {
                     h.remove(JwtClaims.Headers.ACCOUNT_ID);
@@ -127,7 +136,9 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                     h.remove(JwtClaims.Headers.SUPER_ADMIN);
                     h.remove(JwtClaims.Headers.PERMISSIONS);
                     h.remove(JwtClaims.Headers.APPS);
-                    h.remove(JwtClaims.Headers.APP_CODE);
+                    if (!keepAppCode) {
+                        h.remove(JwtClaims.Headers.APP_CODE);
+                    }
                     h.remove(JwtClaims.Headers.INTERNAL_TOKEN);
                 })
                 .build();
