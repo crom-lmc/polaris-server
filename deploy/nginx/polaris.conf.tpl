@@ -24,9 +24,6 @@ server {
         polaris-settings.${DOMAIN}
         polaris-job.${DOMAIN}
         polaris-portal.${DOMAIN}
-        polaris-gateway.${DOMAIN}
-        polaris-auth.${DOMAIN}
-        polaris-account.${DOMAIN}
         polaris-forum.${DOMAIN};
     return 301 https://$host$request_uri;
 }
@@ -199,65 +196,6 @@ server {
         root /opt/polaris/www/forum;
         index index.html;
         try_files $uri $uri/ /index.html;
-    }
-}
-
-# ============ 后端直连域名（4 个，便于自测/直连）============
-
-server {
-    listen 443 ssl;
-    server_name polaris-gateway.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/polaris-gateway.${DOMAIN}/polaris-gateway.${DOMAIN}_nginx/polaris-gateway.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/polaris-gateway.${DOMAIN}/polaris-gateway.${DOMAIN}_nginx/polaris-gateway.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-
-    location / {
-        proxy_pass http://127.0.0.1:9080;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name polaris-auth.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/polaris-auth.${DOMAIN}/polaris-auth.${DOMAIN}_nginx/polaris-auth.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/polaris-auth.${DOMAIN}/polaris-auth.${DOMAIN}_nginx/polaris-auth.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-
-    location / {
-        proxy_pass http://127.0.0.1:9001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name polaris-account.${DOMAIN};
-    ssl_certificate     /etc/nginx/certs/polaris-account.${DOMAIN}/polaris-account.${DOMAIN}_nginx/polaris-account.${DOMAIN}_bundle.crt;
-    ssl_certificate_key /etc/nginx/certs/polaris-account.${DOMAIN}/polaris-account.${DOMAIN}_nginx/polaris-account.${DOMAIN}.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    client_max_body_size 20m;
-
-    location / {
-        proxy_pass http://127.0.0.1:9002;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
     }
 }
 
