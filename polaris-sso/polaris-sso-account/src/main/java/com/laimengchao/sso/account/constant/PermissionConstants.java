@@ -138,6 +138,81 @@ public final class PermissionConstants {
             new PermDef("维护通知", EHR_ANNOUNCEMENT_MANAGE, PermissionType.BUTTON, EHR_MENU_ANNOUNCEMENT, 1)
     );
 
+    /* ---------- 业务应用 openapi（接口开放平台）的内置权限 ---------- */
+
+    /** 开放平台的权限域：开放 API 的调用权限码全部注册在该 app_code 下 */
+    public static final String OPENAPI_APP = "openapi";
+    /* —— 管理端菜单（平台管理员在统一登录中心给运营人员分配） —— */
+    public static final String OPENAPI_MENU_DASHBOARD = "openapi:dashboard";
+    public static final String OPENAPI_MENU_ENDPOINT = "openapi:endpoint";
+    public static final String OPENAPI_MENU_APP = "openapi:app";
+    public static final String OPENAPI_MENU_CHANNEL = "openapi:channel";
+    public static final String OPENAPI_MENU_LOG = "openapi:log";
+    public static final String OPENAPI_MENU_STAT = "openapi:stat";
+    public static final String OPENAPI_MENU_SETTING = "openapi:setting";
+    /* —— 管理端按钮 —— */
+    public static final String OPENAPI_ENDPOINT_LIST = "openapi:endpoint:list";
+    public static final String OPENAPI_ENDPOINT_CREATE = "openapi:endpoint:create";
+    public static final String OPENAPI_ENDPOINT_EDIT = "openapi:endpoint:edit";
+    public static final String OPENAPI_ENDPOINT_TOGGLE = "openapi:endpoint:toggle";
+    public static final String OPENAPI_ENDPOINT_DELETE = "openapi:endpoint:delete";
+    public static final String OPENAPI_APP_LIST = "openapi:app:list";
+    public static final String OPENAPI_APP_AUTH = "openapi:app:auth";
+    public static final String OPENAPI_APP_SECRET_RESET = "openapi:app:secret:reset";
+    public static final String OPENAPI_APP_TOGGLE = "openapi:app:toggle";
+    public static final String OPENAPI_CHANNEL_LIST = "openapi:channel:list";
+    public static final String OPENAPI_CHANNEL_CREATE = "openapi:channel:create";
+    public static final String OPENAPI_CHANNEL_EDIT = "openapi:channel:edit";
+    public static final String OPENAPI_CHANNEL_CREDENTIAL = "openapi:channel:credential";
+    public static final String OPENAPI_CHANNEL_DELETE = "openapi:channel:delete";
+    public static final String OPENAPI_LOG_LIST = "openapi:log:list";
+    public static final String OPENAPI_LOG_DETAIL = "openapi:log:detail";
+    public static final String OPENAPI_LOG_EXPORT = "openapi:log:export";
+    public static final String OPENAPI_STAT_VIEW = "openapi:stat:view";
+    public static final String OPENAPI_SETTING_EDIT = "openapi:setting:edit";
+    /* —— 开放 API 调用权限（授权给第三方应用，无菜单，parentCode=null） —— */
+    public static final String INBOUND_MASTER_LIST = "inbound:master:list";
+    public static final String INBOUND_DICT_LIST = "inbound:dict:list";
+    public static final String INBOUND_EMPLOYEE_LIST = "inbound:employee:list";
+    public static final String INBOUND_ORG_TREE = "inbound:org:tree";
+    public static final String OUTBOUND_EMAIL_INVOKE = "outbound:email:invoke";
+
+    /** 开放平台内置权限清单（管理端 + 四类进 + 一等出），幂等播种到 sso_permission(app_code='openapi') */
+    public static final java.util.List<PermDef> OPENAPI_BUILTIN = java.util.List.of(
+            new PermDef("接口开放平台-概览", OPENAPI_MENU_DASHBOARD, PermissionType.MENU, null, 1),
+            new PermDef("API 管理", OPENAPI_MENU_ENDPOINT, PermissionType.MENU, null, 2),
+            new PermDef("对接应用", OPENAPI_MENU_APP, PermissionType.MENU, null, 3),
+            new PermDef("出站渠道", OPENAPI_MENU_CHANNEL, PermissionType.MENU, null, 4),
+            new PermDef("调用日志", OPENAPI_MENU_LOG, PermissionType.MENU, null, 5),
+            new PermDef("统计报表", OPENAPI_MENU_STAT, PermissionType.MENU, null, 6),
+            new PermDef("平台设置", OPENAPI_MENU_SETTING, PermissionType.MENU, null, 7),
+            new PermDef("查看开放 API", OPENAPI_ENDPOINT_LIST, PermissionType.BUTTON, OPENAPI_MENU_ENDPOINT, 1),
+            new PermDef("新建开放 API", OPENAPI_ENDPOINT_CREATE, PermissionType.BUTTON, OPENAPI_MENU_ENDPOINT, 2),
+            new PermDef("编辑开放 API", OPENAPI_ENDPOINT_EDIT, PermissionType.BUTTON, OPENAPI_MENU_ENDPOINT, 3),
+            new PermDef("启停开放 API", OPENAPI_ENDPOINT_TOGGLE, PermissionType.BUTTON, OPENAPI_MENU_ENDPOINT, 4),
+            new PermDef("删除开放 API", OPENAPI_ENDPOINT_DELETE, PermissionType.BUTTON, OPENAPI_MENU_ENDPOINT, 5),
+            new PermDef("查看对接应用", OPENAPI_APP_LIST, PermissionType.BUTTON, OPENAPI_MENU_APP, 1),
+            new PermDef("配置接口授权", OPENAPI_APP_AUTH, PermissionType.BUTTON, OPENAPI_MENU_APP, 2),
+            new PermDef("重置应用密钥", OPENAPI_APP_SECRET_RESET, PermissionType.BUTTON, OPENAPI_MENU_APP, 3),
+            new PermDef("启停应用", OPENAPI_APP_TOGGLE, PermissionType.BUTTON, OPENAPI_MENU_APP, 4),
+            new PermDef("查看出站渠道", OPENAPI_CHANNEL_LIST, PermissionType.BUTTON, OPENAPI_MENU_CHANNEL, 1),
+            new PermDef("新建渠道", OPENAPI_CHANNEL_CREATE, PermissionType.BUTTON, OPENAPI_MENU_CHANNEL, 2),
+            new PermDef("编辑渠道", OPENAPI_CHANNEL_EDIT, PermissionType.BUTTON, OPENAPI_MENU_CHANNEL, 3),
+            new PermDef("维护渠道凭证", OPENAPI_CHANNEL_CREDENTIAL, PermissionType.BUTTON, OPENAPI_MENU_CHANNEL, 4),
+            new PermDef("删除渠道", OPENAPI_CHANNEL_DELETE, PermissionType.BUTTON, OPENAPI_MENU_CHANNEL, 5),
+            new PermDef("查询调用日志", OPENAPI_LOG_LIST, PermissionType.BUTTON, OPENAPI_MENU_LOG, 1),
+            new PermDef("查看报文详情", OPENAPI_LOG_DETAIL, PermissionType.BUTTON, OPENAPI_MENU_LOG, 2),
+            new PermDef("导出日志", OPENAPI_LOG_EXPORT, PermissionType.BUTTON, OPENAPI_MENU_LOG, 3),
+            new PermDef("查看统计报表", OPENAPI_STAT_VIEW, PermissionType.BUTTON, OPENAPI_MENU_STAT, 1),
+            new PermDef("修改平台设置", OPENAPI_SETTING_EDIT, PermissionType.BUTTON, OPENAPI_MENU_SETTING, 1),
+            /* 开放 API 调用权限：无菜单，parentCode=null */
+            new PermDef("获取主数据", INBOUND_MASTER_LIST, PermissionType.BUTTON, null, 20),
+            new PermDef("获取字典", INBOUND_DICT_LIST, PermissionType.BUTTON, null, 21),
+            new PermDef("获取人员信息", INBOUND_EMPLOYEE_LIST, PermissionType.BUTTON, null, 22),
+            new PermDef("获取组织信息", INBOUND_ORG_TREE, PermissionType.BUTTON, null, 23),
+            new PermDef("调用邮件渠道", OUTBOUND_EMAIL_INVOKE, PermissionType.BUTTON, null, 24)
+    );
+
     /* ---------- 业务应用 forum（社区论坛）的内置权限 ---------- */
 
     public static final String FORUM_APP = "forum";

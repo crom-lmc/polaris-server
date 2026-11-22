@@ -70,6 +70,14 @@ public class GatewayProperties {
             // 独立论坛：游客查询与 OAuth2 换票匿名可用，互动接口仍需 Bearer
             "/api/forum/public/**",
             "/api/forum/sso/**",
+            // 接口开放平台：第三方用平台自有鉴权（client_credentials 令牌 / HMAC 签名），不带 SSO 用户令牌，
+            // 必须放行让网关跳过验签；注意管理端 /api/open/admin/** 不在白名单，仍需网关注入 X-Account-* 头
+            "/api/open/token",
+            "/api/open/v1/**",
+            // 管理端 SSO 换票：靠一次性 ticket / OAuth code + appSecret 准入，不带用户令牌
+            "/api/open/sso/**",
+            // 出站接口：内网服务间调用，走 X-Internal-Token（通常直连 9010；经网关时也放行）
+            "/api/open/outbound/**",
             // 上传的图片/附件：静态资源，读者端也要能直接加载
             "/uploads/**",
             // 调度中心派发入口：中心直连网关 9080 调 /internal/jobs/run，

@@ -36,6 +36,11 @@ spring:
           uri: ${SSO_ACCOUNT_ROUTE:http://127.0.0.1:9002}
           predicates:
             - Path=/api/accounts/**,/api/roles/**,/api/permissions/**,/api/applications/**
+        # 接口开放平台：第三方进出 + 管理端（管理端由网关注入 X-Account-* 头，openapi 服务按 @Permit 校验）
+        - id: openapi
+          uri: ${OPENAPI_ROUTE:http://127.0.0.1:9010}
+          predicates:
+            - Path=/api/open/**
         # 业务应用：CMS 内容管理端
         - id: cms
           uri: ${CMS_ROUTE:http://127.0.0.1:9004}

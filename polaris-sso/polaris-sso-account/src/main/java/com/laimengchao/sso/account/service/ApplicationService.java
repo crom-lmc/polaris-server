@@ -39,4 +39,12 @@ public interface ApplicationService {
 
     /** 校验应用密钥，供 /api/auth/ticket/exchange 鉴权 */
     boolean verifySecret(String code, String secret);
+
+    /**
+     * 应用在其 app_code 域下注册的开放 API 权限码（inbound:/outbound: 前缀）。
+     * <p>
+     * 供接口开放平台签发短期令牌时写入 perms——权限单一来源仍是统一登录中心的
+     * sso_permission，开放平台不持有副本。
+     */
+    List<String> apiPermissionCodes(String appCode);
 }

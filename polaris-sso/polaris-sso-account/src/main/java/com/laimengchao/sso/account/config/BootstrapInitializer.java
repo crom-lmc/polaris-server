@@ -205,6 +205,8 @@ public class BootstrapInitializer implements ApplicationRunner {
         // 论坛双应用域：前台（北极星空）只有写操作码，管理端（北极星核）保留完整后台权限树
         seedPermissions(PermissionConstants.FORUM_APP, PermissionConstants.FORUM_MEMBER_BUILTIN);
         seedPermissions(PermissionConstants.FORUM_ADMIN_APP, PermissionConstants.FORUM_ADMIN_BUILTIN);
+        // 接口开放平台：管理端权限树 + 四类开放 API 调用码 + 邮件出站码
+        seedPermissions(PermissionConstants.OPENAPI_APP, PermissionConstants.OPENAPI_BUILTIN);
     }
 
     /** 按应用补权限码；父级菜单的 id 只在同应用内找，避免业务应用同名码把 parentId 指错 */

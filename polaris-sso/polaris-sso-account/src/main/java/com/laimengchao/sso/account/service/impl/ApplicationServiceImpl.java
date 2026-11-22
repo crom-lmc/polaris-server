@@ -179,6 +179,16 @@ public class ApplicationServiceImpl implements ApplicationService {
                 secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
+    @Override
+    public List<String> apiPermissionCodes(String appCode) {
+        return permissionService.listAll(appCode).stream()
+                .map(p -> p.getCode())
+                .filter(code -> code != null
+                        && (code.startsWith("inbound:") || code.startsWith("outbound:")))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     // ---------------- 内部工具 ----------------
 
     private SsoApplication require(Long id) {

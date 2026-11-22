@@ -431,4 +431,46 @@ public final class PermissionCodes {
     public static final String FORUM_CHECKIN = "forum:checkin";
     public static final String FORUM_LOTTERY_DRAW = "forum:lottery:draw";
     public static final String FORUM_GIFT_REDEEM = "forum:gift:redeem";
+
+    /* ============================================================
+     * 接口开放平台（app_code = openapi）
+     * ============================================================ */
+    public static final String APP_OPENAPI = "openapi";
+
+    /* 管理端菜单 */
+    public static final String OPENAPI_MENU_DASHBOARD = "openapi:dashboard";
+    public static final String OPENAPI_MENU_ENDPOINT = "openapi:endpoint";
+    public static final String OPENAPI_MENU_APP = "openapi:app";
+    public static final String OPENAPI_MENU_CHANNEL = "openapi:channel";
+    public static final String OPENAPI_MENU_LOG = "openapi:log";
+    public static final String OPENAPI_MENU_STAT = "openapi:stat";
+    public static final String OPENAPI_MENU_SETTING = "openapi:setting";
+
+    /* 管理端按钮（与 sso-account PermissionConstants 同值，供 openapi 服务 @Permit 使用） */
+    public static final String OPENAPI_ENDPOINT_LIST = "openapi:endpoint:list";
+    public static final String OPENAPI_ENDPOINT_CREATE = "openapi:endpoint:create";
+    public static final String OPENAPI_ENDPOINT_EDIT = "openapi:endpoint:edit";
+    public static final String OPENAPI_ENDPOINT_TOGGLE = "openapi:endpoint:toggle";
+    public static final String OPENAPI_ENDPOINT_DELETE = "openapi:endpoint:delete";
+    public static final String OPENAPI_APP_LIST = "openapi:app:list";
+    public static final String OPENAPI_APP_AUTH = "openapi:app:auth";
+    public static final String OPENAPI_APP_SECRET_RESET = "openapi:app:secret:reset";
+    public static final String OPENAPI_APP_TOGGLE = "openapi:app:toggle";
+    public static final String OPENAPI_CHANNEL_LIST = "openapi:channel:list";
+    public static final String OPENAPI_CHANNEL_CREATE = "openapi:channel:create";
+    public static final String OPENAPI_CHANNEL_EDIT = "openapi:channel:edit";
+    public static final String OPENAPI_CHANNEL_CREDENTIAL = "openapi:channel:credential";
+    public static final String OPENAPI_CHANNEL_DELETE = "openapi:channel:delete";
+    public static final String OPENAPI_LOG_LIST = "openapi:log:list";
+    public static final String OPENAPI_LOG_DETAIL = "openapi:log:detail";
+    public static final String OPENAPI_LOG_EXPORT = "openapi:log:export";
+    public static final String OPENAPI_STAT_VIEW = "openapi:stat:view";
+    public static final String OPENAPI_SETTING_EDIT = "openapi:setting:edit";
+
+    /* 开放 API 调用权限码（注册在 openapi 域，授权给第三方应用） */
+    public static final String INBOUND_MASTER_LIST = "inbound:master:list";
+    public static final String INBOUND_DICT_LIST = "inbound:dict:list";
+    public static final String INBOUND_EMPLOYEE_LIST = "inbound:employee:list";
+    public static final String INBOUND_ORG_TREE = "inbound:org:tree";
+    public static final String OUTBOUND_EMAIL_INVOKE = "outbound:email:invoke";
 }

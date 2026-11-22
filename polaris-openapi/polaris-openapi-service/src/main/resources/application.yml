@@ -1,0 +1,93 @@
+server:
+  port: ${OPENAPI_PORT:9010}
+
+spring:
+  application:
+    name: openapi
+  config:
+    import: "optional:nacos:openapi.yaml?group=${SSO_NACOS_GROUP:SSO}&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${SSO_NACOS_ADDR:${NACOS_SERVER_ADDR:127.0.0.1:8848}}
+      username: ${SSO_NACOS_USER:${NACOS_USERNAME:nacos}}
+      password: ${SSO_NACOS_PASSWORD:${NACOS_PASSWORD:}}
+      config:
+        enabled: ${SSO_NACOS_ENABLED:false}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+        group: ${SSO_NACOS_GROUP:SSO}
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        enabled: ${SSO_NACOS_DISCOVERY:false}
+        group: ${SSO_NACOS_GROUP:SSO}
+        namespace: ${SSO_NACOS_NAMESPACE:sso-ms-local}
+  datasource:
+    url: ${OPENAPI_DB_URL:jdbc:mysql://127.0.0.1:3306/polaris_openapi?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true}
+    username: ${OPENAPI_DB_USER:root}
+    password: ${OPENAPI_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+  sql:
+    init:
+      mode: ${OPENAPI_SQL_INIT_MODE:always}
+      encoding: UTF-8
+  data:
+    redis:
+      # P2 限流/nonce 跨实例共享（与 sso 的 db2 隔离，用 db3）；未配置时自动降级进程内实现
+      host: ${OPENAPI_REDIS_HOST:${SSO_REDIS_HOST:127.0.0.1}}
+      port: ${OPENAPI_REDIS_PORT:${SSO_REDIS_PORT:6379}}
+      database: ${OPENAPI_REDIS_DB:3}
+      password: ${OPENAPI_REDIS_PASSWORD:${SSO_REDIS_PASSWORD:}}
+      timeout: 3000ms
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.laimengchao.sso.openapi.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+
+# 统一登录中心跨服客户端（X-Internal-Token 准入）
+sso:
+  client:
+    account-base-url: ${SSO_ACCOUNT_URL:http://127.0.0.1:9002}
+    internal-token: ${SSO_INTERNAL_TOKEN:}
+  # P2 管理端 SSO：openapi 作为 OAuth 客户端入驻统一登录中心（appSecret 部署时注入）
+  openapi:
+    app-code: ${SSO_OPENAPI_APP_CODE:openapi}
+    # 默认与 sso-account data.sql 的 openapi 应用种子一致；生产必须由 Nacos/环境变量覆盖并同步修改库里的 app_secret
+    app-secret: ${SSO_OPENAPI_APP_SECRET:oPeNaPiS3cr3t9Kw7dN2pQ5vYzLm}
+
+# 下游业务服务的 internal 接口地址（凭 X-Internal-Token 准入）
+internal:
+  settings-url: ${SETTINGS_URL:http://127.0.0.1:9007}
+  ehr-url: ${EHR_URL:http://127.0.0.1:9006}
+  token: ${SSO_INTERNAL_TOKEN:}
+
+# 开放平台自身配置
+openapi:
+  # 自签短期访问令牌（HS256）的密钥，生产必须走环境变量/Nacos 下发，至少 32 字节
+  token-secret: ${OPENAPI_TOKEN_SECRET:openapi-local-dev-secret-change-me-please-32bytes}
+  token-ttl-seconds: ${OPENAPI_TOKEN_TTL_SECONDS:3600}
+  # 签名模式：时间戳允许偏差（秒）与 nonce 去重窗口由本地 Caffeine 承担（P0 用 ConcurrentHashMap）
+  signature-tolerance-seconds: ${OPENAPI_SIGNATURE_TOLERANCE_SECONDS:300}
+  # P1 出站：渠道凭证 AES-GCM 加密主密钥（复用 common SecretCipher.parseKey，须 16/24/32 字节）
+  # 生产必须走环境变量/Nacos 下发；库里只存 ENC(...) 密文，明文绝不入库/回显
+  channel:
+    credential-key: ${OPENAPI_CHANNEL_KEY:openapi-channel-key-000000000000}
+  # P1 出站：重试 + 熔断（进程内轻量实现，与 P0 限流同风格；多实例可在 P2 平滑换 Resilience4j）
+  outbound:
+    retry-max: ${OPENAPI_OUTBOUND_RETRY_MAX:2}
+    retry-interval-ms: ${OPENAPI_OUTBOUND_RETRY_INTERVAL_MS:200}
+    circuit-failure-rate: ${OPENAPI_OUTBOUND_CIRCUIT_FAILURE_RATE:50}
+    circuit-min-calls: ${OPENAPI_OUTBOUND_CIRCUIT_MIN_CALLS:5}
+    circuit-open-ms: ${OPENAPI_OUTBOUND_CIRCUIT_OPEN_MS:30000}

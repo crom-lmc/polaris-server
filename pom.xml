@@ -42,6 +42,8 @@
         <module>polaris-job</module>
         <!-- 独立社区论坛：forum-service(9009)，公开浏览 + SSO 互动 + 积分交易 -->
         <module>polaris-forum</module>
+        <!-- 接口开放平台：openapi-service(9010，独立库 polaris_openapi)，第三方进出唯一对接点 -->
+        <module>polaris-openapi</module>
     </modules>
 
     <dependencyManagement>
