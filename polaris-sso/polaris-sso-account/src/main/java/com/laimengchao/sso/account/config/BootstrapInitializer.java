@@ -174,6 +174,7 @@ public class BootstrapInitializer implements ApplicationRunner {
                 + "WHEN code IN ('cms', 'ehr') THEN 'MANAGEMENT' "
                 + "WHEN code = 'portal' THEN 'PORTAL' "
                 + "WHEN code IN ('forum', 'forum-admin') THEN 'COMMUNITY' "
+                + "WHEN code = 'openapi' THEN 'SYSTEM' "
                 + "ELSE 'OTHER' END WHERE app_type IS NULL OR app_type = ''");
         if (updated > 0) {
             log.info("迁移：已回填 {} 个应用的空类型", updated);

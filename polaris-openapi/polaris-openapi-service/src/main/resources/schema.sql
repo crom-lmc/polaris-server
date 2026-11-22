@@ -1,11 +1,12 @@
 -- 接口开放平台结构基线（MySQL 5.7，独立库 polaris_openapi）
--- 可重复执行：全部 CREATE TABLE IF NOT EXISTS，不含 DROP/ALTER。
+-- 可重复执行：CREATE TABLE IF NOT EXISTS + 幂等加列（prepared statement，无 DROP）。
 
 CREATE TABLE IF NOT EXISTS `api_open_endpoint` (
   `id` bigint(20) NOT NULL COMMENT '雪花ID',
   `api_code` varchar(64) NOT NULL COMMENT '开放API唯一标识，如 inbound.master.list',
   `api_name` varchar(128) NOT NULL COMMENT 'API名称',
   `direction` tinyint(4) NOT NULL COMMENT '1=INBOUND 2=OUTBOUND',
+  `operation_type` varchar(16) NOT NULL DEFAULT 'QUERY' COMMENT '操作类型：QUERY/CREATE/UPDATE/DELETE/EXECUTE',
   `app_code` varchar(64) NOT NULL COMMENT '目标内部应用编码 / 出站渠道编码',
   `method` varchar(16) NOT NULL DEFAULT 'POST' COMMENT 'HTTP方法',
   `path` varchar(255) NOT NULL COMMENT '对外路径',
@@ -83,3 +84,12 @@ CREATE TABLE IF NOT EXISTS `api_outbound_channel` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_channel_code` (`channel_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='出站第三方渠道配置';
+
+-- 兼容已部署库：幂等新增 operation_type 列（新库已随 CREATE TABLE 建好，此处检测到即跳过）。
+SET @op_type_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'api_open_endpoint' AND COLUMN_NAME = 'operation_type');
+SET @op_type_sql = IF(@op_type_exists = 0,
+  'ALTER TABLE `api_open_endpoint` ADD COLUMN `operation_type` varchar(16) NOT NULL DEFAULT ''QUERY'' COMMENT ''操作类型：QUERY/CREATE/UPDATE/DELETE/EXECUTE'' AFTER `direction`',
+  'SELECT 1');
+PREPARE op_type_stmt FROM @op_type_sql;
+EXECUTE op_type_stmt;
+DEALLOCATE PREPARE op_type_stmt;

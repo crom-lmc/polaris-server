@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -37,6 +38,19 @@ public class InternalAppController {
     @GetMapping
     public R<List<AppBrief>> list() {
         List<AppBrief> apps = applicationService.listEnabled().stream()
+                .map(a -> new AppBrief(a.getId(), a.getCode(), a.getName()))
+                .toList();
+        return R.ok(apps);
+    }
+
+    /**
+     * 指定类型的启用应用清单（精简字段）。供开放平台只展示第三方对接应用，
+     * 避免把 sso-center / ehr / cms 等内部系统误列为第三方。
+     */
+    @GetMapping("/by-type")
+    public R<List<AppBrief>> listByType(@RequestParam("appType") String appType) {
+        List<AppBrief> apps = applicationService.listEnabled().stream()
+                .filter(a -> appType.equals(a.getAppType()))
                 .map(a -> new AppBrief(a.getId(), a.getCode(), a.getName()))
                 .toList();
         return R.ok(apps);

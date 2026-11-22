@@ -79,6 +79,10 @@ public interface AccountApi {
     @GetMapping("/internal/apps")
     R<List<AppInfo>> listEnabledApps();
 
+    /** 指定类型的启用应用（如开放平台第三方对接应用） */
+    @GetMapping("/internal/apps/by-type")
+    R<List<AppInfo>> listEnabledAppsByType(@RequestParam("appType") String appType);
+
     /** 应用凭据校验 */
     @PostMapping("/internal/apps/verify")
     R<AppInfo> verifyApp(@RequestBody AppVerifyRequest request);

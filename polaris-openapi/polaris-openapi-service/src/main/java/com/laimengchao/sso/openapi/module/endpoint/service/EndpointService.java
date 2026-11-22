@@ -31,6 +31,9 @@ public class EndpointService {
         if (req.getApiCode() == null || req.getApiCode().isBlank()) {
             throw new BizException(ErrorCode.PARAM_ERROR, "api_code 必填");
         }
+        if (req.getOperationType() == null || req.getOperationType().isBlank()) {
+            req.setOperationType(inferOperationType(req));
+        }
         ApiOpenEndpoint existing = mapper.selectByCode(req.getApiCode());
         if (existing == null) {
             req.setId(null);
@@ -47,6 +50,20 @@ public class EndpointService {
             mapper.updateById(req);
         }
         log.info("开放 API 已保存：apiCode={}", req.getApiCode());
+    }
+
+    /** 未显式选择操作类型时：出站一律 EXECUTE；入站按 HTTP 方法推断。 */
+    private String inferOperationType(ApiOpenEndpoint req) {
+        if (req.getDirection() != null && req.getDirection() == 2) {
+            return "EXECUTE";
+        }
+        String method = req.getMethod() == null ? "" : req.getMethod().toUpperCase();
+        return switch (method) {
+            case "POST" -> "CREATE";
+            case "PUT", "PATCH" -> "UPDATE";
+            case "DELETE" -> "DELETE";
+            default -> "QUERY";
+        };
     }
 
     public void toggle(String apiCode, int status) {

@@ -18,6 +18,8 @@ public class ApiOpenEndpoint {
     private String apiCode;
     private String apiName;
     private Integer direction;
+    /** 操作类型：QUERY/CREATE/UPDATE/DELETE/EXECUTE（出站调用），由管理端注册时指定 */
+    private String operationType;
     private String appCode;
     private String method;
     private String path;

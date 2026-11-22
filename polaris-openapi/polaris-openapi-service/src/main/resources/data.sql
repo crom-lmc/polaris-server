@@ -3,16 +3,21 @@
 -- 由 sso-account 的 BootstrapInitializer 幂等播种；第三方应用在自己的 app_code 域下被授予这些码。
 
 INSERT IGNORE INTO `api_open_endpoint`
-  (`id`, `api_code`, `api_name`, `direction`, `app_code`, `method`, `path`, `target_url`, `auth_type`, `required_perm`, `rate_limit_per_min`, `timeout_ms`, `retry_max`, `idempotent`, `mask_rules`, `remark`, `status`, `created_at`, `updated_at`, `deleted`)
+  (`id`, `api_code`, `api_name`, `direction`, `operation_type`, `app_code`, `method`, `path`, `target_url`, `auth_type`, `required_perm`, `rate_limit_per_min`, `timeout_ms`, `retry_max`, `idempotent`, `mask_rules`, `remark`, `status`, `created_at`, `updated_at`, `deleted`)
 VALUES
-  (202611220000000001,'inbound.master.categories','获取主数据类别',1,'settings','GET','/api/open/v1/master/categories','/internal/biz/categories','SIGNATURE','inbound:master:list',60,3000,0,1,NULL,'六类主数据类别清单',1,NOW(),NOW(),0),
-  (202611220000000002,'inbound.master.items','获取主数据项',1,'settings','GET','/api/open/v1/master/{type}/items','/internal/biz/{type}','SIGNATURE','inbound:master:list',60,3000,0,1,NULL,'按类别取启用主数据项',1,NOW(),NOW(),0),
-  (202611220000000003,'inbound.dict.items','获取字典项',1,'settings','GET','/api/open/v1/dict/{typeCode}/items','/internal/dicts/{typeCode}','SIGNATURE','inbound:dict:list',60,3000,0,1,NULL,'按类型取字典项',1,NOW(),NOW(),0),
-  (202611220000000004,'inbound.dict.batch','批量获取字典',1,'settings','POST','/api/open/v1/dict/batch','/internal/dicts/batch','SIGNATURE','inbound:dict:list',60,3000,0,1,NULL,'一次取多类型字典',1,NOW(),NOW(),0),
-  (202611220000000005,'inbound.employee.active','获取在职人员',1,'ehr','GET','/api/open/v1/employees/active','/internal/orgs/employees/active','SIGNATURE','inbound:employee:list',60,3000,0,1,'{"mobile":"mobile","email":"email"}','已开户未离职人员',1,NOW(),NOW(),0),
-  (202611220000000006,'inbound.org.tree','获取组织树',1,'ehr','GET','/api/open/v1/orgs/tree','/internal/orgs/tree','SIGNATURE','inbound:org:tree',60,3000,0,1,NULL,'全量组织节点（扁平）',1,NOW(),NOW(),0),
-  (202611220000000007,'inbound.org.employees','获取组织成员',1,'ehr','GET','/api/open/v1/orgs/{id}/employees','/internal/orgs/{id}/employees','SIGNATURE','inbound:employee:list',60,3000,0,1,NULL,'某组织直属已开户成员',1,NOW(),NOW(),0),
-  (202611220000000008,'outbound.email.send','发送邮件',2,'email','POST','/api/open/v1/outbound/email/send','','INTERNAL','outbound:email:invoke',30,5000,0,0,'{"to":"to","subject":"subject","body":"body"}','邮件出站（SMTP 凭证托管，auth_config 配 host/port/from，credential_ref 存加密账号口令）',1,NOW(),NOW(),0);
+  (202611220000000001,'inbound.master.categories','获取主数据类别',1,'QUERY','settings','GET','/api/open/v1/master/categories','/internal/biz/categories','SIGNATURE','inbound:master:list',60,3000,0,1,NULL,'六类主数据类别清单',1,NOW(),NOW(),0),
+  (202611220000000002,'inbound.master.items','获取主数据项',1,'QUERY','settings','GET','/api/open/v1/master/{type}/items','/internal/biz/{type}','SIGNATURE','inbound:master:list',60,3000,0,1,NULL,'按类别取启用主数据项',1,NOW(),NOW(),0),
+  (202611220000000003,'inbound.dict.items','获取字典项',1,'QUERY','settings','GET','/api/open/v1/dict/{typeCode}/items','/internal/dicts/{typeCode}','SIGNATURE','inbound:dict:list',60,3000,0,1,NULL,'按类型取字典项',1,NOW(),NOW(),0),
+  (202611220000000004,'inbound.dict.batch','批量获取字典',1,'QUERY','settings','POST','/api/open/v1/dict/batch','/internal/dicts/batch','SIGNATURE','inbound:dict:list',60,3000,0,1,NULL,'一次取多类型字典',1,NOW(),NOW(),0),
+  (202611220000000005,'inbound.employee.active','获取在职人员',1,'QUERY','ehr','GET','/api/open/v1/employees/active','/internal/orgs/employees/active','SIGNATURE','inbound:employee:list',60,3000,0,1,'{"mobile":"mobile","email":"email"}','已开户未离职人员',1,NOW(),NOW(),0),
+  (202611220000000006,'inbound.org.tree','获取组织树',1,'QUERY','ehr','GET','/api/open/v1/orgs/tree','/internal/orgs/tree','SIGNATURE','inbound:org:tree',60,3000,0,1,NULL,'全量组织节点（扁平）',1,NOW(),NOW(),0),
+  (202611220000000007,'inbound.org.employees','获取组织成员',1,'QUERY','ehr','GET','/api/open/v1/orgs/{id}/employees','/internal/orgs/{id}/employees','SIGNATURE','inbound:employee:list',60,3000,0,1,NULL,'某组织直属已开户成员',1,NOW(),NOW(),0),
+  (202611220000000008,'outbound.email.send','发送邮件',2,'EXECUTE','email','POST','/api/open/v1/outbound/email/send','','INTERNAL','outbound:email:invoke',30,5000,0,0,'{"to":"to","subject":"subject","body":"body"}','邮件出站（SMTP 凭证托管，auth_config 配 host/port/from，credential_ref 存加密账号口令）',1,NOW(),NOW(),0);
+
+-- 已部署老库：新增列默认为 QUERY，这里按已知种子 api_code 幂等回填真实操作类型。
+-- 条件带 operation_type='QUERY' 守卫，用户后续在管理端改过的值不会被重复覆盖。
+UPDATE `api_open_endpoint` SET `operation_type` = 'EXECUTE'
+ WHERE `api_code` = 'outbound.email.send' AND `operation_type` = 'QUERY';
 
 -- P1 幂等升级：把 P0 的邮件出站占位行（status=2）升级为启用。
 -- 仅匹配 P0 的原始 remark，升级后改写 remark，因此：
