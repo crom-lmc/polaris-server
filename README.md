@@ -1,3 +1,12 @@
+<div align="center">
+  <img src="https://img.shields.io/badge/STATUS-ARCHIVED-red.svg" alt="Archived">
+  <img src="https://img.shields.io/badge/MIGRATED_TO-polaris-blue.svg" alt="Migrated">
+</div>
+
+<h2 align="center">⚠️ 本仓库已停止更新</h2>
+<p align="center">前端/后端代码已合并迁移至新仓库：<b><a href="https://github.com/crom-lmc/polaris">crom-lmc/polaris</a></b></p>
+
+
 # Polaris Server
 
 Polaris 一体化企业平台后端，提供统一认证、账号与权限、人力管理、配置与审批、内容管理、门户聚合、博客和任务调度能力。
